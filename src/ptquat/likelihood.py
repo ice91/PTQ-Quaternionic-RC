@@ -1,14 +1,20 @@
+# src/ptquat/likelihood.py
 from __future__ import annotations
 import numpy as np
-from numpy.linalg import slogdet, solve
+from numpy.linalg import cholesky
 from .constants import DEG2RAD, DR_NUM_KPC
 
+
 def _num_grad_v_wrt_r(r_kpc, v_fun, h=DR_NUM_KPC):
+    """
+    中心差分估計 dv/dr。v_fun 需可向量化地回傳 v(r_kpc)。
+    """
     r_plus  = r_kpc + h
     r_minus = np.clip(r_kpc - h, a_min=1e-6, a_max=None)
     v_plus  = v_fun(r_plus)
     v_minus = v_fun(r_minus)
     return (v_plus - v_minus) / (r_plus - r_minus)
+
 
 def build_covariance(v_model_kms: np.ndarray,
                      r_kpc: np.ndarray,
@@ -19,7 +25,7 @@ def build_covariance(v_model_kms: np.ndarray,
                      sigma_sys_kms: float = 4.0) -> np.ndarray:
     """
     C = diag(meas^2) + sigma_D^2 J_D J_D^T + sigma_i^2 J_i J_i^T + sigma_sys^2 I
-    with
+    其中
       J_D = dv/dD ≈ (dv/dr) * (r/D)      (因 r = D*theta, dr/dD = r/D)
       J_i = dv/di ≈ v * cot(i)           (已在 deprojected 速度下回推)
     單位一致皆為 [km/s]。
@@ -37,7 +43,8 @@ def build_covariance(v_model_kms: np.ndarray,
     if i_err_deg > 0:
         i_rad = float(i_deg) * DEG2RAD
         # 避免 i→0 的數值不穩（品質切已有 i>30°）
-        cot_i = np.cos(i_rad) / np.maximum(np.sin(i_rad), 1e-6)
+        sin_i = np.maximum(np.sin(i_rad), 1e-6)
+        cot_i = np.cos(i_rad) / sin_i
         J_i = v_model_kms * cot_i
         C += (i_err_deg * DEG2RAD)**2 * np.outer(J_i, J_i)
 
@@ -47,19 +54,48 @@ def build_covariance(v_model_kms: np.ndarray,
 
     return C
 
+
 def gaussian_loglike(v_obs_kms: np.ndarray,
                      v_model_kms: np.ndarray,
                      C: np.ndarray) -> float:
     """
-    -1/2 [ r^T C^{-1} r + ln det C + n ln 2pi ]
+    高斯對數概似：
+      -1/2 [ r^T C^{-1} r + ln det C + n ln(2π) ]
+
+    純 NumPy 的穩定作法：
+    - 先強制對稱 C，以減少數值殘餘造成的非正定。
+    - 逐步加入輕微抖動（jitter）直到可 Cholesky。
+    - 以同一份正則化後的 C_reg 同時計算 logdet 與解線性方程。
     """
-    r = v_obs_kms - v_model_kms
-    sign, logdet = slogdet(C)
-    if sign <= 0:
-        # 柔性正則化確保正定性
-        eps = 1e-6 * np.median(np.diag(C))
-        sign, logdet = slogdet(C + eps*np.eye(C.shape[0]))
-    alpha = solve(C, r, assume_a='pos')
+    r = np.asarray(v_obs_kms, float) - np.asarray(v_model_kms, float)
+
+    # 以同一個 C_reg 做所有後續運算
+    C_reg = 0.5 * (C + C.T)  # 強制對稱
+    n = C_reg.shape[0]
+
+    # 設定初始 jitter（取對角中位數做尺度）
+    diag_med = float(np.median(np.diag(C_reg))) if np.isfinite(np.median(np.diag(C_reg))) else 1.0
+    jitter0 = max(1e-12 * diag_med, 1e-12)
+
+    # 嘗試多次 Cholesky，必要時逐次放大 jitter
+    L = None
+    for k in range(4):  # 1e-12, 1e-11, 1e-10, 1e-9 倍階梯
+        try:
+            L = cholesky(C_reg)
+            break
+        except np.linalg.LinAlgError:
+            C_reg = C_reg + (10.0**k) * jitter0 * np.eye(n)
+    if L is None:
+        # 最後保底再加大一些，理論上不太會走到這裡
+        C_reg = C_reg + 1e-6 * np.eye(n)
+        L = cholesky(C_reg)
+
+    # log det C = 2 * sum(log(diag(L)))
+    logdet = 2.0 * np.sum(np.log(np.diag(L)))
+
+    # 以前代/回代解 alpha = C^{-1} r
+    y = np.linalg.solve(L, r)
+    alpha = np.linalg.solve(L.T, y)
     quad = float(r @ alpha)
-    n = C.shape[0]
-    return -0.5 * (quad + logdet + n*np.log(2*np.pi))
+
+    return -0.5 * (quad + logdet + n * np.log(2.0 * np.pi))
