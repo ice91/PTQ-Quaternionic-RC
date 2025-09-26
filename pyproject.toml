@@ -3,25 +3,19 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ptquat"
+name = "ptquat-rc"
 version = "0.1.0"
-description = "H0-anchored PT-symmetric quaternionic one-parameter galaxy rotation-curve fits (global epsilon)."
-authors = [{ name = "Your Name" }]
-readme = "README.md"
-license = {text = "MIT"}
 requires-python = ">=3.9"
 dependencies = [
-  "numpy>=1.24",
-  "scipy>=1.10",
+  "numpy>=1.23",
   "pandas>=2.0",
   "matplotlib>=3.7",
   "emcee>=3.1",
-  "tqdm>=4.65",
-  "pyyaml>=6.0",
+  "tqdm>=4.66",
+  "PyYAML>=6.0",
+  "astropy>=6.0",
+  "astroquery>=0.4.7"
 ]
 
-[project.urls]
-Homepage = "https://github.com/yourname/PTQ-Quaternionic-RC"
-
-[tool.setuptools.packages.find]
-where = ["src"]
+[project.scripts]
+ptquat = "ptquat.cli:main"

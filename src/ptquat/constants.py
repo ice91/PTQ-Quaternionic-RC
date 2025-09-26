@@ -1,15 +1,16 @@
+# src/ptquat/constants.py
 import numpy as np
 
-# Physical constants
-C_LIGHT = 299_792_458.0             # m/s
-KM = 1_000.0                        # m
-KPC = 3.085677581491367e19          # m
-MPC = 1_000.0 * KPC                 # m
+# Physical constants (SI)
+C_LIGHT = 299_792_458.0                 # m/s
+KM      = 1_000.0                       # m
+KPC     = 3.085677581491367e19          # m
+MPC     = 1_000.0 * KPC                 # m
 DEG2RAD = np.pi / 180.0
 
-# H0: Planck 2018 baseline (can be changed by CLI if desired)
-H0_KMS_MPC = 67.4                   # km/s/Mpc
-H0_SI = (H0_KMS_MPC * KM) / MPC     # s^-1
+# H0 default: Planck 2018 (可由 CLI 覆蓋)
+H0_KMS_MPC_DEFAULT = 67.4               # km/s/Mpc
+H0_SI              = (H0_KMS_MPC_DEFAULT * KM) / MPC  # s^-1
 
-# Small finite-difference step in kpc for numerical gradients
+# Finite-difference step for dv/dr [kpc]
 DR_NUM_KPC = 0.01

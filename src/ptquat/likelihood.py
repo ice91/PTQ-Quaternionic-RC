@@ -2,13 +2,8 @@ from __future__ import annotations
 import numpy as np
 from numpy.linalg import slogdet, solve
 from .constants import DEG2RAD, DR_NUM_KPC
-from .models import model_v_kms
 
 def _num_grad_v_wrt_r(r_kpc, v_fun, h=DR_NUM_KPC):
-    """
-    Central finite difference derivative dv/dr at each radius.
-    v_fun takes r_k as input and returns v(r_k).
-    """
     r_plus  = r_kpc + h
     r_minus = np.clip(r_kpc - h, a_min=1e-6, a_max=None)
     v_plus  = v_fun(r_plus)
@@ -25,23 +20,24 @@ def build_covariance(v_model_kms: np.ndarray,
     """
     C = diag(meas^2) + sigma_D^2 J_D J_D^T + sigma_i^2 J_i J_i^T + sigma_sys^2 I
     with
-      J_D = dv/dD ≈ (dv/dr) * (r/D)
-      J_i = dv/di ≈ v * cot(i)
-    where i is in radians. All in velocity units [km/s].
+      J_D = dv/dD ≈ (dv/dr) * (r/D)      (因 r = D*theta, dr/dD = r/D)
+      J_i = dv/di ≈ v * cot(i)           (已在 deprojected 速度下回推)
+    單位一致皆為 [km/s]。
     """
     n = len(v_model_kms)
-    C = np.diag(np.asarray(v_err_meas_kms)**2)
+    C = np.diag(np.asarray(v_err_meas_kms, float)**2)
 
     # Distance term
-    if D_err_Mpc > 0:
+    if D_Mpc > 0 and D_err_Mpc > 0:
         dv_dr = _num_grad_v_wrt_r(r_kpc, v_fun_for_grad)
-        J_D = dv_dr * (r_kpc / D_Mpc)  # since r = D * theta => dr/dD = r/D
+        J_D = dv_dr * (r_kpc / D_Mpc)
         C += (D_err_Mpc**2) * np.outer(J_D, J_D)
 
     # Inclination term
     if i_err_deg > 0:
-        i_rad = i_deg * DEG2RAD
-        cot_i = np.cos(i_rad) / np.sin(i_rad)
+        i_rad = float(i_deg) * DEG2RAD
+        # 避免 i→0 的數值不穩（品質切已有 i>30°）
+        cot_i = np.cos(i_rad) / np.maximum(np.sin(i_rad), 1e-6)
         J_i = v_model_kms * cot_i
         C += (i_err_deg * DEG2RAD)**2 * np.outer(J_i, J_i)
 
@@ -60,10 +56,10 @@ def gaussian_loglike(v_obs_kms: np.ndarray,
     r = v_obs_kms - v_model_kms
     sign, logdet = slogdet(C)
     if sign <= 0:
-        # Regularize softly if numerical issues
+        # 柔性正則化確保正定性
         eps = 1e-6 * np.median(np.diag(C))
         sign, logdet = slogdet(C + eps*np.eye(C.shape[0]))
     alpha = solve(C, r, assume_a='pos')
-    quad = r @ alpha
+    quad = float(r @ alpha)
     n = C.shape[0]
     return -0.5 * (quad + logdet + n*np.log(2*np.pi))
