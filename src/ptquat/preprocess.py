@@ -4,15 +4,20 @@ import pandas as pd
 from pathlib import Path
 
 # 欄位映射：不同 VizieR 鏡像偶爾用簡寫，這裡做容錯
+# 欄位映射：不同 VizieR 鏡像偶爾用簡寫，這裡做容錯
 _MAP2 = {
-    "Name": "galaxy",
-    "Rad": "r_kpc",
-    "Vobs": "v_obs_kms",
+    "Name":   "galaxy",
+    "Rad":    "r_kpc",
+    "Vobs":   "v_obs_kms",
     "e_Vobs": "v_err_kms",
-    "Vgas": "v_gas_kms",
-    "Vdisk": "v_disk_kms",
+    "Vgas":   "v_gas_kms",
+    "Vdisk":  "v_disk_kms",
     "Vbulge": "v_bulge_kms",
+    # 可能遇到的短名別名（防呆）
+    "Vbul":   "v_bulge_kms",
+    "Vblg":   "v_bulge_kms",
 }
+
 _MAP1 = {
     "Name": "galaxy",
     "Dist": "D_Mpc",
