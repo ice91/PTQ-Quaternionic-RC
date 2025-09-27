@@ -2,6 +2,7 @@
 from __future__ import annotations
 import pandas as pd
 from pathlib import Path
+import numpy as np
 
 # 欄位映射：不同 VizieR 鏡像偶爾用簡寫，這裡做容錯
 # 欄位映射：不同 VizieR 鏡像偶爾用簡寫，這裡做容錯
@@ -113,10 +114,12 @@ def build_tidy_csv(
     df = df[df["v_err_kms"] >= 0].copy()
 
     # 品質切
-    with pd.option_context("mode.use_inf_as_na", True):
-        relD = (df["D_err_Mpc"] / df["D_Mpc"]).abs()
+    relD = (df["D_err_Mpc"] / df["D_Mpc"]).abs()
+    relD = relD.replace([np.inf, -np.inf], np.nan)
+
     mask = (
         (df["i_deg"] > i_min_deg) &
+        (relD.notna()) &
         (relD < relD_max) &
         (df["Qual"] <= qual_max)
     )
