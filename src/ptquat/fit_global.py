@@ -1,7 +1,8 @@
+# src/ptquat/fit_global.py
 from __future__ import annotations
 import argparse, json
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Optional
 import numpy as np
 import pandas as pd
 import emcee
@@ -12,6 +13,7 @@ from .data import load_tidy_sparc, GalaxyData
 from .models import model_v_kms
 from .likelihood import build_covariance, gaussian_loglike
 from .constants import H0_SI
+
 
 # ------------------------ Priors ------------------------ #
 def log_prior(theta: np.ndarray,
@@ -47,6 +49,7 @@ def log_prior(theta: np.ndarray,
 
     return lp
 
+
 # -------------------- Log-likelihood -------------------- #
 def log_likelihood(theta: np.ndarray,
                    galaxies: List[GalaxyData],
@@ -60,7 +63,6 @@ def log_likelihood(theta: np.ndarray,
         # v_model and a closure for grad computation
         def vfun(rk):
             # Interpolate baryons to new radii if needed (we assume same radii here)
-            # For numeric grad we only nudge a little; using the same per-point baryons is OK
             return model_v_kms(U, eps, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
 
         v_mod = vfun(g.r_kpc)
@@ -68,6 +70,7 @@ def log_likelihood(theta: np.ndarray,
                               g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sigma_sys_kms)
         total += gaussian_loglike(g.v_obs, v_mod, Cg)
     return total
+
 
 def log_posterior(theta: np.ndarray,
                   galaxies: List[GalaxyData],
@@ -80,9 +83,10 @@ def log_posterior(theta: np.ndarray,
     ll = log_likelihood(theta, galaxies, sigma_sys_kms, H0_si)
     return lp + ll
 
+
 # ------------------------- CLI -------------------------- #
 def parse_args(argv=None):
-    ap = argparse.ArgumentParser(description="Global-epsilon SPARC mini-fit (Appendix D protocol).")
+    ap = argparse.ArgumentParser(description="Global-epsilon SPARC mini/full fit with HDF5 backend support.")
     ap.add_argument("--data-path", required=True, help="Tidy SPARC subset CSV.")
     ap.add_argument("--outdir", default="results", help="Output directory.")
     ap.add_argument("--prior", choices=["galaxies-only","planck-anchored"], default="galaxies-only")
@@ -91,7 +95,16 @@ def parse_args(argv=None):
     ap.add_argument("--nwalkers", type=str, default="4x", help="Num walkers or '4x' for 4*k.")
     ap.add_argument("--steps", type=int, default=8000)
     ap.add_argument("--seed", type=int, default=42)
+
+    # New: HDF5 backend + thinning + resume
+    ap.add_argument("--backend-hdf5", type=str, default=None,
+                    help="Path to emcee HDF5 backend (store chain on disk). Example: results/sparc90/chain.h5")
+    ap.add_argument("--thin-by", type=int, default=10,
+                    help="Thin factor when loading samples for summaries (>=1).")
+    ap.add_argument("--resume", action="store_true",
+                    help="Resume from existing HDF5 backend (do not reset).")
     return ap.parse_args(argv)
+
 
 def run(argv=None):
     args = parse_args(argv)
@@ -113,58 +126,90 @@ def run(argv=None):
     k = 1 + G
     if args.nwalkers.endswith("x"):
         mult = int(args.nwalkers[:-1])
-        nwalkers = max(2* k, mult * k)
+        nwalkers = max(2 * k, mult * k)
     else:
         nwalkers = int(args.nwalkers)
 
+    # Init positions
     rng = np.random.default_rng(args.seed)
     p0 = np.empty((nwalkers, k))
     # init epsilon
     if args.prior == "planck-anchored":
-        p0[:,0] = rng.normal(1.47, 0.05, size=nwalkers)
+        p0[:, 0] = rng.normal(1.47, 0.05, size=nwalkers)
     else:
-        p0[:,0] = rng.uniform(0.2, 2.5, size=nwalkers)
+        p0[:, 0] = rng.uniform(0.2, 2.5, size=nwalkers)
     # init Upsilons
-    p0[:,1:] = rng.normal(0.5, 0.05, size=(nwalkers, G))
-    p0[:,1:] = np.clip(p0[:,1:], 0.1, 1.2)
+    p0[:, 1:] = rng.normal(0.5, 0.05, size=(nwalkers, G))
+    p0[:, 1:] = np.clip(p0[:, 1:], 0.1, 1.2)
+
+    # Optional HDF5 backend
+    backend = None
+    if args.backend_hdf5:
+        try:
+            from emcee.backends import HDFBackend
+        except Exception as e:
+            raise RuntimeError(
+                "HDF5 backend requires emcee>=3 and h5py. Please install with: pip install h5py"
+            ) from e
+
+        backend_path = Path(args.backend_hdf5)
+        backend_path.parent.mkdir(parents=True, exist_ok=True)
+        backend = HDFBackend(str(backend_path))
+
+        if args.resume and backend.iteration > 0:
+            print(f"Resuming from backend {backend_path} at iteration={backend.iteration}")
+            p0_init = None  # continue from last state
+        else:
+            backend.reset(nwalkers, k)
+            p0_init = p0
+    else:
+        p0_init = p0
 
     sampler = emcee.EnsembleSampler(
         nwalkers, k, log_posterior,
-        args=(galaxies, args.sigma_sys, H0_si, args.prior)
+        args=(galaxies, args.sigma_sys, H0_si, args.prior),
+        backend=backend
     )
 
     print(f"Running emcee with nwalkers={nwalkers}, steps={args.steps}, k={k}")
-    sampler.run_mcmc(p0, args.steps, progress=True)
+    sampler.run_mcmc(p0_init, args.steps, progress=True)
 
-    # Flattened chain (discard 1/3 burn-in)
+    # -------- Postprocess (memory-safe with thinning) -------- #
     burn = args.steps // 3
-    chain = sampler.get_chain(discard=burn, flat=True)  # [Nsamples, k]
-    eps_samples = chain[:,0]
-    Ups_samples = chain[:,1:]
+    thin = max(int(args.thin_by), 1)
+
+    if backend is not None:
+        chain = backend.get_chain(discard=burn, flat=True, thin=thin)
+    else:
+        chain = sampler.get_chain(discard=burn, flat=True, thin=thin)
+
+    eps_samples = chain[:, 0]
+    Ups_samples = chain[:, 1:]
 
     # Medians/68%
     def med_lo_hi(x):
-        q = np.percentile(x, [16,50,84])
+        q = np.percentile(x, [16, 50, 84])
         return float(q[1]), float(q[0]), float(q[2])
 
     eps_med, eps_lo, eps_hi = med_lo_hi(eps_samples)
 
     # Evaluate best (median) model and chi2, AIC, BIC
     theta_med = np.concatenate([[eps_med], np.median(Ups_samples, axis=0)])
-    # Compute per-galaxy summaries
+
     rows = []
     N_total = 0
     chi2_tot = 0.0
-    import math
 
     for gi, g in enumerate(galaxies):
-        U_med = theta_med[1+gi]
+        U_med = theta_med[1 + gi]
+
         def vfun(rk):
             return model_v_kms(U_med, eps_med, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+
         v_mod = vfun(g.r_kpc)
         Cg = build_covariance(v_mod, g.r_kpc, g.v_err, g.D_Mpc, g.D_err_Mpc,
                               g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=args.sigma_sys)
-        # For reporting chi2_g we use the quadratic term r^T C^-1 r
+        # chi2_g = r^T C^{-1} r
         r = g.v_obs - v_mod
         alpha = np.linalg.solve(Cg, r)
         chi2_g = float(r @ alpha)
@@ -193,9 +238,10 @@ def run(argv=None):
     df_pg = pd.DataFrame(rows).sort_values("galaxy")
     df_pg.to_csv(outdir / "per_galaxy_summary.csv", index=False)
 
-    # Save posterior samples
+    # Save posterior (thinned)
     np.savez_compressed(outdir / "posterior_samples.npz",
-                        epsilon=eps_samples, Upsilons=Ups_samples, theta_med=theta_med)
+                        epsilon=eps_samples, Upsilons=Ups_samples, theta_med=theta_med,
+                        burn_in=burn, thin=thin, nwalkers=nwalkers, steps=args.steps)
 
     # Global summary
     summary = dict(
@@ -210,17 +256,22 @@ def run(argv=None):
         chi2_total=float(chi2_tot),
         AIC=float(AIC),
         BIC=float(BIC),
-        k_parameters=int(1+G),
+        k_parameters=int(1 + G),
         steps=args.steps,
         nwalkers=nwalkers,
-        burn_in=burn
+        burn_in=burn,
+        thin=thin,
+        backend_hdf5=str(args.backend_hdf5) if args.backend_hdf5 else None,
+        resumed=bool(args.backend_hdf5 and args.resume)
     )
     with open(outdir / "global_summary.yaml", "w") as f:
         yaml.safe_dump(summary, f)
 
     print("\n=== Global summary ===")
     print(json.dumps(summary, indent=2))
-    print(f"\nSaved: {outdir/'per_galaxy_summary.csv'}, {outdir/'global_summary.yaml'} and plots/*.png")
+    print(f"\nSaved: {outdir/'per_galaxy_summary.csv'}, {outdir/'global_summary.yaml'}, "
+          f"{outdir/'posterior_samples.npz'} and plots/*.png")
+    
 
 if __name__ == "__main__":
     run()

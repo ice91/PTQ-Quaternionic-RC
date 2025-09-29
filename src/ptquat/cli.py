@@ -20,7 +20,7 @@ def main(argv=None):
     p1.add_argument("--reldmax", type=float, default=0.2)
     p1.add_argument("--qual-max", type=int, default=2)
 
-    p2 = sub.add_parser("fit", help="Global-epsilon SPARC mini-fit")
+    p2 = sub.add_parser("fit", help="Global-epsilon SPARC mini/full fit")
     p2.add_argument("--data", default="dataset/sparc_tidy.csv")
     p2.add_argument("--outdir", default="results/mini")
     p2.add_argument("--prior", choices=["galaxies-only","planck-anchored"], default="galaxies-only")
@@ -29,6 +29,10 @@ def main(argv=None):
     p2.add_argument("--nwalkers", default="4x")
     p2.add_argument("--steps", type=int, default=12000)
     p2.add_argument("--seed", type=int, default=42)
+    # New: HDF5 backend options
+    p2.add_argument("--backend-hdf5", type=str, default=None, help="Path to HDF5 backend file.")
+    p2.add_argument("--thin-by", type=int, default=10, help="Thin factor when loading samples.")
+    p2.add_argument("--resume", action="store_true", help="Resume if backend exists and has iterations.")
 
     args = ap.parse_args(argv)
 
@@ -53,4 +57,8 @@ def main(argv=None):
             f"--steps={args.steps}",
             f"--nwalkers={args.nwalkers}",
             f"--seed={args.seed}",
-        ] + ([] if args.H0_kms_mpc is None else [f"--H0-kms-mpc={args.H0_kms_mpc}"]))
+        ] +
+        ([] if args.H0_kms_mpc is None else [f"--H0-kms-mpc={args.H0_kms_mpc}"]) +
+        ([] if args.backend_hdf5 is None else [f"--backend-hdf5={args.backend_hdf5}"]) +
+        ([f"--thin-by={args.thin_by}"] if args.thin_by else []) +
+        (["--resume"] if args.resume else []))
