@@ -144,3 +144,7 @@ def model_v_nfw1p(Upsilon: float,
     vbar2 = vbar_squared_kms2(Upsilon, v_disk_kms, v_bulge_kms, v_gas_kms)
     vhalo = nfw_v_kms_M200_c(r_kpc, M200, c, H0_si=H0_si)
     return np.sqrt(vbar2 + vhalo**2)
+
+# --- Backward-compat aliases (keep old imports working) ---
+model_v_kms = model_v_ptq
+model_v_kms_split = model_v_ptq_split
