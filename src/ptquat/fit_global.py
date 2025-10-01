@@ -171,6 +171,20 @@ def parse_args(argv=None):
     ap.add_argument("--backend-hdf5", type=str, default=None)
     ap.add_argument("--thin-by", type=int, default=10)
     ap.add_argument("--resume", action="store_true")
+    # add model
+    ap.add_argument("--model", choices=["ptq","mond","baryon"], default="ptq",
+                help="ptq: epsilon global; mond: a0 global; baryon: epsilon fixed 0")
+    ap.add_argument("--a0-si", type=float, default=None,
+                    help="Fix MOND a0 in SI (m/s^2); if omitted, a0 is sampled globally.")
+    ap.add_argument("--a0-prior-uniform", type=str, default="5e-11,2e-10",
+                    help="If sampling a0: uniform prior [lo,hi] in SI. Default 5e-11–2e-10.")
+    #nfw1p
+    ap.add_argument("--model", choices=["ptq","baryon","mond","nfw1p"], default="ptq")
+    ap.add_argument("--c0", type=float, default=10.0, help="c(M) normalization at 1e12 Msun")
+    ap.add_argument("--c-slope", type=float, default=-0.1, help="c(M) slope beta")
+    ap.add_argument("--logM200-range", type=str, default="9,13", help="Uniform prior bounds for log10 M200 [Msun]")
+# （若你還沒加 MOND，可暫時忽略 mond 相關 CLI 選項）
+
     return ap.parse_args(argv)
 
 

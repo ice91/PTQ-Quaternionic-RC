@@ -14,3 +14,7 @@ H0_SI              = (H0_KMS_MPC_DEFAULT * KM) / MPC  # s^-1
 
 # Finite-difference step for dv/dr [kpc]
 DR_NUM_KPC = 0.01
+
+# add
+G_SI   = 6.67430e-11            # m^3 kg^-1 s^-2
+MSUN   = 1.98847e30             # kg
