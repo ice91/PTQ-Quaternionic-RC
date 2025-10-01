@@ -368,11 +368,11 @@ velocity floor ($\sigma_{\rm sys}$) (parameterized by ($\ln\sigma$) with a weak 
     
 - **MOND (simple ($\nu$))**  
     [  
-    $$v^2 = v_N^2,\nu!\left(\frac{g_N}{a_0}\right),\quad  \nu(y)=\tfrac12+\sqrt{\tfrac14+\tfrac1y},\quad  v_N^2=\Upsilon(v_d^2+v_b^2)+v_g^2,\ g_N=\frac{v_N^2}{r}$$  
+    $$v^2 = v_N^2,\nu!\left(\frac{g_N}{a_0}\right),\quad \nu(y)=\tfrac12+\sqrt{\tfrac14+\tfrac1y},\quad v_N^2=\Upsilon(v_d^2+v_b^2)+v_g^2,\ g_N=\frac{v_N^2}{r}  $$  
     ]
     
 - **NFW-1p**  
     [  
-    $$v^2(r)=v_{\rm bar}^2(r)+v_{\rm NFW}^2!\big(M_{200},,c(M_{200})\big),\quad  c(M)=c_0\left(\frac{M}{10^{12}M_\odot}\right)^{\beta}$$  
+    $$v^2(r)=v_{\rm bar}^2(r)+v_{\rm NFW}^2!\big(M_{200},,c(M_{200})\big),\quad c(M)=c_0\left(\frac{M}{10^{12}M_\odot}\right)^{\beta}  $$  
     ]
     
