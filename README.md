@@ -366,7 +366,7 @@ velocity floor ($\sigma_{\rm sys}$) (parameterized by ($\ln\sigma$) with a weak 
     $$v^2(r)=\Upsilon_d,v_d^2+\Upsilon_b,v_b^2+v_g^2+(\epsilon cH_0) r$$  
     ]
     
-- **MOND (simple (\nu))**  
+- **MOND (simple ($\nu$))**  
     [  
     $$v^2 = v_N^2,\nu!\left(\frac{g_N}{a_0}\right),\quad  \nu(y)=\tfrac12+\sqrt{\tfrac14+\tfrac1y},\quad  v_N^2=\Upsilon(v_d^2+v_b^2)+v_g^2,\ g_N=\frac{v_N^2}{r}$$  
     ]
