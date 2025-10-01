@@ -33,6 +33,15 @@ def main(argv=None):
     p2.add_argument("--backend-hdf5", type=str, default=None, help="Path to HDF5 backend file.")
     p2.add_argument("--thin-by", type=int, default=10, help="Thin factor when loading samples.")
     p2.add_argument("--resume", action="store_true", help="Resume if backend exists and has iterations.")
+    # 新增參數：
+    p2.add_argument("--epsilon-fixed", type=float, default=None,
+                    help="Fix epsilon to a value (e.g. 0.0 for baseline). If set, epsilon is NOT sampled.")
+    p2.add_argument("--split-ml", action="store_true",
+                    help="Per-galaxy split mass-to-light: fit U_disk and U_bulge separately.")
+    p2.add_argument("--sigma-sys-learn", action="store_true",
+                    help="Infer a single global sigma_sys (velocity floor) instead of fixing it.")
+    p2.add_argument("--sigma-sys-prior-scale", type=float, default=5.0,
+                    help="Half-normal prior scale (km/s) for sigma_sys if learning.")
 
     args = ap.parse_args(argv)
 
@@ -57,8 +66,13 @@ def main(argv=None):
             f"--steps={args.steps}",
             f"--nwalkers={args.nwalkers}",
             f"--seed={args.seed}",
-        ] +
-        ([] if args.H0_kms_mpc is None else [f"--H0-kms-mpc={args.H0_kms_mpc}"]) +
-        ([] if args.backend_hdf5 is None else [f"--backend-hdf5={args.backend_hdf5}"]) +
-        ([f"--thin-by={args.thin_by}"] if args.thin_by else []) +
-        (["--resume"] if args.resume else []))
+        ]
+        + ([] if args.H0_kms_mpc is None else [f"--H0-kms-mpc={args.H0_kms_mpc}"])
+        + ([] if args.backend_hdf5 is None else [f"--backend-hdf5={args.backend_hdf5}"])
+        + ([f"--thin-by={args.thin_by}"] if args.thin_by else [])
+        + (["--resume"] if args.resume else [])
+        + ([] if args.epsilon_fixed is None else [f"--epsilon-fixed={args.epsilon_fixed}"])
+        + (["--split-ml"] if args.split_ml else [])
+        + (["--sigma-sys-learn"] if args.sigma_sys_learn else [])
+        + ([f"--sigma-sys-prior-scale={args.sigma_sys_prior_scale}"] if args.sigma_sys_learn else [])
+        )
