@@ -1,4 +1,3 @@
-# src/ptquat/cli.py
 from __future__ import annotations
 import argparse
 from pathlib import Path
@@ -20,28 +19,27 @@ def main(argv=None):
     p1.add_argument("--reldmax", type=float, default=0.2)
     p1.add_argument("--qual-max", type=int, default=2)
 
-    p2 = sub.add_parser("fit", help="Global-epsilon SPARC mini/full fit")
+    p2 = sub.add_parser("fit", help="Run global fits (PTQ / Baryon / MOND / NFW-1p)")
     p2.add_argument("--data", default="dataset/sparc_tidy.csv")
     p2.add_argument("--outdir", default="results/mini")
+    p2.add_argument("--model", choices=["ptq","ptq-split","baryon","mond","nfw1p"], default="ptq")
     p2.add_argument("--prior", choices=["galaxies-only","planck-anchored"], default="galaxies-only")
     p2.add_argument("--sigma-sys", type=float, default=4.0)
     p2.add_argument("--H0-kms-mpc", type=float, default=None)
     p2.add_argument("--nwalkers", default="4x")
     p2.add_argument("--steps", type=int, default=12000)
     p2.add_argument("--seed", type=int, default=42)
-    # New: HDF5 backend options
-    p2.add_argument("--backend-hdf5", type=str, default=None, help="Path to HDF5 backend file.")
-    p2.add_argument("--thin-by", type=int, default=10, help="Thin factor when loading samples.")
-    p2.add_argument("--resume", action="store_true", help="Resume if backend exists and has iterations.")
-    # 新增參數：
-    p2.add_argument("--epsilon-fixed", type=float, default=None,
-                    help="Fix epsilon to a value (e.g. 0.0 for baseline). If set, epsilon is NOT sampled.")
-    p2.add_argument("--split-ml", action="store_true",
-                    help="Per-galaxy split mass-to-light: fit U_disk and U_bulge separately.")
-    p2.add_argument("--sigma-sys-learn", action="store_true",
-                    help="Infer a single global sigma_sys (velocity floor) instead of fixing it.")
-    p2.add_argument("--sigma-sys-prior-scale", type=float, default=5.0,
-                    help="Half-normal prior scale (km/s) for sigma_sys if learning.")
+    # MOND
+    p2.add_argument("--a0-si", type=float, default=None)
+    p2.add_argument("--a0-range", type=str, default="5e-11,2e-10")
+    # NFW
+    p2.add_argument("--c0", type=float, default=10.0)
+    p2.add_argument("--c-slope", type=float, default=-0.1)
+    p2.add_argument("--logM200-range", type=str, default="9,13")
+    # backend
+    p2.add_argument("--backend-hdf5", type=str, default=None)
+    p2.add_argument("--thin-by", type=int, default=10)
+    p2.add_argument("--resume", action="store_true")
 
     args = ap.parse_args(argv)
 
@@ -58,21 +56,23 @@ def main(argv=None):
         )
         print(f"Tidy CSV saved to {out}")
     elif args.cmd == "fit":
+        # 轉發參數（保持 CLI 介面簡潔）
         run_fit([
             f"--data-path={args.data}",
             f"--outdir={args.outdir}",
+            f"--model={args.model}",
             f"--prior={args.prior}",
             f"--sigma-sys={args.sigma_sys}",
             f"--steps={args.steps}",
             f"--nwalkers={args.nwalkers}",
             f"--seed={args.seed}",
-        ]
-        + ([] if args.H0_kms_mpc is None else [f"--H0-kms-mpc={args.H0_kms_mpc}"])
-        + ([] if args.backend_hdf5 is None else [f"--backend-hdf5={args.backend_hdf5}"])
-        + ([f"--thin-by={args.thin_by}"] if args.thin_by else [])
-        + (["--resume"] if args.resume else [])
-        + ([] if args.epsilon_fixed is None else [f"--epsilon-fixed={args.epsilon_fixed}"])
-        + (["--split-ml"] if args.split_ml else [])
-        + (["--sigma-sys-learn"] if args.sigma_sys_learn else [])
-        + ([f"--sigma-sys-prior-scale={args.sigma_sys_prior_scale}"] if args.sigma_sys_learn else [])
-        )
+            f"--a0-range={args.a0_range}",
+            f"--c0={args.c0}",
+            f"--c-slope={args.c_slope}",
+            f"--logM200-range={args.logM200_range}",
+        ] +
+        ([] if args.H0_kms_mpc is None else [f"--H0-kms-mpc={args.H0_kms_mpc}"]) +
+        ([] if args.a0_si is None else [f"--a0-si={args.a0_si}"]) +
+        ([] if args.backend_hdf5 is None else [f"--backend-hdf5={args.backend_hdf5}"]) +
+        ([f"--thin-by={args.thin_by}"] if args.thin_by else []) +
+        (["--resume"] if args.resume else []))
