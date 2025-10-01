@@ -1,4 +1,4 @@
-f# src/ptquat/cli.py
+# src/ptquat/cli.py
 from __future__ import annotations
 import argparse
 from pathlib import Path
