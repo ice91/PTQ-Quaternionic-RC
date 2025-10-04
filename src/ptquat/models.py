@@ -63,27 +63,6 @@ def model_v_ptq_split(U_disk: float,
     return np.sqrt(vbar2 + lin)
 
 
-# ---------- PTQ-sat：線性項的飽和版本（外盤趨近平坦） ----------
-
-def model_v_ptq_sat(Upsilon: float,
-                    epsilon: float,
-                    r0_kpc: float,
-                    r_kpc: np.ndarray,
-                    v_disk_kms: np.ndarray,
-                    v_bulge_kms: np.ndarray,
-                    v_gas_kms: np.ndarray,
-                    H0_si: float = H0_SI) -> np.ndarray:
-    """
-    v_model = sqrt( v_bar^2 + [(epsilon c H0) r] / (1 + r/r0) )
-    內區 r<<r0 還原線性項；外區 r>>r0 額外項 → (epsilon c H0) r0（常數），使曲線外盤趨近平坦。
-    """
-    vbar2 = vbar_squared_kms2(Upsilon, v_disk_kms, v_bulge_kms, v_gas_kms)
-    lin   = linear_term_kms2(epsilon, r_kpc, H0_si=H0_si)
-    r0 = max(float(r0_kpc), 1e-9)
-    sat = lin / (1.0 + (r_kpc / r0))
-    return np.sqrt(vbar2 + sat)
-
-
 # ---------- 基線：只有重子（epsilon=0） ----------
 
 def model_v_baryon(Upsilon: float,
@@ -121,6 +100,57 @@ def model_v_mond(Upsilon: float,
     return np.sqrt(v2)
 
 
+# ---------- PTQ-ν：用 a0(ε)=ε c H0 駕動 MOND 形狀 ----------
+
+def model_v_ptq_nu(Upsilon: float,
+                   epsilon: float,
+                   r_kpc: np.ndarray,
+                   v_disk_kms: np.ndarray,
+                   v_bulge_kms: np.ndarray,
+                   v_gas_kms: np.ndarray,
+                   H0_si: float = H0_SI) -> np.ndarray:
+    """
+    PTQ-ν:
+      a0(ε) = ε c H0
+      使用 MOND 的 simple-ν 形狀，但 a0 由 ε 與 H0 給定（不再單獨擬合）。
+    """
+    a0_si = max(epsilon * C_LIGHT * H0_si, 1e-30)
+    vN2 = Upsilon * (v_disk_kms**2 + v_bulge_kms**2) + v_gas_kms**2      # (km/s)^2
+    r_m = r_kpc * KPC
+    gN = (vN2 * (KM**2)) / np.maximum(r_m, 1e-12)                        # m/s^2
+    y  = np.maximum(gN / a0_si, 1e-12)
+    nu = 0.5 + np.sqrt(0.25 + 1.0 / y)
+    v2 = vN2 * nu
+    return np.sqrt(v2)
+
+
+# ---------- PTQ-screen：加強/變鈍的轉換（全域指數 q） ----------
+
+def model_v_ptq_screen(Upsilon: float,
+                       epsilon: float,
+                       q: float,
+                       r_kpc: np.ndarray,
+                       v_disk_kms: np.ndarray,
+                       v_bulge_kms: np.ndarray,
+                       v_gas_kms: np.ndarray,
+                       H0_si: float = H0_SI) -> np.ndarray:
+    """
+    PTQ-screen:
+      a0(ε) = ε c H0
+      ν_q(y) = 0.5 + sqrt(0.25 + y^{-q})
+      q 為全域參數：q>1 較「硬」的屏蔽/開啟、q<1 較柔和。
+    """
+    a0_si = max(epsilon * C_LIGHT * H0_si, 1e-30)
+    vN2 = Upsilon * (v_disk_kms**2 + v_bulge_kms**2) + v_gas_kms**2      # (km/s)^2
+    r_m = r_kpc * KPC
+    gN = (vN2 * (KM**2)) / np.maximum(r_m, 1e-12)                        # m/s^2
+    y  = np.maximum(gN / a0_si, 1e-12)
+    # generalized "simple-ν"
+    nu = 0.5 + np.sqrt(0.25 + np.power(y, -float(q)))
+    v2 = vN2 * nu
+    return np.sqrt(v2)
+
+
 # ---------- NFW-1p（每星系只放 M200，c 由 c–M 關係給出） ----------
 
 def nfw_v_kms_M200_c(r_kpc: np.ndarray,
@@ -134,13 +164,13 @@ def nfw_v_kms_M200_c(r_kpc: np.ndarray,
     rho_crit = 3.0 * H0_si**2 / (8.0 * np.pi * G_SI)
     R200 = (3.0 * M200 / (4.0 * np.pi * 200.0 * rho_crit))**(1.0/3.0)  # [m]
     rs = R200 / np.maximum(c, 1e-6)
-    x = (r_kpc * KPC) / np.maximum(rs, 1e-30)
+    x = (r_kpc * KPC) / np.maximum(rs, 1.0e-30)
     g  = np.log1p(x) - x/(1.0 + x)
     gc = np.log1p(c) - c/(1.0 + c)
-    gc = np.maximum(gc, 1e-20)
+    gc = np.maximum(gc, 1.0e-20)
     M_r = M200 * (g / gc)
-    v2  = G_SI * M_r / np.maximum(r_kpc * KPC, 1e-30)   # [m^2 s^-2]
-    return np.sqrt(np.maximum(v2, 0.0)) / KM            # [km/s]
+    v2  = G_SI * M_r / np.maximum(r_kpc * KPC, 1.0e-30)   # [m^2 s^-2]
+    return np.sqrt(np.maximum(v2, 0.0)) / KM              # [km/s]
 
 def c_powerlaw(M200_Msun: float,
                c0: float = 10.0,

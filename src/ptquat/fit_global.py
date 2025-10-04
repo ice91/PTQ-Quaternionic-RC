@@ -9,10 +9,10 @@ import yaml
 
 from .data import load_tidy_sparc, GalaxyData
 from .likelihood import build_covariance, gaussian_loglike
-from .constants import H0_SI, C_LIGHT
+from .constants import H0_SI
 from .models import (
-    model_v_ptq, model_v_ptq_split, model_v_ptq_sat,
-    model_v_baryon, model_v_mond, model_v_nfw1p
+    model_v_ptq, model_v_ptq_split, model_v_baryon, model_v_mond, model_v_nfw1p,
+    model_v_ptq_nu, model_v_ptq_screen
 )
 
 # ------------------------- 參數版型 -------------------------
@@ -24,25 +24,22 @@ def _layout(model: str, G: int, sigma_sys_learn: bool,
     """
     L = {"model": model, "G": G, "sigma_learn": sigma_sys_learn, "a0_fixed": a0_fixed}
     s = 0
-    if model == "ptq":
+    if model in ("ptq", "ptq-nu"):
         # [eps] + [U_g]*G + [ln_sigma]
         L["i_eps"] = s; s += 1
+        L["sl_U"]  = slice(s, s+G); s += G
+    elif model == "ptq-screen":
+        # [eps] + [lq] + [U_g]*G + [ln_sigma]
+        L["i_eps"] = s; s += 1
+        L["i_lq"]  = s; s += 1         # q = exp(lq), global screening strength
         L["sl_U"]  = slice(s, s+G); s += G
     elif model == "ptq-split":
         # [eps] + [Ud_g]*G + [Ub_g]*G + [ln_sigma]
         L["i_eps"] = s; s += 1
         L["sl_Ud"] = slice(s, s+G); s += G
         L["sl_Ub"] = slice(s, s+G); s += G
-    elif model == "ptq-sat":
-        # [eps] + [U_g]*G + [log10 r0_g]*G + [ln_sigma]
-        L["i_eps"] = s; s += 1
-        L["sl_U"]  = slice(s, s+G); s += G
-        L["sl_lr0"] = slice(s, s+G); s += G
-    elif model == "ptq-nu":
-        # [eps] + [U_g]*G + [ln_sigma];  a_star = kappa * eps * c H0（kappa 非抽樣，CLI 指定）
-        L["i_eps"] = s; s += 1
-        L["sl_U"]  = slice(s, s+G); s += G
     elif model == "baryon":
+        # [U_g]*G + [ln_sigma]
         L["sl_U"] = slice(s, s+G); s += G
     elif model == "mond":
         # [log10a0]? + [U_g]*G + [ln_sigma]
@@ -73,7 +70,7 @@ def _unpack(theta: np.ndarray, L: dict) -> dict:
     if "sl_Ub" in L:        out["Ub"]  = np.asarray(theta[L["sl_Ub"]])
     if "i_log10a0" in L:    out["log10a0"] = float(theta[L["i_log10a0"]])
     if "sl_lM" in L:        out["lM"]  = np.asarray(theta[L["sl_lM"]])
-    if "sl_lr0" in L:       out["lr0"] = np.asarray(theta[L["sl_lr0"]])  # log10 r0[kpc]
+    if "i_lq" in L:         out["lq"]  = float(theta[L["i_lq"]])  # q = exp(lq)
     if "i_lnsig" in L:      out["sigma"] = float(np.exp(theta[L["i_lnsig"]]))
     return out
 
@@ -85,16 +82,15 @@ def log_prior(theta: np.ndarray,
               prior_kind: str,
               L: dict,
               logM_range: Tuple[float,float],
-              a0_range: Tuple[float,float],
-              r0_range: Tuple[float,float]) -> float:
+              a0_range: Tuple[float,float]) -> float:
     """
     針對每種模型套用合適的先驗。
-    - epsilon: flat(0,4) or N(1.47,0.05^2)（planck-anchored）
-    - Upsilon: N(0.5,0.1^2) 且截在 [0.05,1.5]
-    - MOND:    log10 a0 in [log10(lo), log10(hi)]
-    - NFW-1p:  log10 M200_g in [lo,hi]
-    - PTQ-sat: log10 r0_g in [log10(lo), log10(hi)]
-    - sigma_sys: 半常態 prior（以 lnσ 參數化加入 Jacobian）
+    - PTQ/ν/screen: epsilon ~ flat(0,4) 或 N(1.47,0.05^2)
+      * screen 額外：lq ~ N(0, 0.35^2)  => q = exp(lq) 落在 ~[0.5, 2.0] 為主，並硬界 q∈[0.25, 8]
+    - Upsilon: 每星系 Gaussian N(0.5,0.1^2) 且截在 [0.05,1.5]
+    - MOND: 若 a0 需抽樣，log10 a0 在 [log10(lo), log10(hi)] 常數
+    - NFW-1p: log10 M200_g 在 [lo,hi] 常數
+    - sigma_sys: 對 σ 使用半常態，並以 lnσ 參數化加入 Jacobian
     """
     G = len(galaxies)
     pars = _unpack(theta, L)
@@ -102,7 +98,7 @@ def log_prior(theta: np.ndarray,
     m  = L["model"]
 
     # epsilon prior
-    if m in ("ptq", "ptq-split", "ptq-sat", "ptq-nu"):
+    if m in ("ptq", "ptq-nu", "ptq-screen", "ptq-split"):
         eps = pars["eps"]
         if prior_kind == "galaxies-only":
             if not (0.0 < eps < 4.0):
@@ -115,8 +111,17 @@ def log_prior(theta: np.ndarray,
         else:
             return -np.inf
 
+    # screen: prior on q (via lq)
+    if m == "ptq-screen":
+        lq = pars["lq"]
+        q  = float(np.exp(lq))
+        if not (0.25 <= q <= 8.0):
+            return -np.inf
+        mu_lq, sig_lq = 0.0, 0.35  # log-normal peaked at q≈1
+        lp += -0.5*((lq-mu_lq)/sig_lq)**2 - np.log(sig_lq*np.sqrt(2*np.pi))
+
     # Upsilon priors
-    if m in ("ptq","ptq-sat","ptq-nu","baryon","mond","nfw1p"):
+    if m in ("ptq","ptq-nu","ptq-screen","baryon","mond","nfw1p"):
         U = pars["U"]
         for u in U:
             if not (0.05 <= u <= 1.5):
@@ -137,6 +142,7 @@ def log_prior(theta: np.ndarray,
         loglo, loghi = np.log10(lo), np.log10(hi)
         if not (loglo <= pars["log10a0"] <= loghi):
             return -np.inf
+        # uniform in log10(a0) -> 常數項即可
 
     # NFW-1p halo mass prior
     if m == "nfw1p":
@@ -144,15 +150,6 @@ def log_prior(theta: np.ndarray,
         lM = pars["lM"]
         if np.any((lM < lo) | (lM > hi)):
             return -np.inf
-
-    # PTQ-sat: log10 r0 prior（均勻）
-    if m == "ptq-sat":
-        lo, hi = r0_range
-        loglo, loghi = np.log10(lo), np.log10(hi)
-        lr0 = pars["lr0"]
-        if np.any((lr0 < loglo) | (lr0 > loghi)):
-            return -np.inf
-        # uniform in log10 r0 -> 常數
 
     # sigma_sys prior（若學習）
     if "sigma" in pars:
@@ -174,8 +171,7 @@ def log_likelihood(theta: np.ndarray,
                    L: dict,
                    c0: float,
                    c_slope: float,
-                   a0_fixed: Optional[float],
-                   kappa: float) -> float:
+                   a0_fixed: Optional[float]) -> float:
     pars = _unpack(theta, L)
     m = L["model"]
 
@@ -189,26 +185,25 @@ def log_likelihood(theta: np.ndarray,
             def vfun(rk):
                 return model_v_ptq(U, eps, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
 
+        elif m == "ptq-nu":
+            U   = float(pars["U"][gi])
+            eps = float(pars["eps"])
+            def vfun(rk):
+                return model_v_ptq_nu(U, eps, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+
+        elif m == "ptq-screen":
+            U   = float(pars["U"][gi])
+            eps = float(pars["eps"])
+            q   = float(np.exp(pars["lq"]))
+            def vfun(rk):
+                return model_v_ptq_screen(U, eps, q, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+
         elif m == "ptq-split":
             Ud  = float(pars["Ud"][gi])
             Ub  = float(pars["Ub"][gi])
             eps = float(pars["eps"])
             def vfun(rk):
                 return model_v_ptq_split(Ud, Ub, eps, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
-
-        elif m == "ptq-sat":
-            U   = float(pars["U"][gi])
-            eps = float(pars["eps"])
-            r0  = float(10.0**pars["lr0"][gi])  # kpc
-            def vfun(rk):
-                return model_v_ptq_sat(U, eps, r0, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
-
-        elif m == "ptq-nu":
-            U   = float(pars["U"][gi])
-            eps = float(pars["eps"])
-            a_star = float(kappa) * float(eps) * C_LIGHT * H0_si
-            def vfun(rk):
-                return model_v_mond(U, a_star, rk, g.v_disk, g.v_bulge, g.v_gas)
 
         elif m == "baryon":
             U = float(pars["U"][gi])
@@ -227,7 +222,6 @@ def log_likelihood(theta: np.ndarray,
             def vfun(rk):
                 return model_v_nfw1p(U, lM, rk, g.v_disk, g.v_bulge, g.v_gas,
                                      H0_si=H0_si, c0=c0, c_slope=c_slope)
-
         else:
             raise ValueError("Unknown model: "+m)
 
@@ -248,13 +242,11 @@ def log_posterior(theta: np.ndarray,
                   c_slope: float,
                   logM_range: Tuple[float,float],
                   a0_range: Tuple[float,float],
-                  r0_range: Tuple[float,float],
-                  a0_fixed: Optional[float],
-                  kappa: float) -> float:
-    lp = log_prior(theta, galaxies, prior_kind, L, logM_range, a0_range, r0_range)
+                  a0_fixed: Optional[float]) -> float:
+    lp = log_prior(theta, galaxies, prior_kind, L, logM_range, a0_range)
     if not np.isfinite(lp):
         return -np.inf
-    ll = log_likelihood(theta, galaxies, sigma_sys_fixed, H0_si, L, c0, c_slope, a0_fixed, kappa)
+    ll = log_likelihood(theta, galaxies, sigma_sys_fixed, H0_si, L, c0, c_slope, a0_fixed)
     return lp + ll
 
 
@@ -262,24 +254,21 @@ def log_posterior(theta: np.ndarray,
 
 def parse_args(argv=None):
     ap = argparse.ArgumentParser(
-        description="Global fits for PTQ / PTQ-sat / PTQ-nu / Baryon / MOND / NFW-1p with full likelihood and AIC/BIC."
+        description="Global fits for PTQ / PTQ-ν / PTQ-screen / Baryon / MOND / NFW-1p with full likelihood and AIC/BIC."
     )
     ap.add_argument("--data-path", required=True)
     ap.add_argument("--outdir", default="results")
-    ap.add_argument("--model", choices=["ptq","ptq-split","ptq-sat","ptq-nu","baryon","mond","nfw1p"], default="ptq")
+    ap.add_argument("--model", choices=["ptq","ptq-nu","ptq-screen","ptq-split","baryon","mond","nfw1p"], default="ptq")
 
     # cosmology / noise
     ap.add_argument("--sigma-sys", type=float, default=4.0, help="Velocity floor [km/s].")
     ap.add_argument("--H0-kms-mpc", type=float, default=None, help="Override H0 [km/s/Mpc].")
-    ap.add_argument("--kappa", type=float, default=(1.0/(2.0*np.pi)),
-                    help="Scale factor in a_* = kappa * eps * c * H0 (for ptq-nu).")
 
     # priors
     ap.add_argument("--prior", choices=["galaxies-only","planck-anchored"], default="galaxies-only")
     ap.add_argument("--logM200-range", type=str, default="9,13", help="Uniform prior bounds for log10 M200 [Msun] (nfw1p).")
     ap.add_argument("--a0-range", type=str, default="5e-11,2e-10", help="Uniform prior on a0 [m/s^2] (mond).")
     ap.add_argument("--a0-si", type=float, default=None, help="Fix MOND a0 (if given).")
-    ap.add_argument("--r0-range", type=str, default="0.1,30.0", help="Uniform prior on r0 [kpc] in log10-space (ptq-sat).")
 
     # NFW c–M relation
     ap.add_argument("--c0", type=float, default=10.0, help="c(M) normalization at 1e12 Msun (nfw1p).")
@@ -318,7 +307,6 @@ def run(argv=None):
     # model layout
     a0_range = tuple(map(float, args.a0_range.split(",")))
     logM_range = tuple(map(float, args.logM200_range.split(",")))
-    r0_range = tuple(map(float, args.r0_range.split(",")))
     L = _layout(args.model, G, sigma_sys_learn=True, a0_fixed=args.a0_si)
     k = L["k"]
 
@@ -334,7 +322,7 @@ def run(argv=None):
     p0 = np.empty((nwalkers, k))
 
     s = 0
-    if args.model in ("ptq","ptq-split","ptq-sat","ptq-nu"):
+    if args.model in ("ptq","ptq-nu","ptq-screen","ptq-split"):
         # epsilon
         if args.prior == "planck-anchored":
             p0[:, s] = rng.normal(1.47, 0.05, size=nwalkers)
@@ -342,32 +330,22 @@ def run(argv=None):
             p0[:, s] = rng.uniform(0.2, 2.5, size=nwalkers)
         s += 1
 
-    if args.model == "ptq":
-        p0[:, s:s+G] = np.clip(rng.normal(0.5, 0.05, size=(nwalkers, G)), 0.1, 1.2); s += G
+    if args.model == "ptq-screen":
+        # lq (q = exp(lq)) 起始於 ~N(0,0.2^2) -> q~1±20%
+        p0[:, s] = rng.normal(0.0, 0.2, size=nwalkers); s += 1
 
+    if args.model in ("ptq","ptq-nu","ptq-screen"):
+        p0[:, s:s+G] = np.clip(rng.normal(0.5, 0.05, size=(nwalkers, G)), 0.1, 1.5); s += G
     elif args.model == "ptq-split":
         p0[:, s:s+G] = np.clip(rng.normal(0.5, 0.06, size=(nwalkers, G)), 0.1, 1.5); s += G
         p0[:, s:s+G] = np.clip(rng.normal(0.5, 0.06, size=(nwalkers, G)), 0.1, 1.5); s += G
-
-    elif args.model == "ptq-sat":
-        # U_g
-        p0[:, s:s+G] = np.clip(rng.normal(0.5, 0.05, size=(nwalkers, G)), 0.1, 1.5); s += G
-        # log10 r0_g (uniform)
-        loglo, loghi = np.log10(r0_range[0]), np.log10(r0_range[1])
-        p0[:, s:s+G] = rng.uniform(loglo, loghi, size=(nwalkers, G)); s += G
-
-    elif args.model == "ptq-nu":
-        p0[:, s:s+G] = np.clip(rng.normal(0.5, 0.05, size=(nwalkers, G)), 0.1, 1.5); s += G
-
     elif args.model == "baryon":
         p0[:, s:s+G] = np.clip(rng.normal(0.5, 0.05, size=(nwalkers, G)), 0.1, 1.5); s += G
-
     elif args.model == "mond":
         if args.a0_si is None:
             loglo, loghi = np.log10(a0_range[0]), np.log10(a0_range[1])
             p0[:, s] = rng.uniform(loglo, loghi, size=nwalkers); s += 1
         p0[:, s:s+G] = np.clip(rng.normal(0.5, 0.05, size=(nwalkers, G)), 0.1, 1.5); s += G
-
     elif args.model == "nfw1p":
         p0[:, s:s+G] = np.clip(rng.normal(0.5, 0.05, size=(nwalkers, G)), 0.1, 1.5); s += G
         lo, hi = logM_range
@@ -395,7 +373,7 @@ def run(argv=None):
     sampler = emcee.EnsembleSampler(
         nwalkers, k, log_posterior,
         args=(galaxies, args.sigma_sys, H0_si, args.prior, L,
-              args.c0, args.c_slope, logM_range, a0_range, r0_range, args.a0_si, args.kappa),
+              args.c0, args.c_slope, logM_range, a0_range, args.a0_si),
         backend=backend
     )
     print(f"Running emcee with nwalkers={nwalkers}, steps={args.steps}, k={k}")
@@ -412,32 +390,35 @@ def run(argv=None):
     med = np.median(chain, axis=0)
     P = _unpack(med, L)
 
-    # 後驗抽樣的 epsilon / a0 / sigma
+    # 後驗抽樣的 epsilon / a0 / sigma / q
     eps_stats = None
     a0_stats  = None
-    astar_stats = None
-    if args.model in ("ptq","ptq-split","ptq-sat","ptq-nu"):
-        eps_samples = (backend.get_chain(discard=burn, flat=True, thin=thin)[:, L["i_eps"]]
+    q_stats   = None
+    if args.model in ("ptq","ptq-nu","ptq-screen","ptq-split"):
+        col = L["i_eps"]
+        eps_samples = (backend.get_chain(discard=burn, flat=True, thin=thin)[:, col]
                        if backend is not None else
-                       sampler.get_chain(discard=burn, flat=True, thin=thin)[:, L["i_eps"]])
-        q = np.percentile(eps_samples, [16,50,84]); eps_stats = (float(q[1]), float(q[0]), float(q[2]))
-
-        if args.model == "ptq-nu":
-            astar = args.kappa * eps_samples * C_LIGHT * H0_si  # [m/s^2]
-            q = np.percentile(astar, [16,50,84]); astar_stats = (float(q[1]), float(q[0]), float(q[2]))
-
+                       sampler.get_chain(discard=burn, flat=True, thin=thin)[:, col])
+        qnt = np.percentile(eps_samples, [16,50,84]); eps_stats = (float(qnt[1]), float(qnt[0]), float(qnt[2]))
+    if args.model == "ptq-screen":
+        col = L["i_lq"]
+        lq_samples = (backend.get_chain(discard=burn, flat=True, thin=thin)[:, col]
+                      if backend is not None else
+                      sampler.get_chain(discard=burn, flat=True, thin=thin)[:, col])
+        q_lin = np.exp(lq_samples)
+        qnt = np.percentile(q_lin, [16,50,84]); q_stats = (float(qnt[1]), float(qnt[0]), float(qnt[2]))
     if args.model == "mond" and ("i_log10a0" in L):
         a0_samp = (backend.get_chain(discard=burn, flat=True, thin=thin)[:, L["i_log10a0"]]
                    if backend is not None else
                    sampler.get_chain(discard=burn, flat=True, thin=thin)[:, L["i_log10a0"]])
         a0_lin = 10.0**a0_samp
-        q = np.percentile(a0_lin, [16,50,84]); a0_stats = (float(q[1]), float(q[0]), float(q[2]))
+        qnt = np.percentile(a0_lin, [16,50,84]); a0_stats = (float(qnt[1]), float(qnt[0]), float(qnt[2]))
 
     sig_samp = (backend.get_chain(discard=burn, flat=True, thin=thin)[:, L["i_lnsig"]]
                 if backend is not None else
                 sampler.get_chain(discard=burn, flat=True, thin=thin)[:, L["i_lnsig"]])
     sig_lin = np.exp(sig_samp)
-    q = np.percentile(sig_lin, [16,50,84]); sig_stats = (float(q[1]), float(q[0]), float(q[2]))
+    qnt = np.percentile(sig_lin, [16,50,84]); sig_stats = (float(qnt[1]), float(qnt[0]), float(qnt[2]))
 
     # 用中位數參數評估模型並計算分星系與全域指標
     rows = []
@@ -445,61 +426,45 @@ def run(argv=None):
     chi2_tot = 0.0
     logL_tot = 0.0
 
-    # 取 per-galaxy 中位數 U / logM / lr0（若有）
-    if args.model == "ptq":
+    # 取 per-galaxy 中位數參數
+    if args.model in ("ptq","ptq-nu","ptq-screen","baryon","mond","nfw1p"):
         U_med = P["U"]
     elif args.model == "ptq-split":
         Ud_med, Ub_med = P["Ud"], P["Ub"]
-    elif args.model == "ptq-sat":
-        U_med = P["U"]
-        lr0_med = P["lr0"]
-    elif args.model == "ptq-nu":
-        U_med = P["U"]
-    elif args.model == "baryon":
-        U_med = P["U"]
-    elif args.model == "mond":
-        U_med = P["U"]
-    elif args.model == "nfw1p":
-        U_med  = P["U"]
+    if args.model == "nfw1p":
         lM_med = P["lM"]
 
     sigma_use = float(P["sigma"])
     eps_use   = float(P["eps"]) if "eps" in P else None
     a0_use    = (args.a0_si if args.a0_si is not None
                  else (10.0**P["log10a0"] if "log10a0" in P else None))
-    a_star_use = (args.kappa * eps_use * C_LIGHT * H0_si) if (args.model=="ptq-nu") else None
+    q_use     = float(np.exp(P["lq"])) if "lq" in P else None
 
     for gi, g in enumerate(galaxies):
         if args.model == "ptq":
             U = float(U_med[gi])
             def vfun(rk):
                 return model_v_ptq(U, eps_use, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
-
+        elif args.model == "ptq-nu":
+            U = float(U_med[gi])
+            def vfun(rk):
+                return model_v_ptq_nu(U, eps_use, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+        elif args.model == "ptq-screen":
+            U = float(U_med[gi])
+            def vfun(rk):
+                return model_v_ptq_screen(U, eps_use, q_use, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
         elif args.model == "ptq-split":
             Ud, Ub = float(Ud_med[gi]), float(Ub_med[gi])
             def vfun(rk):
                 return model_v_ptq_split(Ud, Ub, eps_use, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
-
-        elif args.model == "ptq-sat":
-            U = float(U_med[gi]); r0_kpc = float(10.0**lr0_med[gi])
-            def vfun(rk):
-                return model_v_ptq_sat(U, eps_use, r0_kpc, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
-
-        elif args.model == "ptq-nu":
-            U = float(U_med[gi])
-            def vfun(rk):
-                return model_v_mond(U, a_star_use, rk, g.v_disk, g.v_bulge, g.v_gas)
-
         elif args.model == "baryon":
             U = float(U_med[gi])
             def vfun(rk):
                 return model_v_baryon(U, rk, g.v_disk, g.v_bulge, g.v_gas)
-
         elif args.model == "mond":
             U = float(U_med[gi])
             def vfun(rk):
                 return model_v_mond(U, a0_use, rk, g.v_disk, g.v_bulge, g.v_gas)
-
         elif args.model == "nfw1p":
             U  = float(U_med[gi])
             lM = float(lM_med[gi])
@@ -516,13 +481,8 @@ def run(argv=None):
         r = g.v_obs - v_mod
         alpha = np.linalg.solve(Cg, r)
         chi2_g = float(r @ alpha)
-
-        # 每星系自由度（近似）：看有幾個 per-galaxy 參數
-        if args.model in ("ptq-split","nfw1p","ptq-sat"):
-            n_pg = 2
-        else:
-            n_pg = 1
-        nu_g = max(len(g.r_kpc) - n_pg, 1)
+        # 每星系自由度估算（split 有兩個 M/L）
+        nu_g = max(len(g.r_kpc) - (2 if args.model=="ptq-split" else 1), 1)
         chi2_red_g = chi2_g / nu_g
         ll_g = gaussian_loglike(g.v_obs, v_mod, Cg)
 
@@ -536,7 +496,6 @@ def run(argv=None):
             Upsilon_med=(float(Ud_med[gi]) if args.model=="ptq-split" else float(U_med[gi])),
             Upsilon_bulge_med=(float(Ub_med[gi]) if args.model=="ptq-split" else None),
             log10_M200_med=(float(lM_med[gi]) if args.model=="nfw1p" else None),
-            r0_kpc_med=(float(10.0**lr0_med[gi]) if args.model=="ptq-sat" else None),
             chi2=chi2_g,
             chi2_red=chi2_red_g,
             loglike=ll_g
@@ -564,21 +523,19 @@ def run(argv=None):
         epsilon_median=(eps_stats[0] if eps_stats else None),
         epsilon_p16=(eps_stats[1] if eps_stats else None),
         epsilon_p84=(eps_stats[2] if eps_stats else None),
+        q_median=(q_stats[0] if q_stats else None),
+        q_p16=(q_stats[1] if q_stats else None),
+        q_p84=(q_stats[2] if q_stats else None),
         a0_median=(a0_stats[0] if a0_stats else (args.a0_si if args.model=="mond" else None)),
         a0_p16=(a0_stats[1] if a0_stats else None),
         a0_p84=(a0_stats[2] if a0_stats else None),
-        astar_median=(astar_stats[0] if astar_stats else None),
-        astar_p16=(astar_stats[1] if astar_stats else None),
-        astar_p84=(astar_stats[2] if astar_stats else None),
         chi2_total=float(chi2_tot), logL_total_full=float(logL_tot),
         AIC_quad=float(AIC_quad), BIC_quad=float(BIC_quad),
         AIC_full=float(AIC_full), BIC_full=float(BIC_full),
         k_parameters=int(k_eff),
         steps=args.steps, nwalkers=nwalkers, burn_in=burn, thin=thin,
         backend_hdf5=str(args.backend_hdf5) if args.backend_hdf5 else None,
-        resumed=bool(args.backend_hdf5 and args.resume),
-        r0_range_kpc=list(r0_range),
-        kappa=args.kappa
+        resumed=bool(args.backend_hdf5 and args.resume)
     )
     with open(outdir / "global_summary.yaml", "w") as f:
         yaml.safe_dump(summary, f)
