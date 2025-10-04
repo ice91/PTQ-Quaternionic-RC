@@ -63,6 +63,27 @@ def model_v_ptq_split(U_disk: float,
     return np.sqrt(vbar2 + lin)
 
 
+# ---------- PTQ-sat：線性項的飽和版本（外盤趨近平坦） ----------
+
+def model_v_ptq_sat(Upsilon: float,
+                    epsilon: float,
+                    r0_kpc: float,
+                    r_kpc: np.ndarray,
+                    v_disk_kms: np.ndarray,
+                    v_bulge_kms: np.ndarray,
+                    v_gas_kms: np.ndarray,
+                    H0_si: float = H0_SI) -> np.ndarray:
+    """
+    v_model = sqrt( v_bar^2 + [(epsilon c H0) r] / (1 + r/r0) )
+    內區 r<<r0 還原線性項；外區 r>>r0 額外項 → (epsilon c H0) r0（常數），使曲線外盤趨近平坦。
+    """
+    vbar2 = vbar_squared_kms2(Upsilon, v_disk_kms, v_bulge_kms, v_gas_kms)
+    lin   = linear_term_kms2(epsilon, r_kpc, H0_si=H0_si)
+    r0 = max(float(r0_kpc), 1e-9)
+    sat = lin / (1.0 + (r_kpc / r0))
+    return np.sqrt(vbar2 + sat)
+
+
 # ---------- 基線：只有重子（epsilon=0） ----------
 
 def model_v_baryon(Upsilon: float,

@@ -23,7 +23,7 @@ def main(argv=None):
     p1.add_argument("--qual-max", type=int, default=2)
 
     # fit
-    p2 = sub.add_parser("fit", help="Global fits (PTQ / Baryon / MOND / NFW-1p) with HDF5 backend")
+    p2 = sub.add_parser("fit", help="Global fits (PTQ / PTQ-sat / PTQ-nu / Baryon / MOND / NFW-1p) with HDF5 backend")
     p2.add_argument("--data", default="dataset/sparc_tidy.csv")
     p2.add_argument("--outdir", default="results/mini")
     p2.add_argument("--prior", choices=["galaxies-only","planck-anchored"], default="galaxies-only")
@@ -34,12 +34,15 @@ def main(argv=None):
     p2.add_argument("--seed", type=int, default=42)
 
     # 模型選擇與其引數（轉傳到 fit_global）
-    p2.add_argument("--model", choices=["ptq","ptq-split","baryon","mond","nfw1p"], default="ptq")
+    p2.add_argument("--model", choices=["ptq","ptq-split","ptq-sat","ptq-nu","baryon","mond","nfw1p"], default="ptq")
     p2.add_argument("--a0-si", type=float, default=None, help="Fix MOND a0 [m/s^2]; if omitted, sample it.")
     p2.add_argument("--a0-range", type=str, default="5e-11,2e-10", help="Uniform prior range for a0 when sampling.")
     p2.add_argument("--logM200-range", type=str, default="9,13", help="Uniform prior for log10 M200 [Msun] in nfw1p.")
     p2.add_argument("--c0", type=float, default=10.0, help="c(M) normalization at 1e12 Msun in nfw1p.")
     p2.add_argument("--c-slope", type=float, default=-0.1, help="c(M) slope beta in nfw1p.")
+    p2.add_argument("--r0-range", type=str, default="0.1,30.0", help="Uniform prior on r0 [kpc] in log10-space (ptq-sat).")
+    p2.add_argument("--kappa", type=float, default=(1.0/(2.0*3.141592653589793)),
+                    help="Scale factor in a_* = kappa * eps * c * H0 (for ptq-nu).")
 
     # HDF5 backend / thinning / resume
     p2.add_argument("--backend-hdf5", type=str, default=None, help="emcee HDF5 backend path")
@@ -76,6 +79,8 @@ def main(argv=None):
             f"--logM200-range={args.logM200_range}",
             f"--c0={args.c0}",
             f"--c-slope={args.c_slope}",
+            f"--r0-range={args.r0_range}",
+            f"--kappa={args.kappa}",
         ]
         + ([] if args.H0_kms_mpc is None else [f"--H0-kms-mpc={args.H0_kms_mpc}"])
         + ([] if args.a0_si is None else [f"--a0-si={args.a0_si}"])
