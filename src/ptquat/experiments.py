@@ -17,6 +17,9 @@ from .models import (
 )
 from .fit_global import run as run_fit
 from .plotting import plot_residual_plateau, plot_ppc_hist
+from typing import Any
+from .models import linear_term_kms2  # (cH0) r in (km/s)^2
+
 
 # -------------------------------
 # 共用：呼叫全域擬合並回傳 summary dict
@@ -68,89 +71,94 @@ def _call_fit(data_path: str,
 # -------------------------------
 # S1 Posterior(-like) Predictive Check（以中位數參數 + 完整協方差）
 # -------------------------------
-def ppc_check(results_dir: str, data_path: str, out_prefix: str = "ppc") -> Dict:
+def ppc_check(results_dir: str, data_path: str, out_prefix: str = "ppc") -> dict:
     """
-    使用 global_summary.yaml 的中位數參數，重建每個星系的模型 v_mod，
-    用 build_covariance 產生 C，計算 standardized residuals 與 coverage。
-    產出：
-      - {results_dir}/{out_prefix}_per_point.csv
-      - {results_dir}/{out_prefix}_summary.yaml
-      - {results_dir}/{out_prefix}_z_hist.png
+    Posterior(-like) predictive coverage check using median params from results_dir.
+    Uses Student-t critical values if the fitted run used t-likelihood.
     """
-    results = yaml.safe_load(open(Path(results_dir) / "global_summary.yaml"))
-    model = results["model"]
-    H0_si = float(results.get("H0_si", H0_SI))
-    sig_med = float(results["sigma_sys_median"])
-    eps = results.get("epsilon_median")
-    q   = results.get("q_median")
-    a0  = results.get("a0_median")
-    per = pd.read_csv(Path(results_dir) / "per_galaxy_summary.csv").set_index("galaxy")
+    import os, json
+    import numpy as np
+    import pandas as pd
+    import yaml
+    from pathlib import Path
+    from .data import load_tidy_sparc
+    from .models import (
+        model_v_ptq, model_v_ptq_nu, model_v_ptq_screen, model_v_ptq_split,
+        model_v_baryon, model_v_mond, model_v_nfw1p
+    )
+    from .constants import H0_SI
+    from .likelihood import build_covariance
 
-    # 載入資料
+    res = Path(results_dir)
+    summ = yaml.safe_load(open(res/"global_summary.yaml"))
+    per  = pd.read_csv(res/"per_galaxy_summary.csv").set_index("galaxy")
+
+    like = str(summ.get("likelihood", "gauss"))
+    nu   = float(summ.get("t_dof", 8.0))
+    H0_si = float(summ.get("H0_si", H0_SI))
+    model = summ["model"]
+    sig_med = float(summ["sigma_sys_median"])
+    eps_med = summ.get("epsilon_median", None)
+    q_med   = summ.get("q_median", None)
+    a0_med  = summ.get("a0_median", None)
+
+    # critical multipliers for 68/95
+    k68, k95 = 1.0, 1.96
+    if like == "t":
+        try:
+            from scipy.stats import t as _t
+            k68 = float(_t.ppf(0.84, df=nu))
+            k95 = float(_t.ppf(0.975, df=nu))
+        except Exception:
+            pass  # fallback to Gaussian multipliers
+
     gdict = load_tidy_sparc(data_path)
-    rows = []
-    # 建立模型函數（取決於 model）
-    def make_vfun(gal_name: str):
-        g = gdict[gal_name]
+    galaxies = [gdict[k] for k in sorted(gdict.keys())]
+
+    n = 0; hit68 = 0; hit95 = 0
+    for g in galaxies:
+        if model in ("ptq", "ptq-nu", "ptq-screen", "baryon", "mond", "nfw1p"):
+            U = float(per.loc[g.name, "Upsilon_med"])
+        if model == "ptq-split":
+            Ud = float(per.loc[g.name, "Upsilon_med"])
+            Ub = float(per.loc[g.name, "Upsilon_bulge_med"])
+        if model == "nfw1p":
+            lM = float(per.loc[g.name, "log10_M200_med"])
+
         if model == "ptq":
-            U = float(per.loc[gal_name, "Upsilon_med"])
-            return lambda rk: model_v_ptq(U, eps, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+            def vfun(rk): return model_v_ptq(U, eps_med, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
         elif model == "ptq-nu":
-            U = float(per.loc[gal_name, "Upsilon_med"])
-            return lambda rk: model_v_ptq_nu(U, eps, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+            def vfun(rk): return model_v_ptq_nu(U, eps_med, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
         elif model == "ptq-screen":
-            U = float(per.loc[gal_name, "Upsilon_med"])
-            q_use = float(q) if q is not None else 1.0
-            return lambda rk: model_v_ptq_screen(U, eps, q_use, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+            def vfun(rk): return model_v_ptq_screen(U, eps_med, q_med, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
         elif model == "ptq-split":
-            Ud = float(per.loc[gal_name, "Upsilon_med"])
-            Ub = float(per.loc[gal_name, "Upsilon_bulge_med"])
-            return lambda rk: model_v_ptq_split(Ud, Ub, eps, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+            def vfun(rk): return model_v_ptq_split(Ud, Ub, eps_med, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
         elif model == "baryon":
-            U = float(per.loc[gal_name, "Upsilon_med"])
-            return lambda rk: model_v_baryon(U, rk, g.v_disk, g.v_bulge, g.v_gas)
+            def vfun(rk): return model_v_baryon(U, rk, g.v_disk, g.v_bulge, g.v_gas)
         elif model == "mond":
-            U = float(per.loc[gal_name, "Upsilon_med"])
-            return lambda rk: model_v_mond(U, a0, rk, g.v_disk, g.v_bulge, g.v_gas)
+            def vfun(rk): return model_v_mond(U, a0_med, rk, g.v_disk, g.v_bulge, g.v_gas)
         elif model == "nfw1p":
-            U  = float(per.loc[gal_name, "Upsilon_med"])
-            lM = float(per.loc[gal_name, "log10_M200_med"])
-            return lambda rk: model_v_nfw1p(U, lM, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+            def vfun(rk): return model_v_nfw1p(U, lM, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_SI)
         else:
-            raise ValueError(model)
+            raise ValueError("unknown model")
 
-    # 計算 standardized residuals
-    for name, g in sorted(gdict.items()):
-        if name not in per.index:  # 保險
-            continue
-        vfun = make_vfun(name)
         v_mod = vfun(g.r_kpc)
-        C = build_covariance(v_mod, g.r_kpc, g.v_err, g.D_Mpc, g.D_err_Mpc,
-                             g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med)
-        # 單點標準差
-        sig = np.sqrt(np.clip(np.diag(C), 1e-30, np.inf))
-        z   = (g.v_obs - v_mod) / sig
-        for rk, vo, vm, zz, ss in zip(g.r_kpc, g.v_obs, v_mod, z, sig):
-            rows.append(dict(galaxy=name, r_kpc=float(rk),
-                             v_obs=float(vo), v_mod=float(vm),
-                             z=float(zz), sigma=float(ss)))
-    df = pd.DataFrame(rows)
-    out_csv = Path(results_dir) / f"{out_prefix}_per_point.csv"
-    df.to_csv(out_csv, index=False)
+        Cg = build_covariance(v_mod, g.r_kpc, g.v_err, g.D_Mpc, g.D_err_Mpc,
+                              g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med)
+        diag = np.clip(np.diag(Cg), 1e-12, None)
+        sig  = np.sqrt(diag)
+        r = np.abs(g.v_obs - v_mod)
+        n  += r.size
+        hit68 += int((r <= k68*sig).sum())
+        hit95 += int((r <= k95*sig).sum())
 
-    # Coverage 指標
-    cov68 = float(np.mean(np.abs(df["z"].values) <= 1.0))
-    cov95 = float(np.mean(np.abs(df["z"].values) <= 2.0))
-    summ = dict(model=model, N=len(df), coverage68=cov68, coverage95=cov95)
-    out_yaml = Path(results_dir) / f"{out_prefix}_summary.yaml"
-    with open(out_yaml, "w") as f:
-        yaml.safe_dump(summ, f)
+    cov68 = hit68 / n
+    cov95 = hit95 / n
 
-    # 直方圖
-    out_png = Path(results_dir) / f"{out_prefix}_z_hist.png"
-    plot_ppc_hist(df["z"].values, out_png)
-
-    return summ
+    out = {"model": model, "N": n, "coverage68": cov68, "coverage95": cov95}
+    with open(res/f"{out_prefix}_coverage.json", "w") as f:
+        json.dump(out, f, indent=2)
+    return out
 
 
 # -------------------------------
@@ -372,3 +380,301 @@ def closure_test(results_dir: str,
     with open(out,"w") as f:
         yaml.safe_dump(result, f)
     return result
+
+# ====== Kappa checks: per-galaxy & radius-resolved (append to end of experiments.py) ======
+
+
+def _get_Rd_kpc_safe(g: GalaxyData) -> float:
+    """Try to read Rd from GalaxyData; fallback to r_peak(v_disk)/2.2."""
+    for attr in ("Rd_kpc", "R_d_kpc", "R_d", "Rd"):
+        if hasattr(g, attr):
+            val = getattr(g, attr)
+            try:
+                v = float(val)
+                if np.isfinite(v) and v > 0:
+                    return v
+            except Exception:
+                pass
+    # Fallback: exponential disk peaks ~ at 2.2 Rd
+    i_pk = int(np.argmax(g.v_disk))
+    rpk = float(g.r_kpc[i_pk]) if len(g.r_kpc) > 0 else 1.0
+    return max(rpk / 2.2, 0.1)
+
+def _make_vfun(model: str, H0_si: float, per_row: pd.Series, g: GalaxyData,
+               eps: Optional[float], q: Optional[float], a0: Optional[float]):
+    """Return (vfun, vbar2 array). vfun(r_kpc) -> model velocity [km/s]."""
+    if model == "ptq":
+        U = float(per_row["Upsilon_med"])
+        vfun = lambda rk: model_v_ptq(U, eps, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+        vbar2 = vbar_squared_kms2(U, g.v_disk, g.v_bulge, g.v_gas)
+    elif model == "ptq-nu":
+        U = float(per_row["Upsilon_med"])
+        vfun = lambda rk: model_v_ptq_nu(U, eps, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+        vbar2 = vbar_squared_kms2(U, g.v_disk, g.v_bulge, g.v_gas)
+    elif model == "ptq-screen":
+        U = float(per_row["Upsilon_med"])
+        q_use = float(q) if q is not None else 1.0
+        vfun = lambda rk: model_v_ptq_screen(U, eps, q_use, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+        vbar2 = vbar_squared_kms2(U, g.v_disk, g.v_bulge, g.v_gas)
+    elif model == "ptq-split":
+        Ud = float(per_row["Upsilon_med"])
+        Ub = float(per_row["Upsilon_bulge_med"])
+        vfun = lambda rk: model_v_ptq_split(Ud, Ub, eps, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+        vbar2 = Ud*(g.v_disk**2) + Ub*(g.v_bulge**2) + g.v_gas**2
+    elif model == "baryon":
+        U = float(per_row["Upsilon_med"])
+        vfun = lambda rk: model_v_baryon(U, rk, g.v_disk, g.v_bulge, g.v_gas)
+        vbar2 = vbar_squared_kms2(U, g.v_disk, g.v_bulge, g.v_gas)
+    elif model == "mond":
+        U = float(per_row["Upsilon_med"])
+        vfun = lambda rk: model_v_mond(U, a0, rk, g.v_disk, g.v_bulge, g.v_gas)
+        vbar2 = vbar_squared_kms2(U, g.v_disk, g.v_bulge, g.v_gas)
+    elif model == "nfw1p":
+        U  = float(per_row["Upsilon_med"])
+        lM = float(per_row["log10_M200_med"])
+        vfun = lambda rk: model_v_nfw1p(U, lM, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+        vbar2 = vbar_squared_kms2(U, g.v_disk, g.v_bulge, g.v_gas)
+    else:
+        raise ValueError(model)
+    return vfun, vbar2
+
+def _eps_cos_from_args(epsilon_cos: Optional[float], omega_lambda: Optional[float]) -> float:
+    if epsilon_cos is not None:
+        return float(epsilon_cos)
+    if omega_lambda is not None:
+        if not (0.0 < omega_lambda < 1.0):
+            raise ValueError("omega_lambda must be in (0,1).")
+        return float(np.sqrt(omega_lambda/(1.0-omega_lambda)))
+    # default anchor if not provided
+    return 1.47
+
+def kappa_per_galaxy(results_dir: str,
+                     data_path: str,
+                     eta: float = 0.15,
+                     frac_vmax: float = 0.9,
+                     epsilon_cos: Optional[float] = None,
+                     omega_lambda: Optional[float] = None,
+                     nsamp: int = 300,
+                     out_prefix: str = "kappa_gal") -> Dict[str, Any]:
+    """
+    檢核 A：對每個星系在特徵半徑 r* 做
+      eps_eff = [v_obs(r*)^2 - v_bar(r*)^2] / [(cH0) r*]
+      kappa_pred = (eta * Rd) / r*
+    然後回歸 eps_eff/eps_cos = a * kappa_pred + b。
+    產出 CSV 與散點圖，並回傳回歸統計。
+    """
+    res = yaml.safe_load(open(Path(results_dir)/"global_summary.yaml"))
+    model = res["model"]
+    H0_si = float(res.get("H0_si", H0_SI))
+    sig_med = float(res["sigma_sys_median"])
+    eps = res.get("epsilon_median")
+    q   = res.get("q_median")
+    a0  = res.get("a0_median")
+    per = pd.read_csv(Path(results_dir)/"per_galaxy_summary.csv").set_index("galaxy")
+
+    eps_cos = _eps_cos_from_args(epsilon_cos, omega_lambda)
+    gdict = load_tidy_sparc(data_path)
+
+    rng = np.random.default_rng(1234)
+    rows = []
+
+    for name, g in sorted(gdict.items()):
+        if name not in per.index:  # 安全檢查
+            continue
+        vfun, vbar2 = _make_vfun(model, H0_si, per.loc[name], g, eps, q, a0)
+
+        v_obs = g.v_obs
+        r     = g.r_kpc
+        if len(r) < 3:
+            continue
+        vmax = float(np.nanmax(v_obs))
+        idxs = np.where(v_obs >= frac_vmax * vmax)[0]
+        if len(idxs) == 0:
+            i_star = int(np.floor(0.8*(len(r)-1)))
+        else:
+            i_star = int(idxs[0])
+        i_star = max(0, min(i_star, len(r)-1))
+        r_star = float(r[i_star])
+
+        # 模型與協方差（做 MC 抽樣）
+        v_mod = vfun(r)
+        C = build_covariance(v_mod, r, g.v_err, g.D_Mpc, g.D_err_Mpc,
+                             g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med)
+
+        denom = float(linear_term_kms2(1.0, np.asarray([r_star]), H0_si=H0_si)[0])
+        vbar2_i = float(vbar2[i_star])
+
+        # Monte Carlo：只抽 v_obs（C 內已含距離/傾角與系統底噪）
+        try:
+            Vs = rng.multivariate_normal(mean=v_mod, cov=C, size=nsamp)
+            eps_samp = (Vs[:, i_star]**2 - vbar2_i) / denom
+            eps_med = float(np.percentile(eps_samp, 50))
+            eps_lo  = float(np.percentile(eps_samp, 16))
+            eps_hi  = float(np.percentile(eps_samp, 84))
+        except np.linalg.LinAlgError:
+            # 共變異矩陣不良時退回單點 sigma 近似
+            sig_i = float(np.sqrt(np.clip(np.diag(C)[i_star], 1e-30, np.inf)))
+            z = (v_obs[i_star] - v_mod[i_star]) / sig_i
+            eps_med = (v_obs[i_star]**2 - vbar2_i) / denom
+            eps_lo  = eps_med - (2*v_mod[i_star]*sig_i)/denom
+            eps_hi  = eps_med + (2*v_mod[i_star]*sig_i)/denom
+
+        Rd = _get_Rd_kpc_safe(g)
+        kappa_pred = float(eta * Rd / r_star)
+
+        rows.append(dict(
+            galaxy=name,
+            r_star_kpc=r_star,
+            Rd_kpc=Rd,
+            eps_eff_med=eps_med,
+            eps_eff_p16=eps_lo,
+            eps_eff_p84=eps_hi,
+            eps_eff_over_epscos=eps_med/eps_cos,
+            kappa_pred=kappa_pred
+        ))
+
+    df = pd.DataFrame(rows).dropna()
+    out_csv = Path(results_dir)/f"{out_prefix}_per_galaxy.csv"
+    df.to_csv(out_csv, index=False)
+
+    # 線性回歸 y = a x + b
+    if len(df) >= 2:
+        a, b = np.polyfit(df["kappa_pred"].values, df["eps_eff_over_epscos"].values, 1)
+        yhat = a*df["kappa_pred"].values + b
+        r2 = float(1.0 - np.sum((df["eps_eff_over_epscos"].values - yhat)**2) /
+                          np.sum((df["eps_eff_over_epscos"].values - df["eps_eff_over_epscos"].mean())**2))
+    else:
+        a = b = r2 = np.nan
+
+    # 畫圖
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots(figsize=(5.2, 4.2), dpi=150)
+    ax.scatter(df["kappa_pred"], df["eps_eff_over_epscos"], s=18, alpha=0.7, label="galaxies")
+    # 1:1 線與 best-fit
+    xgrid = np.linspace(0.0, max(1.05*df["kappa_pred"].max(), 0.2), 200)
+    ax.plot(xgrid, xgrid, linestyle="--", linewidth=1.2, label="y = x")
+    if np.isfinite(a):
+        ax.plot(xgrid, a*xgrid + b, linewidth=1.4, label=f"fit: y={a:.2f}x+{b:.2f}, R²={r2:.2f}")
+    ax.set_xlabel(r"$\kappa_{\rm pred}=\eta\,R_d/r_\*$")
+    ax.set_ylabel(r"$\varepsilon_{\rm eff}(r_\*)/\varepsilon_{\rm cos}$")
+    ax.legend()
+    ax.grid(True, alpha=0.25)
+    out_png = Path(results_dir)/f"{out_prefix}.png"
+    fig.tight_layout()
+    fig.savefig(out_png)
+    plt.close(fig)
+
+    summ = dict(
+        N=len(df),
+        eps_cos=eps_cos,
+        eta=eta,
+        frac_vmax=frac_vmax,
+        slope=a, intercept=b, R2=r2,
+        csv=str(out_csv), png=str(out_png)
+    )
+    with open(Path(results_dir)/f"{out_prefix}_summary.json","w") as f:
+        json.dump(summ, f, indent=2)
+    return summ
+
+def kappa_radius_resolved(results_dir: str,
+                          data_path: str,
+                          eta: float = 0.15,
+                          epsilon_cos: Optional[float] = None,
+                          omega_lambda: Optional[float] = None,
+                          nbins: int = 24,
+                          min_per_bin: int = 20,
+                          x_kind: str = "r_over_Rd",
+                          out_prefix: str = "kappa_profile") -> Tuple[pd.DataFrame, Path]:
+    """
+    檢核 B：半徑解析的疊圖。
+      y(r) = eps_eff(r)/eps_cos,  其中 eps_eff(r) = [v_obs^2 - v_bar^2]/[(cH0) r]
+      x = r/Rd (預設；也可選 x=r_kpc)
+    產出 per-point 與 binned 的 CSV 與圖。
+    """
+    res = yaml.safe_load(open(Path(results_dir)/"global_summary.yaml"))
+    model = res["model"]
+    H0_si = float(res.get("H0_si", H0_SI))
+    sig_med = float(res["sigma_sys_median"])
+    eps = res.get("epsilon_median")
+    q   = res.get("q_median")
+    a0  = res.get("a0_median")
+    per = pd.read_csv(Path(results_dir)/"per_galaxy_summary.csv").set_index("galaxy")
+
+    eps_cos = _eps_cos_from_args(epsilon_cos, omega_lambda)
+    gdict = load_tidy_sparc(data_path)
+
+    pts = []
+    for name, g in sorted(gdict.items()):
+        if name not in per.index:
+            continue
+        vfun, vbar2 = _make_vfun(model, H0_si, per.loc[name], g, eps, q, a0)
+        v_mod = vfun(g.r_kpc)  # only used for C; eps_eff 用觀測值
+        C = build_covariance(v_mod, g.r_kpc, g.v_err, g.D_Mpc, g.D_err_Mpc,
+                             g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med)
+        # 單點標準差（用於濾除極端不確定點）
+        sig_pt = np.sqrt(np.clip(np.diag(C), 1e-30, np.inf))
+
+        denom = linear_term_kms2(1.0, g.r_kpc, H0_si=H0_si)  # (cH0) r
+        eps_eff = (g.v_obs**2 - vbar2) / np.maximum(denom, 1e-30)
+        Rd = _get_Rd_kpc_safe(g)
+        x = (g.r_kpc / Rd) if x_kind == "r_over_Rd" else g.r_kpc
+        y = eps_eff / eps_cos
+
+        for xi, yi, ri, si in zip(x, y, g.r_kpc, sig_pt):
+            if np.isfinite(xi) and np.isfinite(yi) and si < 100.0:  # 粗略剔除病態點
+                pts.append(dict(galaxy=name, r_kpc=float(ri), x=float(xi), y=float(yi), Rd_kpc=float(Rd)))
+
+    df = pd.DataFrame(pts)
+    per_csv = Path(results_dir)/f"{out_prefix}_per_point.csv"
+    df.to_csv(per_csv, index=False)
+
+    # 分箱
+    if len(df) == 0:
+        raise RuntimeError("No valid points for kappa profile.")
+    x_min = float(np.quantile(df["x"], 0.02))
+    x_max = float(np.quantile(df["x"], 0.98))
+    edges = np.linspace(x_min, x_max, nbins+1)
+    mids  = 0.5*(edges[:-1]+edges[1:])
+    q16, q50, q84, cnt = [], [], [], []
+    for i in range(nbins):
+        m = (df["x"]>=edges[i]) & (df["x"]<edges[i+1])
+        vals = df.loc[m, "y"].values
+        if len(vals) < min_per_bin:
+            q16.append(np.nan); q50.append(np.nan); q84.append(np.nan); cnt.append(int(len(vals)))
+        else:
+            q16.append(float(np.percentile(vals,16)))
+            q50.append(float(np.percentile(vals,50)))
+            q84.append(float(np.percentile(vals,84)))
+            cnt.append(int(len(vals)))
+
+    binned = pd.DataFrame(dict(x_mid=mids, q16=q16, q50=q50, q84=q84, n=cnt))
+    bin_csv = Path(results_dir)/f"{out_prefix}_binned.csv"
+    binned.to_csv(bin_csv, index=False)
+
+    # 預測曲線 y_pred = eta / x  (若 x=r_kpc，則用樣本 Rd 的中位數換成 eta*Rd_med/x)
+    if x_kind == "r_over_Rd":
+        xgrid = np.linspace(max(x_min, 1e-3), x_max, 400)
+        ypred = eta / np.maximum(xgrid, 1e-6)
+        pred_label = r"$\eta/x$"
+    else:
+        Rd_med = float(np.median(df["Rd_kpc"]))
+        xgrid = np.linspace(max(x_min, 1e-3), x_max, 400)
+        ypred = (eta * Rd_med) / np.maximum(xgrid, 1e-6)
+        pred_label = r"$\eta\,R_{d,{\rm med}}/r$"
+
+    # 畫圖
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots(figsize=(5.6, 4.0), dpi=150)
+    ax.plot(xgrid, ypred, linestyle="--", linewidth=1.2, label=pred_label)
+    ax.fill_between(binned["x_mid"], binned["q16"], binned["q84"], alpha=0.25, label="stacked 16–84%")
+    ax.plot(binned["x_mid"], binned["q50"], linewidth=1.6, label="stacked median")
+    ax.set_xlabel("x = r/Rd" if x_kind=="r_over_Rd" else "r [kpc]")
+    ax.set_ylabel(r"$\varepsilon_{\rm eff}(r)/\varepsilon_{\rm cos}$")
+    ax.grid(True, alpha=0.25)
+    ax.legend()
+    out_png = Path(results_dir)/f"{out_prefix}.png"
+    fig.tight_layout()
+    fig.savefig(out_png)
+    plt.close(fig)
+
+    return binned, out_png

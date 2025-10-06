@@ -99,3 +99,24 @@ def gaussian_loglike(v_obs_kms: np.ndarray,
     quad = float(r @ alpha)
 
     return -0.5 * (quad + logdet + n * np.log(2.0 * np.pi))
+
+# --- Append to src/ptquat/likelihood.py ---
+
+def student_t_loglike(y_obs, y_mod, C, nu: float):
+    """
+    Multivariate Student-t log-likelihood with scale matrix C and dof=nu.
+    """
+    import numpy as _np
+    from math import lgamma as _lgamma, log as _log, pi as _pi
+    r = _np.asarray(y_obs) - _np.asarray(y_mod)
+    d = r.size
+    if nu <= 2.0:
+        nu = 2.0001
+    sign, logdet = _np.linalg.slogdet(C)
+    if sign <= 0 or not _np.isfinite(logdet):
+        return -_np.inf
+    alpha = _np.linalg.solve(C, r)
+    z2 = float(r @ alpha)
+    c0 = _lgamma(0.5*(nu + d)) - _lgamma(0.5*nu) - 0.5*d*_log(nu*_pi) - 0.5*logdet
+    return c0 - 0.5*(nu + d)*_np.log1p(z2/nu)
+
