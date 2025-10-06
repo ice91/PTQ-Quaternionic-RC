@@ -1,6 +1,7 @@
 from __future__ import annotations
 import numpy as np
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 def plot_rc(gal_name: str,
             r_kpc: np.ndarray,
@@ -19,3 +20,42 @@ def plot_rc(gal_name: str,
     plt.tight_layout()
     plt.savefig(outpath_png, dpi=160)
     plt.close()
+
+def plot_ppc_hist(z_values: np.ndarray, outpath: Path):
+    fig = plt.figure(figsize=(5,4))
+    ax = fig.add_subplot(111)
+    ax.hist(z_values, bins=50, density=True, alpha=0.8)
+    ax.set_xlabel("Standardized residual z")
+    ax.set_ylabel("PDF")
+    ax.axvline(0.0, lw=1)
+    for k in [1,2]:
+        ax.axvline(+k, ls="--", lw=1)
+        ax.axvline(-k, ls="--", lw=1)
+    ax.set_title("Posterior(-like) predictive residuals")
+    fig.tight_layout()
+    fig.savefig(outpath, dpi=160)
+    plt.close(fig)
+
+def plot_residual_plateau(df_points: pd.DataFrame, df_binned: pd.DataFrame, outpath: Path):
+    """
+    df_points: columns [r_kpc, delta_a]
+    df_binned: columns [r_mid_kpc, q16, q50, q84, n]
+    """
+    fig = plt.figure(figsize=(6.5,4.2))
+    ax = fig.add_subplot(111)
+    # 淡淡散點
+    ax.scatter(df_points["r_kpc"], df_points["delta_a"], s=6, alpha=0.15)
+    # 分箱帶狀
+    x = df_binned["r_mid_kpc"].values
+    y = df_binned["q50"].values
+    y1 = df_binned["q16"].values
+    y2 = df_binned["q84"].values
+    ax.plot(x, y, lw=2, label="median")
+    ax.fill_between(x, y1, y2, alpha=0.25, label="16–84%")
+    ax.set_xlabel("r  [kpc]")
+    ax.set_ylabel(r"$\Delta a = v^2/r - a_{\rm bar}(r)$  [m s$^{-2}$]")
+    ax.legend(loc="best", frameon=False)
+    ax.set_title("Stacked residual-acceleration plateau")
+    fig.tight_layout()
+    fig.savefig(outpath, dpi=160)
+    plt.close(fig)

@@ -5,6 +5,7 @@ from pathlib import Path
 from .fetch_vizier import fetch_sparc_to_csv
 from .preprocess import build_tidy_csv
 from .fit_global import run as run_fit
+from . import experiments as EXP
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="ptquat", description="PT-Quaternionic SPARC workflow")
@@ -27,24 +28,86 @@ def main(argv=None):
     p2.add_argument("--data", default="dataset/sparc_tidy.csv")
     p2.add_argument("--outdir", default="results/mini")
     p2.add_argument("--prior", choices=["galaxies-only","planck-anchored"], default="galaxies-only")
-    p2.add_argument("--sigma-sys", type=float, default=4.0)           # 初始值 + 弱先驗尺度
+    p2.add_argument("--sigma-sys", type=float, default=4.0)
     p2.add_argument("--H0-kms-mpc", type=float, default=None)
     p2.add_argument("--nwalkers", default="4x")
     p2.add_argument("--steps", type=int, default=12000)
     p2.add_argument("--seed", type=int, default=42)
-
-    # 模型選擇與其引數（轉傳到 fit_global）
     p2.add_argument("--model", choices=["ptq","ptq-nu","ptq-screen","ptq-split","baryon","mond","nfw1p"], default="ptq")
-    p2.add_argument("--a0-si", type=float, default=None, help="Fix MOND a0 [m/s^2]; if omitted, sample it.")
-    p2.add_argument("--a0-range", type=str, default="5e-11,2e-10", help="Uniform prior range for a0 when sampling.")
-    p2.add_argument("--logM200-range", type=str, default="9,13", help="Uniform prior for log10 M200 [Msun] in nfw1p.")
-    p2.add_argument("--c0", type=float, default=10.0, help="c(M) normalization at 1e12 Msun in nfw1p.")
-    p2.add_argument("--c-slope", type=float, default=-0.1, help="c(M) slope beta in nfw1p.")
+    p2.add_argument("--a0-si", type=float, default=None)
+    p2.add_argument("--a0-range", type=str, default="5e-11,2e-10")
+    p2.add_argument("--logM200-range", type=str, default="9,13")
+    p2.add_argument("--c0", type=float, default=10.0)
+    p2.add_argument("--c-slope", type=float, default=-0.1)
+    p2.add_argument("--backend-hdf5", type=str, default=None)
+    p2.add_argument("--thin-by", type=int, default=10)
+    p2.add_argument("--resume", action="store_true")
 
-    # HDF5 backend / thinning / resume
-    p2.add_argument("--backend-hdf5", type=str, default=None, help="emcee HDF5 backend path")
-    p2.add_argument("--thin-by", type=int, default=10, help="Thin factor when loading samples")
-    p2.add_argument("--resume", action="store_true", help="Resume if HDF5 backend has iterations")
+    # experiments group
+    px = sub.add_parser("exp", help="Supplementary experiments & robustness")
+    sx = px.add_subparsers(dest="exp_cmd", required=True)
+
+    # exp ppc
+    ppc = sx.add_parser("ppc", help="Posterior(-like) predictive check on an existing results dir")
+    ppc.add_argument("--results", required=True, help="Path to a finished results dir")
+    ppc.add_argument("--data",   default="dataset/sparc_tidy.csv")
+    ppc.add_argument("--prefix", default="ppc")
+
+    # exp stress
+    pst = sx.add_parser("stress", help="Inflate i_err/D_err and re-fit")
+    pst.add_argument("--data", default="dataset/sparc_tidy.csv")
+    pst.add_argument("--outroot", default="results/stress")
+    pst.add_argument("--model", choices=["ptq","ptq-nu","ptq-screen","ptq-split","baryon","mond","nfw1p"], default="ptq-screen")
+    pst.add_argument("--scale-i", type=float, default=2.0)
+    pst.add_argument("--scale-D", type=float, default=2.0)
+    # passthrough fit args
+    pst.add_argument("--prior", choices=["galaxies-only","planck-anchored"], default="galaxies-only")
+    pst.add_argument("--sigma-sys", type=float, default=4.0)
+    pst.add_argument("--H0-kms-mpc", type=float, default=None)
+    pst.add_argument("--nwalkers", default="4x")
+    pst.add_argument("--steps", type=int, default=12000)
+    pst.add_argument("--seed", type=int, default=42)
+
+    # exp mask
+    pmk = sx.add_parser("mask", help="Mask inner radii r<rmin_kpc and re-fit")
+    pmk.add_argument("--data", default="dataset/sparc_tidy.csv")
+    pmk.add_argument("--outroot", default="results/mask")
+    pmk.add_argument("--model", choices=["ptq","ptq-nu","ptq-screen","ptq-split","baryon","mond","nfw1p"], default="ptq-screen")
+    pmk.add_argument("--rmin-kpc", type=float, default=2.0)
+    # passthrough
+    pmk.add_argument("--prior", choices=["galaxies-only","planck-anchored"], default="galaxies-only")
+    pmk.add_argument("--sigma-sys", type=float, default=4.0)
+    pmk.add_argument("--H0-kms-mpc", type=float, default=None)
+    pmk.add_argument("--nwalkers", default="4x")
+    pmk.add_argument("--steps", type=int, default=12000)
+    pmk.add_argument("--seed", type=int, default=42)
+
+    # exp H0
+    ph0 = sx.add_parser("H0", help="Scan H0 sensitivity")
+    ph0.add_argument("--data", default="dataset/sparc_tidy.csv")
+    ph0.add_argument("--outroot", default="results/H0_scan")
+    ph0.add_argument("--model", choices=["ptq","ptq-nu","ptq-screen"], default="ptq-screen")
+    ph0.add_argument("--H0-list", type=float, nargs="+", default=[60.0, 67.4, 70.0, 73.0, 76.0])
+    # passthrough
+    ph0.add_argument("--prior", choices=["galaxies-only","planck-anchored"], default="galaxies-only")
+    ph0.add_argument("--sigma-sys", type=float, default=4.0)
+    ph0.add_argument("--nwalkers", default="4x")
+    ph0.add_argument("--steps", type=int, default=12000)
+    ph0.add_argument("--seed", type=int, default=42)
+
+    # exp plateau
+    ppl = sx.add_parser("plateau", help="Make stacked residual-acceleration plateau plot from a results dir")
+    ppl.add_argument("--results", required=True)
+    ppl.add_argument("--data", default="dataset/sparc_tidy.csv")
+    ppl.add_argument("--nbins", type=int, default=24)
+    ppl.add_argument("--prefix", default="plateau")
+
+    # exp closure
+    pcl = sx.add_parser("closure", help="Cross-scale closure test: epsilon_cos vs epsilon_RC")
+    pcl.add_argument("--results", required=True)
+    group = pcl.add_mutually_exclusive_group(required=True)
+    group.add_argument("--epsilon-cos", type=float, default=None)
+    group.add_argument("--omega-lambda", type=float, default=None)
 
     args = ap.parse_args(argv)
 
@@ -56,10 +119,7 @@ def main(argv=None):
         raw = Path(args.raw)
         t1 = raw / "vizier_table1.csv"
         t2 = raw / "vizier_table2.csv"
-        out = build_tidy_csv(
-            t1, t2, args.out, i_min_deg=args.i_min,
-            relD_max=args.reldmax, qual_max=args.qual_max
-        )
+        out = build_tidy_csv(t1, t2, args.out, i_min_deg=args.i_min, relD_max=args.reldmax, qual_max=args.qual_max)
         print(f"Tidy CSV saved to {out}")
 
     elif args.cmd == "fit":
@@ -82,3 +142,44 @@ def main(argv=None):
         + ([] if args.backend_hdf5 is None else [f"--backend-hdf5={args.backend_hdf5}"])
         + ([f"--thin-by={args.thin_by}"] if args.thin_by else [])
         + (["--resume"] if args.resume else []))
+
+    elif args.cmd == "exp":
+        if args.exp_cmd == "ppc":
+            out = EXP.ppc_check(args.results, args.data, out_prefix=args.prefix)
+            print(json.dumps(out, indent=2))
+
+        elif args.exp_cmd == "stress":
+            out = EXP.stress_errors(
+                data_path=args.data, out_root=args.outroot, model=args.model,
+                scale_i=args.scale_i, scale_D=args.scale_D,
+                prior=args.prior, sigma_sys=args.sigma_sys,
+                H0_kms_mpc=args.H0_kms_mpc, nwalkers=args.nwalkers,
+                steps=args.steps, seed=args.seed
+            )
+            print(json.dumps(out, indent=2))
+
+        elif args.exp_cmd == "mask":
+            out = EXP.mask_inner(
+                data_path=args.data, out_root=args.outroot, model=args.model,
+                rmin_kpc=args.rmin_kpc,
+                prior=args.prior, sigma_sys=args.sigma_sys,
+                H0_kms_mpc=args.H0_kms_mpc, nwalkers=args.nwalkers,
+                steps=args.steps, seed=args.seed
+            )
+            print(json.dumps(out, indent=2))
+
+        elif args.exp_cmd == "H0":
+            df = EXP.scan_H0(
+                data_path=args.data, out_root=args.outroot, model=args.model,
+                H0_list=args.H0_list, prior=args.prior, sigma_sys=args.sigma_sys,
+                nwalkers=args.nwalkers, steps=args.steps, seed=args.seed
+            )
+            print(df.to_string(index=False))
+
+        elif args.exp_cmd == "plateau":
+            df, png = EXP.residual_plateau(args.results, args.data, nbins=args.nbins, out_prefix=args.prefix)
+            print(f"Saved: {png}")
+
+        elif args.exp_cmd == "closure":
+            out = EXP.closure_test(args.results, epsilon_cos=args.epsilon_cos, omega_lambda=args.omega_lambda)
+            print(json.dumps(out, indent=2))
