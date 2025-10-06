@@ -1,11 +1,13 @@
 # src/ptquat/cli.py
 from __future__ import annotations
 import argparse
+import json
 from pathlib import Path
 from .fetch_vizier import fetch_sparc_to_csv
 from .preprocess import build_tidy_csv
 from .fit_global import run as run_fit
 from . import experiments as EXP
+
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="ptquat", description="PT-Quaternionic SPARC workflow")
