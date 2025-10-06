@@ -555,8 +555,8 @@ def kappa_per_galaxy(results_dir: str,
     ax.plot(xgrid, xgrid, linestyle="--", linewidth=1.2, label="y = x")
     if np.isfinite(a):
         ax.plot(xgrid, a*xgrid + b, linewidth=1.4, label=f"fit: y={a:.2f}x+{b:.2f}, R²={r2:.2f}")
-    ax.set_xlabel(r"$\kappa_{\rm pred}=\eta\,R_d/r_\*$")
-    ax.set_ylabel(r"$\varepsilon_{\rm eff}(r_\*)/\varepsilon_{\rm cos}$")
+    ax.set_xlabel(r"$\kappa_{\rm pred}=\eta\,R_d/r_\ast$")
+    ax.set_ylabel(r"$\varepsilon_{\rm eff}(r_\ast)/\varepsilon_{\rm cos}$")
     ax.legend()
     ax.grid(True, alpha=0.25)
     out_png = Path(results_dir)/f"{out_prefix}.png"
