@@ -1,378 +1,425 @@
-# PTQ-Quaternionic-RC — Global Fits & Baseline Comparisons on SPARC
+# PTQ-Quaternionic-RC — SPARC Rotation-Curve Pipeline
 
-This repository provides a **reproducible pipeline** for  
-**data → preprocessing → global Bayesian fitting → model comparison**  
-on the **SPARC** galaxy rotation-curve sample (Lelli+ 2016, VizieR: `J/AJ/152/157`).
+**TL;DR.**  
+This repo reproduces the experiments in our paper where **PTQ is positioned as the physical origin of MOND**.  
+We compare **Baryon-only**, **NFW-1p**, **MOND(ν)**, **PTQ (linear)**, **PTQ-ν**, and **PTQ-screen**, report **full-likelihood AIC/BIC**, and run a robustness/closure suite including **PPC**, **error stress (×2)**, **inner-masking**, **H₀ scan**, and two **κ-checks** that diagnose a universal renormalization (\kappa).
 
-The primary model tests a PT-Quaternionic (PTQ) linear term added to baryons:  
-[  
-$$v^2(r) ;=; v_{\rm bar}^2(r);+;(\epsilon,c,H_0),r,  
-\qquad v_{\rm bar}^2 ;=; \Upsilon,(v_d^2+v_b^2);+;v_g^2.$$  
-]  
-Here $(\Upsilon)$ is a per-galaxy stellar mass-to-light ratio (optionally split  
-into (\Upsilon_{\rm disk}) and (\Upsilon_{\rm bulge})),  
-and (\epsilon) is a **global** (shared) parameter.
-
-Built-in comparators:
-
-- **PTQ** (main): global $$(\epsilon) + per-galaxy (\Upsilon)$$
-    
-- **PTQ-split**: $$global (\epsilon) + per-galaxy (\Upsilon_{\rm disk}, \Upsilon_{\rm bulge})$$
-    
-- **Baryon-only** (baseline): $$(\epsilon=0)$$
-    
-- **MOND (simple ($\nu$))**: $$global (a_0) (fixed or sampled)$$
-    
-- **NFW-1p**: $$per-galaxy (M_{200}); (c) from a (c)–(M) relation (c=c_0(M/10^{12}M_\odot)^{\beta})$$
-    
-
-The likelihood **propagates distance and inclination uncertainties** inside the covariance  
-and **learns a global velocity floor (\sigma_{\rm sys})** (parameterized as (\ln\sigma) with a weak half-normal prior).  
-Outputs include full-likelihood ($\log\mathcal{L}$), AIC/BIC, per-galaxy diagnostics, and plots.
+Key dictionary:  
+$$[  
+\Omega_\Lambda(\epsilon)=\frac{\epsilon^2}{1+\epsilon^2},\qquad  
+a_0(\epsilon)=\epsilon,c,H_0 \quad (\text{optionally } a_0=\kappa,\epsilon,c,H_0).  
+]$$
 
 ---
 
-## Contents
-
-- [Installation](https://chatgpt.com/c/68d4f4d3-cef0-832f-a95c-3ef43a403c90#installation)
-    
-- [Data & Preprocessing](https://chatgpt.com/c/68d4f4d3-cef0-832f-a95c-3ef43a403c90#data--preprocessing)
-    
-- [Models & CLI quick reference](https://chatgpt.com/c/68d4f4d3-cef0-832f-a95c-3ef43a403c90#models--cli-quick-reference)
-    
-- [Main workflow](https://chatgpt.com/c/68d4f4d3-cef0-832f-a95c-3ef43a403c90#main-workflow)
-    
-- [Run in background with `nohup`](https://chatgpt.com/c/68d4f4d3-cef0-832f-a95c-3ef43a403c90#run-in-background-with-nohup)
-    
-- [Outputs](https://chatgpt.com/c/68d4f4d3-cef0-832f-a95c-3ef43a403c90#outputs)
-    
-- [Interpreting results & model comparison](https://chatgpt.com/c/68d4f4d3-cef0-832f-a95c-3ef43a403c90#interpreting-results--model-comparison)
-    
-- [Hardware guidance](https://chatgpt.com/c/68d4f4d3-cef0-832f-a95c-3ef43a403c90#hardware-guidance)
-    
-- [Tests](https://chatgpt.com/c/68d4f4d3-cef0-832f-a95c-3ef43a403c90#tests)
-    
-- [Troubleshooting](https://chatgpt.com/c/68d4f4d3-cef0-832f-a95c-3ef43a403c90#troubleshooting)
-    
-- [Citations](https://chatgpt.com/c/68d4f4d3-cef0-832f-a95c-3ef43a403c90#citations)
-    
-- [License](https://chatgpt.com/c/68d4f4d3-cef0-832f-a95c-3ef43a403c90#license)
-    
-- [Math appendix](https://chatgpt.com/c/68d4f4d3-cef0-832f-a95c-3ef43a403c90#math-appendix)
-    
-
----
-
-## Installation
-
-**Requirements**
-
-- Python ≥ 3.10 (3.11/3.12 recommended)
-    
-- Linux/macOS
-    
-- See `requirements.txt` (`emcee`, `h5py`, `astroquery`, `pandas`, `numpy`, `matplotlib`, `pyyaml`, …)
-    
-
-**Setup**
+## 0. Install
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -U pip
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 pip install -e .
 ```
 
-This installs the CLI entry point `ptquat`.
-
----
-
-## Data & Preprocessing
-
-1. **Fetch SPARC** from VizieR (`J/AJ/152/157`)
-    
-
-```bash
-ptquat fetch --out dataset/raw
-```
-
-Notes:
-
-- We request **all columns** from VizieR and coerce numeric fields (e.g., `Vbulge`) to avoid the “all zeros / 6 names only” pitfall.
-    
-
-2. **Preprocess & quality cuts**
-    
-
-```bash
-ptquat preprocess \
-  --raw dataset/raw \
-  --out dataset/sparc_tidy.csv \
-  --i-min 30 --reldmax 0.2 --qual-max 2
-```
-
-Quality cuts (configurable):
-
-- $(i > 30^\circ)$, relative distance error (< 0.2), quality flag $(Qual \le 2)$.
-    
-- If $(e_i)$ or $(e_D)$ is missing, conservative defaults are injected (see `preprocess.py`).
-    
-
----
-
-## Models & CLI quick reference
-
-```bash
-ptquat fit --help
-```
-
-Key options:
-
-- `--model {ptq, ptq-split, baryon, mond, nfw1p}`
-    
-- `--prior {galaxies-only, planck-anchored}` (affects PTQ/PTQ-split prior on ($\epsilon$))
-    
-- `--sigma-sys 4` → **initial scale** for the global floor; the code **always learns** ($\sigma_{\rm sys}$) (no flag needed)
-    
-- `--H0-kms-mpc` to override (H_0) (default from Planck 2018 in code)
-    
-- MOND: `--a0-si` to fix (a_0) or `--a0-range lo,hi` to sample (a_0)
-    
-- NFW-1p: `--logM200-range 9,13`, `--c0 10 --c-slope -0.1`
-    
-- Sampler & backend: `--nwalkers 4x`, `--steps 12000`, `--backend-hdf5`, `--resume`, `--thin-by 10`
-    
-
----
-
-## Main workflow
-
-### 1) Primary PTQ run
-
-```bash
-ptquat fit \
-  --data dataset/sparc_tidy.csv \
-  --outdir results/ptq_main \
-  --model ptq \
-  --prior galaxies-only \
-  --sigma-sys 4 \
-  --nwalkers 4x \
-  --steps 12000 \
-  --thin-by 10 \
-  --backend-hdf5 results/ptq_main/chain.h5 \
-  --resume
-```
-
-### 2) Baselines / Comparators
-
-```bash
-# Baryon-only (ε=0)
-ptquat fit --data dataset/sparc_tidy.csv --outdir results/baryon \
-  --model baryon --sigma-sys 4 --nwalkers 3x --steps 12000 \
-  --thin-by 10 --backend-hdf5 results/baryon/chain.h5 --resume
-
-# MOND (sample a0; or use --a0-si to fix)
-ptquat fit --data dataset/sparc_tidy.csv --outdir results/mond \
-  --model mond --a0-range 5e-11,2e-10 --sigma-sys 4 \
-  --nwalkers 3x --steps 12000 \
-  --thin-by 10 --backend-hdf5 results/mond/chain.h5 --resume
-
-# NFW-1p (per-galaxy M200; c from c–M relation)
-ptquat fit --data dataset/sparc_tidy.csv --outdir results/nfw1p \
-  --model nfw1p --logM200-range 9,13 --c0 10 --c-slope -0.1 \
-  --sigma-sys 4 --nwalkers 3x --steps 12000 \
-  --thin-by 10 --backend-hdf5 results/nfw1p/chain.h5 --resume
-```
-
----
-
-## Run in background with `nohup`
-
-```bash
-mkdir -p logs
-
-# PTQ
-LOG="logs/ptq_$(date +%F_%H%M%S).log"
-nohup bash -lc 'source .venv/bin/activate; ptquat fit \
-  --data dataset/sparc_tidy.csv --outdir results/ptq_main \
-  --model ptq --prior galaxies-only --sigma-sys 4 \
-  --nwalkers 4x --steps 12000 --thin-by 10 \
-  --backend-hdf5 results/ptq_main/chain.h5 --resume' \
-> "$LOG" 2>&1 & echo "PID=$!  log=$LOG"
-
-# Baryon-only (edit outdir/model)
-# MOND (edit outdir/model/a0 options)
-# NFW-1p (edit outdir/model/c–M options)
-```
-
-Monitor:
-
-```bash
-tail -f logs/ptq_*.log
-```
-
----
-
-## Outputs
-
-Each `outdir` contains:
-
-- `global_summary.yaml`  
-    Key fields:
-    
-    - `model`, `n_galaxies`, `N_total`, `prior`, `H0_si`
-        
-    - `sigma_sys_median/p16/p84` (always learned)
-        
-    - `epsilon_*` (PTQ/PTQ-split) or `a0_*` (MOND, if sampled)
-        
-    - `chi2_total`, `logL_total_full`
-        
-    - `AIC_quad`, `BIC_quad`, `AIC_full`, `BIC_full` (**prefer full-likelihood for comparison**)
-        
-    - `k_parameters`, `steps`, `nwalkers`, `burn_in`, `thin`
-        
-- `per_galaxy_summary.csv`  
-    Per galaxy: $(n), (\Upsilon) (or (\Upsilon_{\rm disk/bulge})), (\chi^2), (\chi^2/\nu), (\log\mathcal{L})$
-    
-- `plot_*.png`  
-    Rotation curves with data and best model
-    
-- `chain.h5` (if `--backend-hdf5`)  
-    plus a thinned snapshot in `posterior_samples.npz` (for some modes)
-    
-
----
-
-## Interpreting results & model comparison
-
-Because the covariance includes distance/inclination terms,  
-**use full-likelihood** criteria for model selection:
-
-$$[  
-\mathrm{AIC}_{\rm full} = -2\log\mathcal{L}_{\rm full} + 2k,\quad  
-\mathrm{BIC}_{\rm full} = -2\log\mathcal{L}_{\rm full} + k\ln N.  
-]$$
-
-As a rule of thumb, $(\Delta)AIC/BIC (\gtrsim 10)$ indicates strong preference.
-
-Simple Python helper:
-
-```python
-import yaml
-def s(p): return yaml.safe_load(open(p))
-ptq  = s("results/ptq_main/global_summary.yaml")
-bar  = s("results/baryon/global_summary.yaml")
-mond = s("results/mond/global_summary.yaml")
-nfw  = s("results/nfw1p/global_summary.yaml")
-
-def d(base, other, key="AIC_full"):
-    return other[key] - base[key]
-
-print("ΔAIC_full (PTQ vs Baryon):", d(ptq, bar))
-print("ΔAIC_full (PTQ vs MOND):  ", d(ptq, mond))
-print("ΔAIC_full (PTQ vs NFW1p): ", d(ptq, nfw))
-```
-
-Also review `per_galaxy_summary.csv` to identify outliers by reduced (\chi^2).
-
----
-
-## Hardware guidance
-
-- **CPU**: 8–16 physical cores recommended (the log-likelihood itself is single-process in this codebase; HDF5 helps with I/O).
-    
-- **Memory**: ≥ 16 GB is comfortable for ~90 galaxies with `nwalkers ≈ 3–4 × (param_dim)`, `steps ≈ 12k`, `thin ≈ 10`, and HDF5 backend.
-    
-- **Disk**: Each model’s `chain.h5` is typically hundreds of MB; several models total a few GB.
-    
-
-If resources are tight: use `--thin-by` (bigger number), reduce `--nwalkers` (e.g. `3x`), and keep the HDF5 backend enabled.
-
----
-
-## Tests
+Test:
 
 ```bash
 pytest -q
 ```
 
-- `tests/test_models.py` — model outputs sanity checks
+---
+
+## 1. Data
+
+### 1.1 Download raw VizieR tables (SPARC; Lelli+ 2016)
+
+```bash
+ptquat fetch --out dataset/raw
+```
+
+This produces `dataset/raw/vizier_table1.csv` and `dataset/raw/vizier_table2.csv`.
+
+### 1.2 Build tidy CSV with quality cuts
+
+```bash
+ptquat preprocess \
+  --raw dataset/raw \
+  --out dataset/sparc_tidy.csv \
+  --i-min 30.0 --reldmax 0.20 --qual-max 2
+```
+
+Columns in the tidy CSV include:  
+`galaxy, r_kpc, v_obs_kms, v_err_kms, v_disk_kms, v_bulge_kms, v_gas_kms, D_Mpc, D_err_Mpc, i_deg, i_err_deg`.
+
+---
+
+## 2. Models
+
+- `baryon`: $(v=\sqrt{v_{\rm bar}^2}).$
     
-- `tests/test_covariance.py` — covariance/loglike stability (Cholesky with jitter)
+- `mond`: MOND (simple-ν). If `--a0-si` not given, (a_0) is sampled with prior `--a0-range`.
+    
+- `nfw1p`: one halo parameter ($M_{200}$) per galaxy; concentration from a c–M power law (`--c0`, `--c-slope`).
+    
+- `ptq` (linear): $(v=\sqrt{v_{\rm bar}^2 + (\epsilon cH_0),r})$. **Negative control** (ruled out by data).
+    
+- `ptq-nu`: reuse MOND shape but set $(a_0=\epsilon cH_0)$ (ε global).
+    
+- `ptq-screen`: generalized MOND-like $(\nu_q(y)=0.5+\sqrt{0.25+y^{-q}})$ with **global** q and $(a_0=\epsilon cH_0)$.
+    
+
+**Priors:** choose via `--prior`:
+
+- `galaxies-only` (flat ε on (0,4)).
+    
+- `planck-anchored` (Gaussian ε prior around 1.47±0.05).
+    
+
+**Likelihood:** `--likelihood gauss|t` (default: gauss). Student-t (ν>2) improves robustness to outliers.
+
+---
+
+## 3. Reproduce the main table (AIC/BIC)
+
+Run the six models with default settings (SPARC90 / N≈1734 points):
+
+```bash
+# PTQ-screen (main model)
+ptquat fit --model ptq-screen --data dataset/sparc_tidy.csv --outdir results/ptq_screen
+
+# MOND baseline
+ptquat fit --model mond --data dataset/sparc_tidy.csv --outdir results/ejpc_mond
+
+# PTQ-ν
+ptquat fit --model ptq-nu --data dataset/sparc_tidy.csv --outdir results/ptq_nu
+
+# NFW-1p
+ptquat fit --model nfw1p --data dataset/sparc_tidy.csv --outdir results/ejpc_nfw1p
+
+# PTQ (linear) — negative control
+ptquat fit --model ptq --data dataset/sparc_tidy.csv --outdir results/ejpc_main
+
+# Baryon-only — negative control
+ptquat fit --model baryon --data dataset/sparc_tidy.csv --outdir results/ejpc_baryon
+```
+
+Each run writes:
+
+- `global_summary.yaml` (includes `chi2_total`, **`AIC_full/BIC_full`**, `k_parameters`, `N_total`, median posteriors `epsilon_median/q_median/a0_median`, etc.)
+    
+- `per_galaxy_summary.csv`
+    
+- `plot_*.png` for each galaxy.
+    
+
+**Compile a comparison CSV:**
+
+```bash
+python - <<'PY'
+import yaml, pandas as pd, pathlib as P
+runs = {
+  "PTQ-screen": "results/ptq_screen/global_summary.yaml",
+  "PTQ-v":      "results/ptq_nu/global_summary.yaml",
+  "PTQ":        "results/ejpc_main/global_summary.yaml",
+  "Baryon":     "results/ejpc_baryon/global_summary.yaml",
+  "NFW-1p":     "results/ejpc_nfw1p/global_summary.yaml",
+  "MOND":       "results/ejpc_mond/global_summary.yaml",
+}
+rows=[]
+for name, yml in runs.items():
+    s=yaml.safe_load(open(yml))
+    rows.append(dict(model=name,k=s["k_parameters"],chi2=s["chi2_total"],
+                     AIC_full=s["AIC_full"],BIC_full=s["BIC_full"],
+                     AIC_quad=s["AIC_quad"],BIC_quad=s["BIC_quad"],
+                     sigma_sys_med=s["sigma_sys_median"],
+                     epsilon_med=s.get("epsilon_median"),
+                     a0_med=s.get("a0_median"),
+                     N=s["N_total"]))
+df=(pd.DataFrame(rows).set_index("model").sort_values("BIC_full"))
+df.to_csv("results/ejpc_model_compare.csv")
+print(df[["k","chi2","AIC_full","BIC_full","AIC_quad","BIC_quad","sigma_sys_med","epsilon_med","a0_med"]])
+print("Saved results/ejpc_model_compare.csv")
+PY
+```
+
+> **Reporting rule:** In the paper, **always cite `AIC_full`/`BIC_full`** (computed from the chosen likelihood), not `AIC_quad/BIC_quad`.  
+> Use ΔAIC/ΔBIC relative to the **best (lowest)** model; you can convert ΔAIC into Akaike weights to discuss strength.
+
+---
+
+## 4. Robustness suite (as in the paper)
+
+### S1. Posterior-(like) Predictive Coverage (PPC)
+
+```bash
+ptquat exp ppc --results results/ptq_screen --data dataset/sparc_tidy.csv
+```
+
+Outputs `{results}/ppc_coverage.json` with 68/95% coverage.
+
+### S2. Error stress test (×2 on i_err & D_err)
+
+```bash
+ptquat exp stress --model ptq-screen --data dataset/sparc_tidy.csv \
+  --scale-i 2 --scale-D 2 --outroot results/stress --prior galaxies-only
+```
+
+Re-fits on a perturbed CSV and writes a fresh `global_summary.yaml`.
+
+### S3. Inner-disk masking
+
+```bash
+ptquat exp mask --model ptq-screen --rmin-kpc 2.0 \
+  --data dataset/sparc_tidy.csv --outroot results/mask
+```
+
+### S4. H₀ sensitivity scan
+
+```bash
+ptquat exp H0 --model ptq-screen --data dataset/sparc_tidy.csv \
+  --outroot results/H0_scan --H0-list 60 67.4 70 73 76
+```
+
+---
+
+## 5. Cross-scale tests
+
+### 5.1 Closure test: (\epsilon_{\rm cos}) vs (\epsilon_{\rm RC})
+
+```bash
+# using ΩΛ=0.69  → ε_cos = sqrt(ΩΛ/(1-ΩΛ))
+ptquat exp closure --results results/ptq_screen --omega-lambda 0.69
+# or explicitly:
+ptquat exp closure --results results/ptq_screen --epsilon-cos 1.47
+```
+
+Writes `{results}/closure_test.yaml` with `epsilon_RC`, `epsilon_cos`, `sigma_RC`, and `pass_within_3sigma`.
+
+> In our runs, the **simplest closure (a_0=\epsilon cH_0)** fails in amplitude (|Δε|≫3σ).  
+> This motivates a **universal renormalization** (\kappa) tested below.
+
+### 5.2 κ-checks (observational validation of a global (\kappa))
+
+**(A) Per-galaxy regression (kappa-gal):**
+
+```bash
+ptquat exp kappa-gal --results results/ptq_screen \
+  --omega-lambda 0.69 --eta 0.15 --frac-vmax 0.9 --nsamp 300
+```
+
+Outputs a CSV and PNG; the fit reports slope≈κ and (R^2).  
+**Sensitivity:** also run `--frac-vmax 0.8` and `1.0` to show slope stability.
+
+**(B) Radius-resolved stack (kappa-prof):**
+
+```bash
+ptquat exp kappa-prof --results results/ptq_screen \
+  --omega-lambda 0.69 --eta 0.15 --nbins 24
+```
+
+The stacked median/band follows ~(\propto 1/x). For the paper figure, overlay **(\kappa\eta/x)** (κ≈0.136).
+
+---
+
+## 6. Residual-acceleration plateau (main figure)
+
+```bash
+ptquat exp plateau --results results/ptq_screen --data dataset/sparc_tidy.csv
+```
+
+Produces `{results}/plateau_per_point.csv`, `{results}/plateau_binned.csv`, and a PNG.
+
+---
+
+## 7. What to report in the paper
+
+- **Information criteria:** use `AIC_full/BIC_full` and **ΔAIC/ΔBIC** relative to the best model.  
+    Typical outcome (may vary slightly with seeds/likelihood):  
+    **PTQ-screen** < **MOND** < **PTQ-ν** ≪ **NFW-1p** ≪ **PTQ (linear)** ≪ **Baryon**.  
+    It is acceptable to write:  
+    _“PTQ-screen outperforms MOND at nearly identical complexity (k≈93 vs 92), with ΔAIC≈10 and ΔBIC≈4.8.”_
+    
+- **Parameters:** report `epsilon_median` (PTQ family), `q_median` (PTQ-screen), `a0_median` (MOND if sampled), `sigma_sys_median`.
+    
+- **PPC / stress / mask / H₀:** one-line summaries: ranking preserved; key posteriors shift minimally.
+    
+- **Closure & κ:** be explicit: simplest closure fails; **κ≈0.13** from κ-checks restores amplitude continuity across scales.
     
 
 ---
 
-## Troubleshooting
+## 8. Reproducibility
 
-- **`ptquat: error: unrecognized arguments: --sigma-sys-learn`**  
-    Not needed. This code _always_ learns a global (\sigma_{\rm sys}) via (\ln \sigma) with a weak prior.  
-    Use `--sigma-sys` only as the _initial scale_ and prior scale.
+- Fix seeds via `--seed`; enable HDF5 backends via `--backend-hdf5 results/<run>/chain.h5 --resume`.
     
-- **VizieR returns `Vbulge` all zeros or only a few names**  
-    The fetcher requests **all columns** and coerces numerics. Re-run:
-    
-    ```bash
-    ptquat fetch --out dataset/raw
-    ptquat preprocess --raw dataset/raw --out dataset/sparc_tidy.csv --i-min 30 --reldmax 0.2 --qual-max 2
-    ```
-    
-- **Acceptance fractions from HDF5**  
-    `emcee.backends.HDFBackend` doesn’t expose `get_acceptance_fraction()`. During a live run, inspect `sampler.acceptance_fraction` in Python. (Persisting it is not implemented here.)
-    
-- **Pandas `FutureWarning: use_inf_as_na`**  
-    Harmless; the code already uses explicit replacements in critical paths.
+- Record environment (Python version, `requirements.txt`) and include the produced `global_summary.yaml` and CSVs.
     
 
 ---
 
-## Citations
+## 9. Field glossary (what the YAML fields mean)
 
-- **SPARC**  
-    Lelli, F., McGaugh, S. S., & Schombert, J. M. (2016), _AJ, 152, 157_.  
-    VizieR catalog: `J/AJ/152/157`. Please cite accordingly.
+- `AIC_full, BIC_full`: computed from the **chosen likelihood** (`gauss` or `t`); **use these in the paper**.
     
-- **emcee**  
-    Foreman-Mackey, D., et al. (2013), _PASP, 125, 306_.
+- `AIC_quad, BIC_quad`: χ²-based quadratic approximation (diagnostic only).
     
-
-If this code underpins your analysis, consider describing the methodology along these lines:  
-“We used the PTQ-Quaternionic-RC pipeline (this repository, commit …) to perform global posterior inference on a SPARC subsample  
-($(i>30^\circ), (\delta D/D<0.2), (Qual\le 2)$); the likelihood propagates distance and inclination uncertainties and learns a global  
-velocity floor ($\sigma_{\rm sys}$) (parameterized by ($\ln\sigma$) with a weak half-normal prior). Model comparison is based on full-likelihood AIC/BIC.”
-
----
-
-## License
-
-- **Code**: see the repository `LICENSE` (MIT/Apache-2.0 recommended if not yet added).
+- `epsilon_median`: global ε (PTQ family).
     
-- **Data**: SPARC per original authors and VizieR terms.
+- `a0_median`: MOND (a_0) (if sampled or fixed via `--a0-si`).
+    
+- `q_median`: PTQ-screen global shape parameter (q).
+    
+- `sigma_sys_median`: global velocity floor [km/s].
+    
+- `k_parameters`: number of free parameters used in AIC/BIC.
+    
+- `N_total`: number of RC points used.
     
 
 ---
 
-## Math appendix
+## 10. Optional ablations
 
-- **PTQ**  
-    [  
-    $$v^2(r)=\Upsilon,(v_d^2+v_b^2)+v_g^2+(\epsilon cH_0) r$$  
-    ]
+- **Student-t likelihood** (`--likelihood t --t-dof 8`) for robustness.
     
-- **PTQ-split**  
-    [  
-    $$v^2(r)=\Upsilon_d,v_d^2+\Upsilon_b,v_b^2+v_g^2+(\epsilon cH_0) r$$  
-    ]
+- **NFW c–M variants** via `--c0` and `--c-slope`.
     
-- **MOND (simple ($\nu$))**  
-    [  
-    $$v^2 = v_N^2,\nu!\left(\frac{g_N}{a_0}\right),\quad  \nu(y)=\tfrac12+\sqrt{\tfrac14+\tfrac1y},\quad  v_N^2=\Upsilon(v_d^2+v_b^2)+v_g^2,\ g_N=\frac{v_N^2}{r}$$  
-    ]
+- **Planck-anchored prior** (`--prior planck-anchored`) vs `galaxies-only`.
     
-- **NFW-1p**  
-    [  
-    $$v^2(r)=v_{\rm bar}^2(r)+v_{\rm NFW}^2!\big(M_{200},,c(M_{200})\big),\quad  c(M)=c_0\left(\frac{M}{10^{12}M_\odot}\right)^{\beta}$$  
-    ]
+
+---
+
+## 11. Citation
+
+
+---
+
+## 12. Paper figures & tables — **one-command build**
+
+在完成「主六模型擬合」與（可選）各 robustness/closure/κ 實驗後，可以用單一腳本把**論文用表格與圖片**全部匯出到 `paper_outputs/`：
+
+```bash
+python scripts/make_paper_artifacts.py
+```
+
+**輸出包含：**
+
+- `model_compare.csv` / `model_compare.tex`（主表；含 ΔAIC/ΔBIC 與 Akaike weight）
     
+- `fig_delta_AIC.png`, `fig_delta_BIC.png`
+    
+- `fig_ppc_coverage.png`（若已執行 `exp ppc`）
+    
+- `fig_h0_AIC.png`, `fig_h0_epsilon.png`（若已執行 `exp H0` 產生掃描 CSV）
+    
+- `fig_kappa_gal.png`, `fig_kappa_profile.png`（若已執行 `kappa-gal`/`kappa-prof`）
+    
+- `fig_plateau.png`（若已執行 `exp plateau`）
+    
+- `stress_mask_summary.csv` / `.tex`（若有 `results/stress` 與/或 `results/mask` 子目錄）
+    
+- `closure_summary.tex`（若有 `closure_test.yaml`）
+    
+
+**自訂模型—結果目錄對映（如果你的 results 路徑不同）：**
+
+```bash
+python scripts/make_paper_artifacts.py \
+  --model "PTQ-screen=results/ptq_screen" \
+  --model "MOND=results/ejpc_mond" \
+  --model "PTQ-v=results/ptq_nu" \
+  --model "NFW-1p=results/ejpc_nfw1p" \
+  --model "PTQ=results/ejpc_main" \
+  --model "Baryon=results/ejpc_baryon" \
+  --outdir paper_outputs
+```
+
+**其他常用參數：**
+
+- `--ppc-json results/ptq_screen/ppc_coverage.json`
+    
+- `--h0-scan-csv results/H0_scan/ptq-screen_H0_scan.csv`
+    
+- `--kappa-gal-csv results/ptq_screen/kappa_gal_per_galaxy.csv`
+    
+- `--kappa-gal-summary results/ptq_screen/kappa_gal_summary.json`
+    
+- `--kappa-prof-binned results/ptq_screen/kappa_profile_binned.csv`
+    
+- `--plateau-binned results/ptq_screen/plateau_binned.csv`
+    
+- `--stress-root results/stress --mask-root results/mask`
+    
+- `--closure-yaml results/ptq_screen/closure_test.yaml`
+    
+- `--outdir paper_outputs_v2`
+    
+
+> **Reminder:** 圖表皆以 **full-likelihood** 的 `AIC_full/BIC_full` 為準；手稿撰寫請引用 ΔAIC/ΔBIC（相對最佳模型）。
+
+---
+
+### 12.1 Manual per-figure recipes (quick cheatsheet)
+
+若你想針對單張圖快速重跑，流程如下（先產生各實驗的中間檔，再用生成腳本繪圖）：
+
+**ΔAIC/ΔBIC 柱狀圖（主表同時輸出）**
+
+```bash
+python scripts/make_paper_artifacts.py --outdir paper_outputs
+```
+
+**PPC 覆蓋率**
+
+```bash
+ptquat exp ppc --results results/ptq_screen --data dataset/sparc_tidy.csv
+python scripts/make_paper_artifacts.py \
+  --ppc-json results/ptq_screen/ppc_coverage.json --outdir paper_outputs
+```
+
+**H₀ 掃描圖**
+
+```bash
+ptquat exp H0 --model ptq-screen --data dataset/sparc_tidy.csv \
+  --outroot results/H0_scan --H0-list 60 67.4 70 73 76
+python scripts/make_paper_artifacts.py \
+  --h0-scan-csv results/H0_scan/ptq-screen_H0_scan.csv --outdir paper_outputs
+```
+
+**κ 檢核（per-galaxy 與半徑解析）**
+
+```bash
+ptquat exp kappa-gal  --results results/ptq_screen --omega-lambda 0.69 --eta 0.15
+ptquat exp kappa-prof --results results/ptq_screen --omega-lambda 0.69 --eta 0.15 --nbins 24
+python scripts/make_paper_artifacts.py \
+  --kappa-gal-csv results/ptq_screen/kappa_gal_per_galaxy.csv \
+  --kappa-gal-summary results/ptq_screen/kappa_gal_summary.json \
+  --kappa-prof-binned results/ptq_screen/kappa_profile_binned.csv \
+  --outdir paper_outputs
+```
+
+**Residual-acceleration plateau**
+
+```bash
+ptquat exp plateau --results results/ptq_screen --data dataset/sparc_tidy.csv
+python scripts/make_paper_artifacts.py \
+  --plateau-binned results/ptq_screen/plateau_binned.csv --outdir paper_outputs
+```
+
+**Stress / Mask 摘要表**
+
+```bash
+ptquat exp stress --model ptq-screen --data dataset/sparc_tidy.csv \
+  --scale-i 2 --scale-D 2 --outroot results/stress
+ptquat exp mask --model ptq-screen --data dataset/sparc_tidy.csv \
+  --rmin-kpc 2.0 --outroot results/mask
+python scripts/make_paper_artifacts.py \
+  --stress-root results/stress --mask-root results/mask --outdir paper_outputs
+```
+
+**Closure 摘要表**
+
+```bash
+ptquat exp closure --results results/ptq_screen --omega-lambda 0.69
+python scripts/make_paper_artifacts.py \
+  --closure-yaml results/ptq_screen/closure_test.yaml --outdir paper_outputs
+```
