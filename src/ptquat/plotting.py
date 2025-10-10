@@ -1,7 +1,12 @@
+# src/ptquat/plotting.py
 from __future__ import annotations
 import numpy as np
-import matplotlib.pyplot as plt
 from pathlib import Path
+
+# 使用無頭後端，避免 CI/無顯示環境錯誤
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
 def plot_rc(gal_name: str,
             r_kpc: np.ndarray,
@@ -36,7 +41,7 @@ def plot_ppc_hist(z_values: np.ndarray, outpath: Path):
     fig.savefig(outpath, dpi=160)
     plt.close(fig)
 
-def plot_residual_plateau(df_points: pd.DataFrame, df_binned: pd.DataFrame, outpath: Path):
+def plot_residual_plateau(df_points, df_binned, outpath: Path):
     """
     df_points: columns [r_kpc, delta_a]
     df_binned: columns [r_mid_kpc, q16, q50, q84, n]
