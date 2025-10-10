@@ -1,3 +1,4 @@
+# src/ptquat/fit_global.py
 from __future__ import annotations
 import argparse, json, math
 from pathlib import Path
@@ -8,35 +9,12 @@ import emcee
 import yaml
 
 from .data import load_tidy_sparc, GalaxyData
-#from .likelihood import build_covariance, gaussian_loglike  # keep existing gaussian impl
-from .likelihood import build_covariance, gaussian_loglike, student_t_loglike  # ← 加入 student_t_loglike
+from .likelihood import build_covariance, gaussian_loglike, student_t_loglike
 from .constants import H0_SI
 from .models import (
     model_v_ptq, model_v_ptq_split, model_v_baryon, model_v_mond, model_v_nfw1p,
     model_v_ptq_nu, model_v_ptq_screen
 )
-
-# ---------- local Student-t loglike (multivariate) ----------
-def student_t_loglike(y_obs: np.ndarray, y_mod: np.ndarray, C: np.ndarray, nu: float) -> float:
-    """
-    Multivariate Student-t log-likelihood with location=y_mod, scale=C, dof=nu.
-    Density ~ Gamma((nu+d)/2)/(Gamma(nu/2)*(nu*pi)^{d/2}*|C|^{1/2}) * (1 + z2/nu)^{-(nu+d)/2}
-    where z2 = (y-μ)^T C^{-1} (y-μ).
-    """
-    r = y_obs - y_mod
-    d = r.size
-    if nu <= 2.0:  # keep numerically safe & reasonable tails
-        nu = 2.0001
-    sign, logdet = np.linalg.slogdet(C)
-    if not np.isfinite(logdet) or sign <= 0:
-        return -np.inf
-    alpha = np.linalg.solve(C, r)
-    z2 = float(r @ alpha)
-    # log constants
-    from math import lgamma, log, pi
-    c0 = lgamma(0.5*(nu + d)) - lgamma(0.5*nu) - 0.5*d*log(nu*pi) - 0.5*logdet
-    return c0 - 0.5*(nu + d)*np.log1p(z2/nu)
-
 
 # ------------------------- 參數版型 -------------------------
 
@@ -342,10 +320,22 @@ def run(argv=None):
         lo, hi = logM_range
         p0[:, s:s+G] = rng.uniform(lo, hi, size=(nwalkers, G)); s += G
 
-    # ln sigma (always learn; we give weak prior in log_prior)
+    # ln sigma (always learn; weak prior in log_prior)
     sig0 = max(args.sigma_sys, 1e-3)
-    p0[:, s] = np.log(sig0); s += 1
+    # 重要修正：加入每個 walker 的微擾，避免初始態線性依賴
+    p0[:, s] = np.log(sig0) + rng.normal(0.0, 0.05, size=nwalkers)
+    s += 1
     assert s == k
+
+    # --- 初始 walkers 的條件數保險：若過大，施加極小抖動 ---
+    A = p0 - p0.mean(axis=0, keepdims=True)
+    try:
+        cn = np.linalg.cond(A)
+    except Exception:
+        cn = np.inf
+    if not np.isfinite(cn) or cn > 1e8:
+        p0 += rng.normal(0.0, 1e-3, size=p0.shape)
+        print(f"[init] Added tiny jitter to walkers (cond before={cn:.2e})")
 
     # backend
     backend = None
