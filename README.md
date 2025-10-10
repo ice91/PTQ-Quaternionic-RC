@@ -60,7 +60,7 @@ Columns in the tidy CSV include:
     
 - `nfw1p`: one halo parameter ($M_{200}$) per galaxy; concentration from a c–M power law (`--c0`, `--c-slope`).
     
-- `ptq` (linear): $(v=\sqrt{v_{\rm bar}^2 + (\epsilon cH_0),r})$. **Negative control** (ruled out by data).
+- `ptq` (linear): $(v=\sqrt{v_{\rm bar}^2 + (\epsilon cH_0)r})$. **Negative control** (ruled out by data).
     
 - `ptq-nu`: reuse MOND shape but set $(a_0=\epsilon cH_0)$ (ε global).
     
@@ -291,98 +291,62 @@ Produces `{results}/plateau_per_point.csv`, `{results}/plateau_binned.csv`, and 
 ## 11. Citation
 
 
+
 ---
 
-## 12. Paper figures & tables — **one-command build**
+## 12. Paper figures & tables — build script
 
-在完成「主六模型擬合」與（可選）各 robustness/closure/κ 實驗後，可以用單一腳本把**論文用表格與圖片**全部匯出到 `paper_outputs/`：
-
-```bash
-python scripts/make_paper_artifacts.py
-```
-
-**輸出包含：**
-
-- `model_compare.csv` / `model_compare.tex`（主表；含 ΔAIC/ΔBIC 與 Akaike weight）
-    
-- `fig_delta_AIC.png`, `fig_delta_BIC.png`
-    
-- `fig_ppc_coverage.png`（若已執行 `exp ppc`）
-    
-- `fig_h0_AIC.png`, `fig_h0_epsilon.png`（若已執行 `exp H0` 產生掃描 CSV）
-    
-- `fig_kappa_gal.png`, `fig_kappa_profile.png`（若已執行 `kappa-gal`/`kappa-prof`）
-    
-- `fig_plateau.png`（若已執行 `exp plateau`）
-    
-- `stress_mask_summary.csv` / `.tex`（若有 `results/stress` 與/或 `results/mask` 子目錄）
-    
-- `closure_summary.tex`（若有 `closure_test.yaml`）
-    
-
-**自訂模型—結果目錄對映（如果你的 results 路徑不同）：**
+完成主模型擬合後，可用單一腳本產出**論文用表格**與**重點圖**到指定資料夾。**此腳本需要明確提供 `--data --out --figdir --models`**：
 
 ```bash
+# Full (six models), Gaussian likelihood, quick smoke run
 python scripts/make_paper_artifacts.py \
-  --model "PTQ-screen=results/ptq_screen" \
-  --model "MOND=results/ejpc_mond" \
-  --model "PTQ-v=results/ptq_nu" \
-  --model "NFW-1p=results/ejpc_nfw1p" \
-  --model "PTQ=results/ejpc_main" \
-  --model "Baryon=results/ejpc_baryon" \
-  --outdir paper_outputs
+  --data dataset/sparc_tidy.csv \
+  --out results/ejpc_run \
+  --figdir paper_figs \
+  --models baryon mond nfw1p ptq ptq-nu ptq-screen \
+  --likelihood gauss \
+  --fast
 ```
 
-**其他常用參數：**
+**會產出：**
 
-- `--ppc-json results/ptq_screen/ppc_coverage.json`
+- **Per-model results**（在 `--out/<model>_<likelihood>/`）
     
-- `--h0-scan-csv results/H0_scan/ptq-screen_H0_scan.csv`
+    - `global_summary.yaml`, `per_galaxy_summary.csv`, 以及每個星系的 `plot_*.png`
+        
+    - 若執行診斷：`ppc_coverage.json`, `kappa_*`、`plateau_*` 相關 CSV/PNG、`closure_test.yaml`
+        
+- **比較表**（在 `--out/`）：
     
-- `--kappa-gal-csv results/ptq_screen/kappa_gal_per_galaxy.csv`
+    - `ejpc_model_compare.csv`（彙整 `AIC_full/BIC_full/χ²/k/N` 等）
+        
+- **圖檔彙整**（在 `--figdir/`）：
     
-- `--kappa-gal-summary results/ptq_screen/kappa_gal_summary.json`
-    
-- `--kappa-prof-binned results/ptq_screen/kappa_profile_binned.csv`
-    
-- `--plateau-binned results/ptq_screen/plateau_binned.csv`
-    
-- `--stress-root results/stress --mask-root results/mask`
-    
-- `--closure-yaml results/ptq_screen/closure_test.yaml`
-    
-- `--outdir paper_outputs_v2`
-    
+    - `plateau_<modeldir>.png`、`kappa_gal_<modeldir>.png`、`kappa_profile_<modeldir>.png`
+        
 
-> **Reminder:** 圖表皆以 **full-likelihood** 的 `AIC_full/BIC_full` 為準；手稿撰寫請引用 ΔAIC/ΔBIC（相對最佳模型）。
+> 預設會對 `ptq-screen`（若包含於 `--models`）執行診斷（plateau / PPC / κ / closure）；若未包含，則改對最後一個模型執行。  
+> 進階選項：`--likelihood t`、`--eta 0.15`、`--nbins 24`、`--omega-lambda 0.685`。  
+> `--skip-fetch` 僅為相容舊介面，現版本會被忽略。
 
 ---
 
-### 12.1 Manual per-figure recipes (quick cheatsheet)
+### 12.1 Quick recipes (per-figure)
 
-若你想針對單張圖快速重跑，流程如下（先產生各實驗的中間檔，再用生成腳本繪圖）：
-
-**ΔAIC/ΔBIC 柱狀圖（主表同時輸出）**
-
-```bash
-python scripts/make_paper_artifacts.py --outdir paper_outputs
-```
+若想針對單圖快速重跑，可直接呼叫 `ptquat exp ...` 產出中間檔；上面的 build script 會自動把主要 PNG 收集到 `--figdir`。
 
 **PPC 覆蓋率**
 
 ```bash
 ptquat exp ppc --results results/ptq_screen --data dataset/sparc_tidy.csv
-python scripts/make_paper_artifacts.py \
-  --ppc-json results/ptq_screen/ppc_coverage.json --outdir paper_outputs
 ```
 
-**H₀ 掃描圖**
+**H₀ 掃描**
 
 ```bash
 ptquat exp H0 --model ptq-screen --data dataset/sparc_tidy.csv \
   --outroot results/H0_scan --H0-list 60 67.4 70 73 76
-python scripts/make_paper_artifacts.py \
-  --h0-scan-csv results/H0_scan/ptq-screen_H0_scan.csv --outdir paper_outputs
 ```
 
 **κ 檢核（per-galaxy 與半徑解析）**
@@ -390,47 +354,45 @@ python scripts/make_paper_artifacts.py \
 ```bash
 ptquat exp kappa-gal  --results results/ptq_screen --omega-lambda 0.69 --eta 0.15
 ptquat exp kappa-prof --results results/ptq_screen --omega-lambda 0.69 --eta 0.15 --nbins 24
-python scripts/make_paper_artifacts.py \
-  --kappa-gal-csv results/ptq_screen/kappa_gal_per_galaxy.csv \
-  --kappa-gal-summary results/ptq_screen/kappa_gal_summary.json \
-  --kappa-prof-binned results/ptq_screen/kappa_profile_binned.csv \
-  --outdir paper_outputs
 ```
 
 **Residual-acceleration plateau**
 
 ```bash
 ptquat exp plateau --results results/ptq_screen --data dataset/sparc_tidy.csv
-python scripts/make_paper_artifacts.py \
-  --plateau-binned results/ptq_screen/plateau_binned.csv --outdir paper_outputs
 ```
 
-**Stress / Mask 摘要表**
+**Stress / Mask 摘要**
 
 ```bash
-ptquat exp stress --model ptq-screen --data dataset/sparc_tidy.csv \
-  --scale-i 2 --scale-D 2 --outroot results/stress
-ptquat exp mask --model ptq-screen --data dataset/sparc_tidy.csv \
-  --rmin-kpc 2.0 --outroot results/mask
-python scripts/make_paper_artifacts.py \
-  --stress-root results/stress --mask-root results/mask --outdir paper_outputs
+ptquat exp stress --model ptq-screen --data dataset/sparc_tidy.csv --scale-i 2 --scale-D 2 --outroot results/stress
+ptquat exp mask   --model ptq-screen --data dataset/sparc_tidy.csv --rmin-kpc 2.0 --outroot results/mask
 ```
 
-**Closure 摘要表**
+> 完成上述任一實驗後，再執行一次 `make_paper_artifacts.py`（同一組 `--out --figdir`）即可把新圖自動蒐集到 `--figdir`。
 
-```bash
-ptquat exp closure --results results/ptq_screen --omega-lambda 0.69
-python scripts/make_paper_artifacts.py \
-  --closure-yaml results/ptq_screen/closure_test.yaml --outdir paper_outputs
-```
-## Reproducing paper figures & tables
+---
+
+## Reproducing paper figures & tables (cheatsheet)
 
 ```bash
 # install
 pip install -e .
-# one-shot (full)
-python scripts/make_paper_artifacts.py
-# fast mode (for CI / tests)
-python scripts/make_paper_artifacts.py --fast --skip-fetch --data dataset/sparc_tidy.csv
-# customize models
-python scripts/make_paper_artifacts.py --models baryon mond ptq-screen
+
+# one-shot (six models, quick)
+python scripts/make_paper_artifacts.py \
+  --data dataset/sparc_tidy.csv \
+  --out results/ejpc_run \
+  --figdir paper_figs \
+  --models baryon mond nfw1p ptq ptq-nu ptq-screen \
+  --fast
+
+# full run (more steps/walkers)
+python scripts/make_paper_artifacts.py \
+  --data dataset/sparc_tidy.csv \
+  --out results/ejpc_run_full \
+  --figdir paper_figs_full \
+  --models baryon mond nfw1p ptq ptq-nu ptq-screen
+```
+
+---
