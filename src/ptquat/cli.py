@@ -44,6 +44,9 @@ def main(argv=None):
     p2.add_argument("--backend-hdf5", type=str, default=None)
     p2.add_argument("--thin-by", type=int, default=10)
     p2.add_argument("--resume", action="store_true")
+    p2.add_argument("--likelihood", choices=["gauss","t"], default="gauss")
+    p2.add_argument("--t-dof", type=float, default=8.0)
+
 
     # experiments group
     px = sub.add_parser("exp", help="Supplementary experiments & robustness")

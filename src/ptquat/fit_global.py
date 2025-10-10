@@ -8,7 +8,8 @@ import emcee
 import yaml
 
 from .data import load_tidy_sparc, GalaxyData
-from .likelihood import build_covariance, gaussian_loglike  # keep existing gaussian impl
+#from .likelihood import build_covariance, gaussian_loglike  # keep existing gaussian impl
+from .likelihood import build_covariance, gaussian_loglike, student_t_loglike  # ← 加入 student_t_loglike
 from .constants import H0_SI
 from .models import (
     model_v_ptq, model_v_ptq_split, model_v_baryon, model_v_mond, model_v_nfw1p,

@@ -423,3 +423,14 @@ ptquat exp closure --results results/ptq_screen --omega-lambda 0.69
 python scripts/make_paper_artifacts.py \
   --closure-yaml results/ptq_screen/closure_test.yaml --outdir paper_outputs
 ```
+## Reproducing paper figures & tables
+
+```bash
+# install
+pip install -e .
+# one-shot (full)
+python scripts/make_paper_artifacts.py
+# fast mode (for CI / tests)
+python scripts/make_paper_artifacts.py --fast --skip-fetch --data dataset/sparc_tidy.csv
+# customize models
+python scripts/make_paper_artifacts.py --models baryon mond ptq-screen
