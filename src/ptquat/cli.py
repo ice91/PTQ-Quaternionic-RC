@@ -47,7 +47,6 @@ def main(argv=None):
     p2.add_argument("--likelihood", choices=["gauss","t"], default="gauss")
     p2.add_argument("--t-dof", type=float, default=8.0)
 
-
     # experiments group
     px = sub.add_parser("exp", help="Supplementary experiments & robustness")
     sx = px.add_subparsers(dest="exp_cmd", required=True)
@@ -72,6 +71,8 @@ def main(argv=None):
     pst.add_argument("--nwalkers", default="4x")
     pst.add_argument("--steps", type=int, default=12000)
     pst.add_argument("--seed", type=int, default=42)
+    pst.add_argument("--likelihood", choices=["gauss","t"], default="gauss")
+    pst.add_argument("--t-dof", type=float, default=8.0)
 
     # exp mask
     pmk = sx.add_parser("mask", help="Mask inner radii r<rmin_kpc and re-fit")
@@ -86,6 +87,8 @@ def main(argv=None):
     pmk.add_argument("--nwalkers", default="4x")
     pmk.add_argument("--steps", type=int, default=12000)
     pmk.add_argument("--seed", type=int, default=42)
+    pmk.add_argument("--likelihood", choices=["gauss","t"], default="gauss")
+    pmk.add_argument("--t-dof", type=float, default=8.0)
 
     # exp H0
     ph0 = sx.add_parser("H0", help="Scan H0 sensitivity")
@@ -99,6 +102,8 @@ def main(argv=None):
     ph0.add_argument("--nwalkers", default="4x")
     ph0.add_argument("--steps", type=int, default=12000)
     ph0.add_argument("--seed", type=int, default=42)
+    ph0.add_argument("--likelihood", choices=["gauss","t"], default="gauss")
+    ph0.add_argument("--t-dof", type=float, default=8.0)
 
     # exp plateau
     ppl = sx.add_parser("plateau", help="Make stacked residual-acceleration plateau plot from a results dir")
@@ -166,6 +171,8 @@ def main(argv=None):
             f"--logM200-range={args.logM200_range}",
             f"--c0={args.c0}",
             f"--c-slope={args.c_slope}",
+            f"--likelihood={args.likelihood}",
+            f"--t-dof={args.t_dof}",
         ]
         + ([] if args.H0_kms_mpc is None else [f"--H0-kms-mpc={args.H0_kms_mpc}"])
         + ([] if args.a0_si is None else [f"--a0-si={args.a0_si}"])
@@ -184,7 +191,8 @@ def main(argv=None):
                 scale_i=args.scale_i, scale_D=args.scale_D,
                 prior=args.prior, sigma_sys=args.sigma_sys,
                 H0_kms_mpc=args.H0_kms_mpc, nwalkers=args.nwalkers,
-                steps=args.steps, seed=args.seed
+                steps=args.steps, seed=args.seed,
+                likelihood=args.likelihood, t_dof=args.t_dof
             )
             print(json.dumps(out, indent=2))
 
@@ -194,7 +202,8 @@ def main(argv=None):
                 rmin_kpc=args.rmin_kpc,
                 prior=args.prior, sigma_sys=args.sigma_sys,
                 H0_kms_mpc=args.H0_kms_mpc, nwalkers=args.nwalkers,
-                steps=args.steps, seed=args.seed
+                steps=args.steps, seed=args.seed,
+                likelihood=args.likelihood, t_dof=args.t_dof
             )
             print(json.dumps(out, indent=2))
 
@@ -202,7 +211,8 @@ def main(argv=None):
             df = EXP.scan_H0(
                 data_path=args.data, out_root=args.outroot, model=args.model,
                 H0_list=args.H0_list, prior=args.prior, sigma_sys=args.sigma_sys,
-                nwalkers=args.nwalkers, steps=args.steps, seed=args.seed
+                nwalkers=args.nwalkers, steps=args.steps, seed=args.seed,
+                likelihood=args.likelihood, t_dof=args.t_dof
             )
             print(df.to_string(index=False))
 

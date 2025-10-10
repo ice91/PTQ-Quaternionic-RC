@@ -2,7 +2,7 @@
 from __future__ import annotations
 import os, math, json, shutil, tempfile
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Any
 import numpy as np
 import pandas as pd
 import yaml
@@ -13,12 +13,10 @@ from .constants import H0_SI, KPC, KM
 from .models import (
     model_v_baryon, model_v_mond, model_v_nfw1p,
     model_v_ptq, model_v_ptq_split, model_v_ptq_nu, model_v_ptq_screen,
-    vbar_squared_kms2
+    vbar_squared_kms2, linear_term_kms2  # (cH0) r in (km/s)^2
 )
 from .fit_global import run as run_fit
 from .plotting import plot_residual_plateau, plot_ppc_hist
-from typing import Any
-from .models import linear_term_kms2  # (cH0) r in (km/s)^2
 
 
 # -------------------------------
@@ -40,7 +38,9 @@ def _call_fit(data_path: str,
               c_slope: float = -0.1,
               backend_hdf5: Optional[str] = None,
               thin_by: int = 10,
-              resume: bool = False) -> Dict:
+              resume: bool = False,
+              likelihood: str = "gauss",
+              t_dof: float = 8.0) -> Dict:
     argv = [
         f"--data-path={data_path}",
         f"--outdir={outdir}",
@@ -55,6 +55,8 @@ def _call_fit(data_path: str,
         f"--c0={c0}",
         f"--c-slope={c_slope}",
         f"--thin-by={thin_by}",
+        f"--likelihood={likelihood}",
+        f"--t-dof={t_dof}",
     ]
     if H0_kms_mpc is not None: argv.append(f"--H0-kms-mpc={H0_kms_mpc}")
     if a0_si is not None:      argv.append(f"--a0-si={a0_si}")
@@ -76,19 +78,6 @@ def ppc_check(results_dir: str, data_path: str, out_prefix: str = "ppc") -> dict
     Posterior(-like) predictive coverage check using median params from results_dir.
     Uses Student-t critical values if the fitted run used t-likelihood.
     """
-    import os, json
-    import numpy as np
-    import pandas as pd
-    import yaml
-    from pathlib import Path
-    from .data import load_tidy_sparc
-    from .models import (
-        model_v_ptq, model_v_ptq_nu, model_v_ptq_screen, model_v_ptq_split,
-        model_v_baryon, model_v_mond, model_v_nfw1p
-    )
-    from .constants import H0_SI
-    from .likelihood import build_covariance
-
     res = Path(results_dir)
     summ = yaml.safe_load(open(res/"global_summary.yaml"))
     per  = pd.read_csv(res/"per_galaxy_summary.csv").set_index("galaxy")
@@ -138,7 +127,8 @@ def ppc_check(results_dir: str, data_path: str, out_prefix: str = "ppc") -> dict
         elif model == "mond":
             def vfun(rk): return model_v_mond(U, a0_med, rk, g.v_disk, g.v_bulge, g.v_gas)
         elif model == "nfw1p":
-            def vfun(rk): return model_v_nfw1p(U, lM, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_SI)
+            # 修正：使用該次擬合的 H0_si，而非常數 H0_SI
+            def vfun(rk): return model_v_nfw1p(U, lM, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
         else:
             raise ValueError("unknown model")
 
@@ -381,8 +371,8 @@ def closure_test(results_dir: str,
         yaml.safe_dump(result, f)
     return result
 
-# ====== Kappa checks: per-galaxy & radius-resolved (append to end of experiments.py) ======
 
+# ====== Kappa checks: per-galaxy & radius-resolved ======
 
 def _get_Rd_kpc_safe(g: GalaxyData) -> float:
     """Try to read Rd from GalaxyData; fallback to r_peak(v_disk)/2.2."""
@@ -512,9 +502,7 @@ def kappa_per_galaxy(results_dir: str,
             eps_lo  = float(np.percentile(eps_samp, 16))
             eps_hi  = float(np.percentile(eps_samp, 84))
         except np.linalg.LinAlgError:
-            # 共變異矩陣不良時退回單點 sigma 近似
             sig_i = float(np.sqrt(np.clip(np.diag(C)[i_star], 1e-30, np.inf)))
-            z = (v_obs[i_star] - v_mod[i_star]) / sig_i
             eps_med = (v_obs[i_star]**2 - vbar2_i) / denom
             eps_lo  = eps_med - (2*v_mod[i_star]*sig_i)/denom
             eps_hi  = eps_med + (2*v_mod[i_star]*sig_i)/denom
@@ -550,7 +538,6 @@ def kappa_per_galaxy(results_dir: str,
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots(figsize=(5.2, 4.2), dpi=150)
     ax.scatter(df["kappa_pred"], df["eps_eff_over_epscos"], s=18, alpha=0.7, label="galaxies")
-    # 1:1 線與 best-fit
     xgrid = np.linspace(0.0, max(1.05*df["kappa_pred"].max(), 0.2), 200)
     ax.plot(xgrid, xgrid, linestyle="--", linewidth=1.2, label="y = x")
     if np.isfinite(a):
@@ -651,7 +638,7 @@ def kappa_radius_resolved(results_dir: str,
     bin_csv = Path(results_dir)/f"{out_prefix}_binned.csv"
     binned.to_csv(bin_csv, index=False)
 
-    # 預測曲線 y_pred = eta / x  (若 x=r_kpc，則用樣本 Rd 的中位數換成 eta*Rd_med/x)
+    # 預測曲線 y_pred
     if x_kind == "r_over_Rd":
         xgrid = np.linspace(max(x_min, 1e-3), x_max, 400)
         ypred = eta / np.maximum(xgrid, 1e-6)
