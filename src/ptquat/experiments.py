@@ -443,10 +443,10 @@ def kappa_per_galaxy(results_dir: str,
                      y_source: str = "model",  # "model" | "obs" | "obs-debias"
                      out_prefix: str = "kappa_gal") -> Dict[str, Any]:
     """
-    檢核A：以特徵半徑 r* 做 y 對 x 的迴歸。
+    檢核A（主結果）：以特徵半徑 r*（首度達到 frac_vmax·vmax）做 y 對 x 的迴歸。
       x = kappa_pred = eta * Rd / r*
       y = eps_eff/eps_cos；依 y_source 決定來源：
-        - "model":    y = (v_mod^2 - v_bar^2)/((cH0) r*) / eps_cos   ← 論文主圖建議
+        - "model":    y = (v_mod^2 - v_bar^2)/((cH0) r*) / eps_cos   ← 論文主圖建議（避免 +sigma^2 偏置）
         - "obs":      y = (v_obs^2 - v_bar^2)/((cH0) r*) / eps_cos    （含噪平方偏置）
         - "obs-debias": 同上但扣掉點位變異 sigma_v^2（近似去偏）
     迴歸 y = a x + b；圖上同時標示 k = a*eta 方便閱讀。
@@ -539,7 +539,7 @@ def kappa_per_galaxy(results_dir: str,
             kappa_pred=kappa_pred
         ))
 
-    # === 關鍵修正：只對必需欄位過濾，避免因 p16/p84 為 NaN（model 模式）而整列被丟棄 ===
+    # 只對必需欄位過濾（model 模式的 p16/p84 允許 NaN）
     df = pd.DataFrame(rows)
     df = df.replace([np.inf, -np.inf], np.nan).dropna(subset=["kappa_pred", "eps_eff_over_epscos"])
 
@@ -592,13 +592,21 @@ def kappa_radius_resolved(results_dir: str,
                           nbins: int = 24,
                           min_per_bin: int = 20,
                           x_kind: str = "r_over_Rd",
-                          out_prefix: str = "kappa_profile") -> Tuple[pd.DataFrame, Path]:
+                          out_prefix: str = "kappa_profile",
+                          x_markers: Optional[List[float]] = None) -> Tuple[pd.DataFrame, Path]:
     """
-    檢核 B：半徑解析的疊圖。
+    檢核B（穩健性）：半徑解析的疊圖。
       y(r) = eps_eff(r)/eps_cos,  其中 eps_eff(r) = [v_obs^2 - v_bar^2]/[(cH0) r]
       x = r/Rd (預設；也可選 x=r_kpc)
-    產出 per-point 與 binned 的 CSV 與圖。
+    內建在 x = 2.2（即 r*=2.2 Rd）做「幾何定義半徑」的穩健性標記與數值對照：
+      - 會在圖上畫出 x=2.2 的垂線
+      - 計算堆疊中位數 y_med(x=2.2) 與理論預測 y_pred=eta/x
+      - 將檢查結果寫入 {out_prefix}_xcheck.json
     """
+    if x_markers is None:
+        # 預設就檢查 r*=2.2 Rd
+        x_markers = [2.2] if x_kind == "r_over_Rd" else []
+
     res = yaml.safe_load(open(Path(results_dir)/"global_summary.yaml"))
     model = res["model"]
     H0_si = float(res.get("H0_si", H0_SI))
@@ -616,7 +624,7 @@ def kappa_radius_resolved(results_dir: str,
         if name not in per.index:
             continue
         vfun, vbar2 = _make_vfun(model, H0_si, per.loc[name], g, eps, q, a0)
-        v_mod = vfun(g.r_kpc)  # only used for C; eps_eff 用觀測值
+        v_mod = vfun(g.r_kpc)  # only used for C；eps_eff 用觀測值
         C = build_covariance(v_mod, g.r_kpc, g.v_err, g.D_Mpc, g.D_err_Mpc,
                              g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med)
         # 單點標準差（用於濾除極端不確定點）
@@ -670,7 +678,7 @@ def kappa_radius_resolved(results_dir: str,
         ypred = (eta * Rd_med) / np.maximum(xgrid, 1e-6)
         pred_label = r"$\eta\,R_{d,{\rm med}}/r$"
 
-    # 畫圖
+    # 圖與 x=2.2 檢查
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots(figsize=(5.6, 4.0), dpi=150)
     ax.plot(xgrid, ypred, linestyle="--", linewidth=1.2, label=pred_label)
@@ -679,10 +687,35 @@ def kappa_radius_resolved(results_dir: str,
     ax.set_xlabel("x = r/Rd" if x_kind=="r_over_Rd" else "r [kpc]")
     ax.set_ylabel(r"$\varepsilon_{\rm eff}(r)/\varepsilon_{\rm cos}$")
     ax.grid(True, alpha=0.25)
+
+    xcheck = {}
+    if x_kind == "r_over_Rd":
+        # 線性內插 binned median 取得 y_med at 指定 x
+        def _interp(xs, ys, x0):
+            xs = np.asarray(xs); ys = np.asarray(ys)
+            m = np.isfinite(xs) & np.isfinite(ys)
+            if m.sum() < 2 or not (xs[m].min() <= x0 <= xs[m].max()):
+                return np.nan
+            return float(np.interp(x0, xs[m], ys[m]))
+        for x0 in x_markers:
+            y_med = _interp(binned["x_mid"], binned["q50"], float(x0))
+            y_th  = float(eta / max(x0, 1e-6))
+            xcheck[str(x0)] = dict(y_median=y_med, y_pred=y_th, delta=y_med - y_th)
+            # 視覺標記
+            ax.axvline(x0, linestyle=":", linewidth=1.0, alpha=0.6)
+            if np.isfinite(y_med):
+                ax.scatter([x0],[y_med], s=28, zorder=5, label=f"median @ x={x0:g}")
+            ax.scatter([x0],[y_th], s=28, marker="x", zorder=5, label=f"pred @ x={x0:g}")
+
+    # 圖例與輸出
     ax.legend()
     out_png = Path(results_dir)/f"{out_prefix}.png"
     fig.tight_layout()
     fig.savefig(out_png)
     plt.close(fig)
+
+    # 寫出 x=2.2 檢查摘要
+    with open(Path(results_dir)/f"{out_prefix}_xcheck.json","w") as f:
+        json.dump(dict(x_kind=x_kind, eta=eta, xcheck=xcheck), f, indent=2)
 
     return binned, out_png
