@@ -505,7 +505,9 @@ def kappa_per_galaxy(results_dir: str,
 
         # Monte Carlo：以 v_obs 為中心抽樣，反映觀測不確定度
         try:
-            Vs = rng.multivariate_normal(mean=v_obs, cov=C, size=nsamp)  # ← 改成以觀測為中心
+            #Vs = rng.multivariate_normal(mean=v_obs, cov=C, size=nsamp)  # ← 改成以觀測為中心
+            #eps_samp = (Vs[:, i_star]**2 - vbar2_i) / denom
+            Vs = rng.multivariate_normal(mean=np.asarray(g.v_obs), cov=C, size=nsamp)
             eps_samp = (Vs[:, i_star]**2 - vbar2_i) / denom
             eps_med = float(np.percentile(eps_samp, 50))
             eps_lo  = float(np.percentile(eps_samp, 16))
