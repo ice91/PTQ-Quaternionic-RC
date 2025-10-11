@@ -48,8 +48,12 @@ def main(argv=None):
     p2.add_argument("--t-dof", type=float, default=8.0)
 
     # experiments group
-    px = sub.add_parser("exp", help="Supplementary experiments & robustness")
-    sx = px.add_subparsers(dest="exp_cmd", required=True)
+    px = sub.add_subparsers(dest="cmd", required=False)  # keep main layout
+    px = ap.add_subparsers(dest="exp_cmd", required=False)
+
+    # 兼容舊用法：使用單一 "exp" 子命令
+    exp = sub.add_parser("exp", help="Supplementary experiments & robustness")
+    sx = exp.add_subparsers(dest="exp_cmd", required=True)
 
     # exp ppc
     ppc = sx.add_parser("ppc", help="Posterior(-like) predictive check on an existing results dir")
@@ -119,21 +123,22 @@ def main(argv=None):
     group.add_argument("--epsilon-cos", type=float, default=None)
     group.add_argument("--omega-lambda", type=float, default=None)
 
-    # exp kappa-gal (per-galaxy kappa check)
-    kgal = sx.add_parser("kappa-gal", help="Per-galaxy kappa check: eps_eff(r*)/eps_cos vs kappa_pred=eta*Rd/r*")
+    # exp kappa-gal（每星系）
+    kgal = sx.add_parser("kappa-gal", help="Per-galaxy kappa check")
     kgal.add_argument("--results", required=True)
     kgal.add_argument("--data", default="dataset/sparc_tidy.csv")
     kgal.add_argument("--eta", type=float, default=0.15)
     kgal.add_argument("--frac-vmax", type=float, default=0.9)
     kgal.add_argument("--nsamp", type=int, default=300)
     kgal.add_argument("--prefix", default="kappa_gal")
-    # NEW: source of y
     kgal.add_argument("--y-source", choices=["model","obs","obs-debias"], default="model")
+    kgal.add_argument("--eps-norm", choices=["fit","cos"], default="fit")
+    kgal.add_argument("--rstar-from", choices=["model","obs"], default="model")
     grp_k = kgal.add_mutually_exclusive_group(required=False)
     grp_k.add_argument("--epsilon-cos", type=float, default=None)
     grp_k.add_argument("--omega-lambda", type=float, default=None)
 
-    # exp kappa-prof (radius-resolved stacked profile)
+    # exp kappa-prof（半徑解析）
     kpro = sx.add_parser("kappa-prof", help="Radius-resolved stacked kappa profile")
     kpro.add_argument("--results", required=True)
     kpro.add_argument("--data", default="dataset/sparc_tidy.csv")
@@ -141,6 +146,7 @@ def main(argv=None):
     kpro.add_argument("--nbins", type=int, default=24)
     kpro.add_argument("--min-per-bin", type=int, default=20)
     kpro.add_argument("--x-kind", choices=["r_over_Rd","r_kpc"], default="r_over_Rd")
+    kpro.add_argument("--eps-norm", choices=["fit","cos"], default="fit")
     kpro.add_argument("--prefix", default="kappa_profile")
     grp_k2 = kpro.add_mutually_exclusive_group(required=False)
     grp_k2.add_argument("--epsilon-cos", type=float, default=None)
@@ -231,7 +237,9 @@ def main(argv=None):
                 results_dir=args.results, data_path=args.data,
                 eta=args.eta, frac_vmax=args.frac_vmax, nsamp=args.nsamp,
                 epsilon_cos=args.epsilon_cos, omega_lambda=args.omega_lambda,
-                y_source=args.y_source,        # keep plumbed through
+                y_source=args.y_source,
+                eps_norm=args.eps_norm,
+                rstar_from=args.rstar_from,
                 out_prefix=args.prefix
             )
             print(json.dumps(out, indent=2))
@@ -241,6 +249,6 @@ def main(argv=None):
                 results_dir=args.results, data_path=args.data,
                 eta=args.eta, epsilon_cos=args.epsilon_cos, omega_lambda=args.omega_lambda,
                 nbins=args.nbins, min_per_bin=args.min_per_bin,
-                x_kind=args.x_kind, out_prefix=args.prefix
+                x_kind=args.x_kind, eps_norm=args.eps_norm, out_prefix=args.prefix
             )
             print(f"Saved: {png}")
