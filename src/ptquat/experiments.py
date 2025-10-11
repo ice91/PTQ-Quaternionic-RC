@@ -36,7 +36,7 @@ def _call_fit(data_path: str,
               logM200_range: str = "9,13",
               c0: float = 10.0,
               c_slope: float = -0.1,
-              backend_hdf5: Optional[str] = None,  # ← 型別修正
+              backend_hdf5: Optional[float] = None,  # ← 型別修正
               thin_by: int = 10,
               resume: bool = False) -> Dict:
     argv = [
@@ -446,9 +446,9 @@ def kappa_per_galaxy(results_dir: str,
     檢核A（主結果）：以特徵半徑 r*（首度達到 frac_vmax·vmax）做 y 對 x 的迴歸。
       x = kappa_pred = eta * Rd / r*
       y = eps_eff/eps_cos；依 y_source 決定來源：
-        - "model":    y = (v_mod^2 - v_bar^2)/((cH0) r*) / eps_cos   ← 論文主圖建議（避免 +sigma^2 偏置）
-        - "obs":      y = (v_obs^2 - v_bar^2)/((cH0) r*) / eps_cos    （含噪平方偏置）
-        - "obs-debias": 同上但扣掉點位變異 sigma_v^2（近似去偏）
+        - "model":    y = (v_mod^2 - v_bar^2)/((cH0) r*) / eps_cos   ← 以模型曲線選 r*（避免 +sigma^2 偏置）
+        - "obs":      y = (v_obs^2 - v_bar^2)/((cH0) r*) / eps_cos    ← 以觀測曲線選 r*
+        - "obs-debias": 同上但扣掉單點變異 sigma_v^2（近似去偏；亦以觀測曲線選 r*）
     迴歸 y = a x + b；圖上同時標示 k = a*eta 方便閱讀。
     """
     assert y_source in ("model", "obs", "obs-debias")
@@ -476,14 +476,19 @@ def kappa_per_galaxy(results_dir: str,
         r     = g.r_kpc
         if len(r) < 3:
             continue
-        vmax = float(np.nanmax(v_obs))
-        idxs = np.where(v_obs >= frac_vmax * vmax)[0]
-        i_star = int(idxs[0]) if len(idxs)>0 else int(np.floor(0.8*(len(r)-1)))
+
+        # 先算模型曲線（用於協方差；也可能用於選 r*）
+        v_mod = vfun(r)
+
+        # 與 y 的來源一致地選 r*
+        v_ref = v_mod if (y_source == "model") else v_obs
+        vmax  = float(np.nanmax(v_ref))
+        idxs  = np.where(v_ref >= frac_vmax * vmax)[0]
+        i_star = int(idxs[0]) if len(idxs) > 0 else int(np.nanargmax(v_ref))
         i_star = max(0, min(i_star, len(r)-1))
         r_star = float(r[i_star])
 
-        # 協方差與各定量
-        v_mod = vfun(r)
+        # 協方差與各定量（注意：C 仍以 v_mod 建立）
         C = build_covariance(v_mod, r, g.v_err, g.D_Mpc, g.D_err_Mpc,
                              g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med)
         sig_i2 = float(np.clip(np.diag(C)[i_star], 1e-30, np.inf))
@@ -697,7 +702,7 @@ def kappa_radius_resolved(results_dir: str,
             if m.sum() < 2 or not (xs[m].min() <= x0 <= xs[m].max()):
                 return np.nan
             return float(np.interp(x0, xs[m], ys[m]))
-        for x0 in x_markers:
+        for x0 in (x_markers or []):
             y_med = _interp(binned["x_mid"], binned["q50"], float(x0))
             y_th  = float(eta / max(x0, 1e-6))
             xcheck[str(x0)] = dict(y_median=y_med, y_pred=y_th, delta=y_med - y_th)
