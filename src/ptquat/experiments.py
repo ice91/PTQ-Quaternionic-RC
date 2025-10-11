@@ -440,98 +440,101 @@ def kappa_per_galaxy(results_dir: str,
                      epsilon_cos: Optional[float] = None,
                      omega_lambda: Optional[float] = None,
                      nsamp: int = 300,
-                     y_source: str = "model",  # "model" | "obs" | "obs-debias"
+                     y_source: str = "model",      # "model" | "obs" | "obs-debias"
+                     eps_norm: str = "fit",        # "fit" | "cos"
+                     rstar_from: str = "model",    # "model" | "obs"
                      out_prefix: str = "kappa_gal") -> Dict[str, Any]:
     """
-    檢核A（主結果）：以特徵半徑 r*（首度達到 frac_vmax·vmax）做 y 對 x 的迴歸。
+    檢核A：以特徵半徑 r* 做 y 對 x 的迴歸。
       x = kappa_pred = eta * Rd / r*
-      y = eps_eff/eps_cos；依 y_source 決定來源：
-        - "model":    y = (v_mod^2 - v_bar^2)/((cH0) r*) / eps_cos   ← 以模型曲線選 r*（避免 +sigma^2 偏置）
-        - "obs":      y = (v_obs^2 - v_bar^2)/((cH0) r*) / eps_cos    ← 以觀測曲線選 r*
-        - "obs-debias": 同上但**只扣測量變異** sigma_meas^2（近似去偏；仍以觀測曲線選 r*）
-    迴歸 y = a x + b；圖上同時標示 k = a*eta 方便閱讀。
+      y = eps_eff / eps_den
+        - eps_den = epsilon_median (eps_norm=fit) 或 ε_cos (eps_norm=cos)
+      y_source 決定 eps_eff 來源；rstar_from 決定 r* 用模型或觀測曲線選點。
     """
     assert y_source in ("model", "obs", "obs-debias")
+    assert eps_norm in ("fit", "cos")
+    assert rstar_from in ("model", "obs")
+
     res = yaml.safe_load(open(Path(results_dir)/"global_summary.yaml"))
-    model = res["model"]
-    H0_si = float(res.get("H0_si", H0_SI))
+    model  = res["model"]
+    H0_si  = float(res.get("H0_si", H0_SI))
     sig_med = float(res["sigma_sys_median"])
-    eps = res.get("epsilon_median")
-    q   = res.get("q_median")
-    a0  = res.get("a0_median")
-    per = pd.read_csv(Path(results_dir)/"per_galaxy_summary.csv").set_index("galaxy")
+    eps_fit_global = float(res.get("epsilon_median")) if res.get("epsilon_median") is not None else np.nan
+    q    = res.get("q_median")
+    a0   = res.get("a0_median")
+    per  = pd.read_csv(Path(results_dir)/"per_galaxy_summary.csv").set_index("galaxy")
 
-    eps_cos = _eps_cos_from_args(epsilon_cos, omega_lambda)
+    # 分母選擇
+    if eps_norm == "fit":
+        eps_den = float(eps_fit_global)
+    else:  # "cos"
+        eps_den = _eps_cos_from_args(epsilon_cos, omega_lambda)
+    if not np.isfinite(eps_den) or eps_den == 0.0:
+        raise ValueError("Invalid epsilon denominator (eps_den). Check --eps-norm / omega-lambda / epsilon-cos.")
+
     gdict = load_tidy_sparc(data_path)
-
     rng = np.random.default_rng(1234)
     rows = []
 
     for name, g in sorted(gdict.items()):
         if name not in per.index:
             continue
-        vfun, vbar2 = _make_vfun(model, H0_si, per.loc[name], g, eps, q, a0)
+        vfun, vbar2 = _make_vfun(model, H0_si, per.loc[name], g, res.get("epsilon_median"), q, a0)
 
         v_obs = g.v_obs
         r     = g.r_kpc
         if len(r) < 3:
             continue
 
-        # 先算模型曲線（用於協方差；也可能用於選 r*）
         v_mod = vfun(r)
 
-        # 與 y 的來源一致地選 r*（model 用 v_mod；obs/obs-debias 用 v_obs）
-        v_ref = v_mod if (y_source == "model") else v_obs
-        vmax  = float(np.nanmax(v_ref))
-        idxs  = np.where(v_ref >= frac_vmax * vmax)[0]
-        i_star = int(idxs[0]) if len(idxs) > 0 else int(np.nanargmax(v_ref))
+        # r* 的選擇與 y_source 無關，由 rstar_from 控制
+        v_for_rstar = v_mod if (rstar_from == "model") else v_obs
+        vmax  = float(np.nanmax(v_for_rstar))
+        idxs  = np.where(v_for_rstar >= frac_vmax * vmax)[0]
+        i_star = int(idxs[0]) if len(idxs) > 0 else int(np.nanargmax(v_for_rstar))
         i_star = max(0, min(i_star, len(r)-1))
         r_star = float(r[i_star])
 
-        # 協方差：抽樣用完整 C（含 sigma_sys）；去偏用只含測量變異的 C_meas
+        # 協方差：抽樣用完整 C；去偏時用只含測量變異的 C_meas
         C = build_covariance(v_mod, r, g.v_err, g.D_Mpc, g.D_err_Mpc,
                              g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med)
         C_meas = build_covariance(v_mod, r, g.v_err, g.D_Mpc, g.D_err_Mpc,
                                   g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=0.0)
         sig_i2_meas = float(np.clip(np.diag(C_meas)[i_star], 1e-30, np.inf))
 
-        denom  = float(linear_term_kms2(1.0, np.asarray([r_star]), H0_si=H0_si)[0])
+        denom   = float(linear_term_kms2(1.0, np.asarray([r_star]), H0_si=H0_si)[0])   # (cH0) r*
         vbar2_i = float(vbar2[i_star])
 
-        # y 的來源
+        # y_source：決定 eps_eff 的估計方式
         if y_source == "model":
-            # 模型驗證：直接用模型預測，不做 MC；不受噪音平方偏置影響
-            eps_med = (v_mod[i_star]**2 - vbar2_i) / denom
+            eps_eff_med = (v_mod[i_star]**2 - vbar2_i) / denom
             eps_lo = np.nan; eps_hi = np.nan
-
         elif y_source == "obs":
-            # 完全資料驅動：以觀測為中心抽樣（會含 +sigma^2 偏置）
             try:
                 Vs = rng.multivariate_normal(mean=v_obs, cov=C, size=nsamp)
                 eps_samp = (Vs[:, i_star]**2 - vbar2_i) / denom
-                eps_med = float(np.percentile(eps_samp, 50))
-                eps_lo  = float(np.percentile(eps_samp, 16))
-                eps_hi  = float(np.percentile(eps_samp, 84))
+                eps_eff_med = float(np.percentile(eps_samp, 50))
+                eps_lo      = float(np.percentile(eps_samp, 16))
+                eps_hi      = float(np.percentile(eps_samp, 84))
             except np.linalg.LinAlgError:
                 sig_i = float(np.sqrt(np.clip(np.diag(C)[i_star], 1e-30, np.inf)))
-                eps_med = (v_obs[i_star]**2 - vbar2_i) / denom
-                eps_lo  = eps_med - (2*v_obs[i_star]*sig_i)/denom
-                eps_hi  = eps_med + (2*v_obs[i_star]*sig_i)/denom
-
-        else:  # "obs-debias"（方案A）：僅扣「測量變異」sig_i2_meas
+                eps_eff_med = (v_obs[i_star]**2 - vbar2_i) / denom
+                eps_lo  = eps_eff_med - (2*v_obs[i_star]*sig_i)/denom
+                eps_hi  = eps_eff_med + (2*v_obs[i_star]*sig_i)/denom
+        else:  # "obs-debias"：只扣測量變異
             try:
                 Vs = rng.multivariate_normal(mean=v_obs, cov=C, size=nsamp)
                 eps_samp = ((Vs[:, i_star]**2 - sig_i2_meas) - vbar2_i) / denom
-                eps_med = float(np.percentile(eps_samp, 50))
-                eps_lo  = float(np.percentile(eps_samp, 16))
-                eps_hi  = float(np.percentile(eps_samp, 84))
+                eps_eff_med = float(np.percentile(eps_samp, 50))
+                eps_lo      = float(np.percentile(eps_samp, 16))
+                eps_hi      = float(np.percentile(eps_samp, 84))
             except np.linalg.LinAlgError:
-                eps_med = ((v_obs[i_star]**2 - sig_i2_meas) - vbar2_i) / denom
-                # 置信區間仍用完整 C 估近似尺度
+                eps_eff_med = ((v_obs[i_star]**2 - sig_i2_meas) - vbar2_i) / denom
                 sig_i = float(np.sqrt(np.clip(np.diag(C)[i_star], 1e-30, np.inf)))
                 base  = max(v_obs[i_star]**2 - sig_i2_meas, 0.0)**0.5
-                eps_lo  = eps_med - (2*base*sig_i)/denom
-                eps_hi  = eps_med + (2*base*sig_i)/denom
+                eps_lo  = eps_eff_med - (2*base*sig_i)/denom
+                eps_hi  = eps_eff_med + (2*base*sig_i)/denom
 
         Rd = _get_Rd_kpc_safe(g)
         kappa_pred = float(eta * Rd / r_star)
@@ -540,51 +543,54 @@ def kappa_per_galaxy(results_dir: str,
             galaxy=name,
             r_star_kpc=r_star,
             Rd_kpc=Rd,
-            eps_eff_med=eps_med,
+            eps_eff_med=eps_eff_med,
             eps_eff_p16=eps_lo,
             eps_eff_p84=eps_hi,
-            eps_eff_over_epscos=eps_med/eps_cos,
+            eps_eff_over_epsden=eps_eff_med/eps_den,
             kappa_pred=kappa_pred
         ))
 
-    # 只對必需欄位過濾（model 模式的 p16/p84 允許 NaN）
+    # 組表、輸出
     df = pd.DataFrame(rows)
-    df = df.replace([np.inf, -np.inf], np.nan).dropna(subset=["kappa_pred", "eps_eff_over_epscos"])
+    df = df.replace([np.inf, -np.inf], np.nan).dropna(subset=["kappa_pred", "eps_eff_over_epsden"])
 
     out_csv = Path(results_dir)/f"{out_prefix}_per_galaxy.csv"
     df.to_csv(out_csv, index=False)
 
-    # 線性回歸 y = a x + b（OLS）
+    # OLS: y = a x + b
     if len(df) >= 2:
-        a, b = np.polyfit(df["kappa_pred"].values, df["eps_eff_over_epscos"].values, 1)
+        a, b = np.polyfit(df["kappa_pred"].values, df["eps_eff_over_epsden"].values, 1)
         yhat = a*df["kappa_pred"].values + b
-        r2 = float(1.0 - np.sum((df["eps_eff_over_epscos"].values - yhat)**2) /
-                          np.sum((df["eps_eff_over_epscos"].values - df["eps_eff_over_epscos"].mean())**2))
+        r2 = float(1.0 - np.sum((df["eps_eff_over_epsden"].values - yhat)**2) /
+                          np.sum((df["eps_eff_over_epsden"].values - df["eps_eff_over_epsden"].mean())**2))
+        k_est = a*eta
     else:
-        a = b = r2 = np.nan
+        a = b = r2 = k_est = np.nan
 
-    # 畫圖（同時標註 k = a*eta）
+    # 圖
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots(figsize=(5.2, 4.2), dpi=150)
-    ax.scatter(df["kappa_pred"], df["eps_eff_over_epscos"], s=18, alpha=0.7, label="galaxies")
+    ax.scatter(df["kappa_pred"], df["eps_eff_over_epsden"], s=18, alpha=0.7, label="galaxies")
     xgrid = np.linspace(0.0, max(1.05*df["kappa_pred"].max(), 0.2), 200) if len(df)>0 else np.linspace(0.0, 0.2, 200)
     ax.plot(xgrid, xgrid, linestyle="--", linewidth=1.2, label="y = x")
     if np.isfinite(a):
-        k_est = a*eta
         ax.plot(xgrid, a*xgrid + b, linewidth=1.4,
                 label=f"fit: y={a:.2f}x+{b:.2f}, R²={r2:.2f}, k≈{k_est:.2f}")
     ax.set_xlabel(r"$\kappa_{\rm pred}=\eta\,R_d/r_\ast$")
-    ax.set_ylabel(r"$\varepsilon_{\rm eff}(r_\ast)/\varepsilon_{\rm cos}$")
-    ax.legend()
-    ax.grid(True, alpha=0.25)
+    ylab_den = r"\varepsilon_{\rm fit}" if eps_norm=="fit" else r"\varepsilon_{\rm cos}"
+    ax.set_ylabel(rf"$\varepsilon_{{\rm eff}}(r_\ast)/{ylab_den}$")
+    ax.legend(); ax.grid(True, alpha=0.25)
     out_png = Path(results_dir)/f"{out_prefix}.png"
     fig.tight_layout(); fig.savefig(out_png); plt.close(fig)
 
+    # 總結（沿用你之前的鍵值，方便對照）
     summ = dict(
         N=len(df),
-        eps_cos=eps_cos, eta=eta, frac_vmax=frac_vmax,
-        slope=a, intercept=b, R2=r2, k_est=(a*eta if np.isfinite(a) else np.nan),
-        y_source=y_source,
+        eta=eta, frac_vmax=frac_vmax, y_source=y_source,
+        slope=a, intercept=b, R2=r2, k_est=k_est,
+        eps_fit=eps_fit_global,
+        eps_den=eps_den,
+        ratio_epsfit_over_epsden=(float(eps_fit_global)/float(eps_den) if (np.isfinite(eps_fit_global) and np.isfinite(eps_den) and eps_den!=0) else np.nan),
         csv=str(out_csv), png=str(out_png)
     )
     with open(Path(results_dir)/f"{out_prefix}_summary.json","w") as f:
@@ -600,53 +606,50 @@ def kappa_radius_resolved(results_dir: str,
                           nbins: int = 24,
                           min_per_bin: int = 20,
                           x_kind: str = "r_over_Rd",
+                          eps_norm: str = "fit",         # 新增
                           out_prefix: str = "kappa_profile",
                           x_markers: Optional[List[float]] = None) -> Tuple[pd.DataFrame, Path]:
-    """
-    檢核B（穩健性）：半徑解析的疊圖。
-      y(r) = eps_eff(r)/eps_cos,  其中 eps_eff(r) = [v_obs^2 - v_bar^2]/[(cH0) r]
-      x = r/Rd (預設；也可選 x=r_kpc)
-    內建在 x = 2.2（即 r*=2.2 Rd）做「幾何定義半徑」的穩健性標記與數值對照：
-      - 會在圖上畫出 x=2.2 的垂線
-      - 計算堆疊中位數 y_med(x=2.2) 與理論預測 y_pred=eta/x
-      - 將檢查結果寫入 {out_prefix}_xcheck.json
-    """
-    if x_markers is None:
-        # 預設就檢查 r*=2.2 Rd
-        x_markers = [2.2] if x_kind == "r_over_Rd" else []
+    assert eps_norm in ("fit","cos")
 
     res = yaml.safe_load(open(Path(results_dir)/"global_summary.yaml"))
     model = res["model"]
     H0_si = float(res.get("H0_si", H0_SI))
     sig_med = float(res["sigma_sys_median"])
-    eps = res.get("epsilon_median")
+    eps_fit_global = float(res.get("epsilon_median")) if res.get("epsilon_median") is not None else np.nan
     q   = res.get("q_median")
     a0  = res.get("a0_median")
-    per = pd.read_csv(Path(results_dir)/"per_galaxy_summary.csv").set_index("galaxy")
+    per = pd.read_csv(Path(results_dir) / "per_galaxy_summary.csv").set_index("galaxy")
 
-    eps_cos = _eps_cos_from_args(epsilon_cos, omega_lambda)
+    # 分母
+    if eps_norm == "fit":
+        eps_den = float(eps_fit_global)
+    else:
+        eps_den = _eps_cos_from_args(epsilon_cos, omega_lambda)
+    if not np.isfinite(eps_den) or eps_den == 0.0:
+        raise ValueError("Invalid epsilon denominator (eps_den) for kappa_profile.")
+
     gdict = load_tidy_sparc(data_path)
-
     pts = []
     for name, g in sorted(gdict.items()):
         if name not in per.index:
             continue
-        vfun, vbar2 = _make_vfun(model, H0_si, per.loc[name], g, eps, q, a0)
-        v_mod = vfun(g.r_kpc)  # only used for C；eps_eff 用觀測值
+        vfun, vbar2 = _make_vfun(model, H0_si, per.loc[name], g, res.get("epsilon_median"), q, a0)
+        v_mod = vfun(g.r_kpc)
         C = build_covariance(v_mod, g.r_kpc, g.v_err, g.D_Mpc, g.D_err_Mpc,
                              g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med)
-        # 單點標準差（用於濾除極端不確定點）
         sig_pt = np.sqrt(np.clip(np.diag(C), 1e-30, np.inf))
 
         denom = linear_term_kms2(1.0, g.r_kpc, H0_si=H0_si)  # (cH0) r
         eps_eff = (g.v_obs**2 - vbar2) / np.maximum(denom, 1e-30)
         Rd = _get_Rd_kpc_safe(g)
         x = (g.r_kpc / Rd) if x_kind == "r_over_Rd" else g.r_kpc
-        y = eps_eff / eps_cos
+        y = eps_eff / eps_den
 
         for xi, yi, ri, si in zip(x, y, g.r_kpc, sig_pt):
-            if np.isfinite(xi) and np.isfinite(yi) and si < 100.0:  # 粗略剔除病態點
+            if np.isfinite(xi) and np.isfinite(yi) and si < 100.0:
                 pts.append(dict(galaxy=name, r_kpc=float(ri), x=float(xi), y=float(yi), Rd_kpc=float(Rd)))
+
+
 
     df = pd.DataFrame(pts)
     per_csv = Path(results_dir)/f"{out_prefix}_per_point.csv"
@@ -693,7 +696,8 @@ def kappa_radius_resolved(results_dir: str,
     ax.fill_between(binned["x_mid"], binned["q16"], binned["q84"], alpha=0.25, label="stacked 16–84%")
     ax.plot(binned["x_mid"], binned["q50"], linewidth=1.6, label="stacked median")
     ax.set_xlabel("x = r/Rd" if x_kind=="r_over_Rd" else "r [kpc]")
-    ax.set_ylabel(r"$\varepsilon_{\rm eff}(r)/\varepsilon_{\rm cos}$")
+    #ax.set_ylabel(r"$\varepsilon_{\rm eff}(r)/\varepsilon_{\rm cos}$")
+    ax.set_ylabel(rf"$\varepsilon_{{\rm eff}}(r)/{'\\varepsilon_{\\rm fit}' if eps_norm=='fit' else '\\varepsilon_{\\rm cos}'}$")
     ax.grid(True, alpha=0.25)
 
     xcheck = {}
