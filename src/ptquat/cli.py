@@ -47,11 +47,7 @@ def main(argv=None):
     p2.add_argument("--likelihood", choices=["gauss","t"], default="gauss")
     p2.add_argument("--t-dof", type=float, default=8.0)
 
-    # experiments group
-    px = sub.add_subparsers(dest="cmd", required=False)  # keep main layout
-    px = ap.add_subparsers(dest="exp_cmd", required=False)
-
-    # 兼容舊用法：使用單一 "exp" 子命令
+    # experiments group (單一 "exp" 子命令)
     exp = sub.add_parser("exp", help="Supplementary experiments & robustness")
     sx = exp.add_subparsers(dest="exp_cmd", required=True)
 
