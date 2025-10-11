@@ -164,8 +164,7 @@ def main(argv=None):
             f"--data-path={args.data}",
             f"--outdir={args.outdir}",
             f"--prior={args.prior}",
-            f"--sigma-sys={args.sigma_s
-ys}",
+            f"--sigma-sys={args.sigma_sys}",
             f"--steps={args.steps}",
             f"--nwalkers={args.nwalkers}",
             f"--seed={args.seed}",
