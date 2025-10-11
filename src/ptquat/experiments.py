@@ -455,13 +455,18 @@ def kappa_per_galaxy(results_dir: str,
                      epsilon_cos: Optional[float] = None,
                      omega_lambda: Optional[float] = None,
                      nsamp: int = 300,
+                     y_source: str = "model",  # "model" | "obs" | "obs-debias"
                      out_prefix: str = "kappa_gal") -> Dict[str, Any]:
     """
-    檢核 A（EJPC 採用）：以「觀測值為中心」的 MC 抽樣。
-      eps_eff = [v_obs(r*)^2 - v_bar(r*)^2] / [(cH0) r*]
-      kappa_pred = (eta * Rd) / r*
-    回歸 eps_eff/eps_cos = a * kappa_pred + b。
+    檢核A：以特徵半徑 r* 做 y 對 x 的迴歸。
+      x = kappa_pred = eta * Rd / r*
+      y = eps_eff/eps_cos；依 y_source 決定來源：
+        - "model":    y = (v_mod^2 - v_bar^2)/((cH0) r*) / eps_cos   ← 論文主圖建議
+        - "obs":      y = (v_obs^2 - v_bar^2)/((cH0) r*) / eps_cos    （含噪平方偏置）
+        - "obs-debias": 同上但扣掉點位變異 sigma_v^2（近似去偏）
+    迴歸 y = a x + b；圖上同時標示 k = a*eta 方便閱讀。
     """
+    assert y_source in ("model", "obs", "obs-debias")
     res = yaml.safe_load(open(Path(results_dir)/"global_summary.yaml"))
     model = res["model"]
     H0_si = float(res.get("H0_si", H0_SI))
@@ -473,12 +478,11 @@ def kappa_per_galaxy(results_dir: str,
 
     eps_cos = _eps_cos_from_args(epsilon_cos, omega_lambda)
     gdict = load_tidy_sparc(data_path)
-
     rng = np.random.default_rng(1234)
-    rows = []
 
+    rows = []
     for name, g in sorted(gdict.items()):
-        if name not in per.index:  # 安全檢查
+        if name not in per.index:
             continue
         vfun, vbar2 = _make_vfun(model, H0_si, per.loc[name], g, eps, q, a0)
 
@@ -488,40 +492,58 @@ def kappa_per_galaxy(results_dir: str,
             continue
         vmax = float(np.nanmax(v_obs))
         idxs = np.where(v_obs >= frac_vmax * vmax)[0]
-        if len(idxs) == 0:
-            i_star = int(np.floor(0.8*(len(r)-1)))
-        else:
-            i_star = int(idxs[0])
+        i_star = int(idxs[0]) if len(idxs)>0 else int(np.floor(0.8*(len(r)-1)))
         i_star = max(0, min(i_star, len(r)-1))
         r_star = float(r[i_star])
 
-        # 模型只用來建 C；MC 均值採「觀測值」(EJPC)
+        # 協方差與各定量
         v_mod = vfun(r)
         C = build_covariance(v_mod, r, g.v_err, g.D_Mpc, g.D_err_Mpc,
                              g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med)
-
-        denom = float(linear_term_kms2(1.0, np.asarray([r_star]), H0_si=H0_si)[0])
+        sig_i2 = float(np.clip(np.diag(C)[i_star], 1e-30, np.inf))
+        denom  = float(linear_term_kms2(1.0, np.asarray([r_star]), H0_si=H0_si)[0])
         vbar2_i = float(vbar2[i_star])
 
-        # Monte Carlo：以 v_obs 為中心抽樣，反映觀測不確定度
-        try:
-            #Vs = rng.multivariate_normal(mean=v_obs, cov=C, size=nsamp)  # ← 改成以觀測為中心
-            #eps_samp = (Vs[:, i_star]**2 - vbar2_i) / denom
-            Vs = rng.multivariate_normal(mean=np.asarray(g.v_obs), cov=C, size=nsamp)
-            eps_samp = (Vs[:, i_star]**2 - vbar2_i) / denom
-            eps_med = float(np.percentile(eps_samp, 50))
-            eps_lo  = float(np.percentile(eps_samp, 16))
-            eps_hi  = float(np.percentile(eps_samp, 84))
-        except np.linalg.LinAlgError:
-            # 共變異矩陣不良時退回單點 sigma 近似（導數以 v_obs 為中心）
-            sig_i = float(np.sqrt(np.clip(np.diag(C)[i_star], 1e-30, np.inf)))
-            eps_med = (v_obs[i_star]**2 - vbar2_i) / denom
-            eps_lo  = eps_med - (2*v_obs[i_star]*sig_i)/denom
-            eps_hi  = eps_med + (2*v_obs[i_star]*sig_i)/denom
+        # y 的來源
+        if y_source == "model":
+            # 模型驗證：直接用模型預測，不做 MC；不受噪音平方偏置影響
+            eps_med = (v_mod[i_star]**2 - vbar2_i) / denom
+            eps_lo = np.nan; eps_hi = np.nan
+
+        elif y_source == "obs":
+            # 完全資料驅動：以觀測為中心抽樣（會含 +sigma^2 偏置）
+            try:
+                Vs = rng.multivariate_normal(mean=v_obs, cov=C, size=nsamp)
+                eps_samp = (Vs[:, i_star]**2 - vbar2_i) / denom
+                eps_med = float(np.percentile(eps_samp, 50))
+                eps_lo  = float(np.percentile(eps_samp, 16))
+                eps_hi  = float(np.percentile(eps_samp, 84))
+            except np.linalg.LinAlgError:
+                sig_i = float(np.sqrt(sig_i2))
+                eps_med = (v_obs[i_star]**2 - vbar2_i) / denom
+                eps_lo  = eps_med - (2*v_obs[i_star]*sig_i)/denom
+                eps_hi  = eps_med + (2*v_obs[i_star]*sig_i)/denom
+
+        else:  # "obs-debias"
+            # 觀測為中心，但扣掉單點變異近似去偏：E[v_obs^2]≈v_true^2+sigma^2
+            # 中位數用點估；區間用 MC 再對每次樣本扣掉對角變異近似
+            try:
+                Vs = rng.multivariate_normal(mean=v_obs, cov=C, size=nsamp)
+                # 對每次樣本近似扣一個固定的 sig_i2
+                eps_samp = ((Vs[:, i_star]**2 - sig_i2) - vbar2_i) / denom
+                eps_med = float(np.percentile(eps_samp, 50))
+                eps_lo  = float(np.percentile(eps_samp, 16))
+                eps_hi  = float(np.percentile(eps_samp, 84))
+            except np.linalg.LinAlgError:
+                eps_med = ((v_obs[i_star]**2 - sig_i2) - vbar2_i) / denom
+                # 粗略區間：仍用導數法但以 debias 後的中心
+                sig_i = float(np.sqrt(sig_i2))
+                base  = max(v_obs[i_star]**2 - sig_i2, 0.0)**0.5
+                eps_lo  = eps_med - (2*base*sig_i)/denom
+                eps_hi  = eps_med + (2*base*sig_i)/denom
 
         Rd = _get_Rd_kpc_safe(g)
         kappa_pred = float(eta * Rd / r_star)
-
         rows.append(dict(
             galaxy=name,
             r_star_kpc=r_star,
@@ -537,7 +559,7 @@ def kappa_per_galaxy(results_dir: str,
     out_csv = Path(results_dir)/f"{out_prefix}_per_galaxy.csv"
     df.to_csv(out_csv, index=False)
 
-    # 線性回歸 y = a x + b
+    # y = a x + b
     if len(df) >= 2:
         a, b = np.polyfit(df["kappa_pred"].values, df["eps_eff_over_epscos"].values, 1)
         yhat = a*df["kappa_pred"].values + b
@@ -546,35 +568,34 @@ def kappa_per_galaxy(results_dir: str,
     else:
         a = b = r2 = np.nan
 
-    # 畫圖
+    # 畫圖（同時標註 k = a*eta）
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots(figsize=(5.2, 4.2), dpi=150)
     ax.scatter(df["kappa_pred"], df["eps_eff_over_epscos"], s=18, alpha=0.7, label="galaxies")
-    # 1:1 線與 best-fit
     xgrid = np.linspace(0.0, max(1.05*df["kappa_pred"].max(), 0.2), 200)
     ax.plot(xgrid, xgrid, linestyle="--", linewidth=1.2, label="y = x")
     if np.isfinite(a):
-        ax.plot(xgrid, a*xgrid + b, linewidth=1.4, label=f"fit: y={a:.2f}x+{b:.2f}, R²={r2:.2f}")
+        k_est = a*eta
+        ax.plot(xgrid, a*xgrid + b, linewidth=1.4,
+                label=f"fit: y={a:.2f}x+{b:.2f}, R²={r2:.2f}, k≈{k_est:.2f}")
     ax.set_xlabel(r"$\kappa_{\rm pred}=\eta\,R_d/r_\ast$")
     ax.set_ylabel(r"$\varepsilon_{\rm eff}(r_\ast)/\varepsilon_{\rm cos}$")
     ax.legend()
     ax.grid(True, alpha=0.25)
     out_png = Path(results_dir)/f"{out_prefix}.png"
-    fig.tight_layout()
-    fig.savefig(out_png)
-    plt.close(fig)
+    fig.tight_layout(); fig.savefig(out_png); plt.close(fig)
 
     summ = dict(
         N=len(df),
-        eps_cos=eps_cos,
-        eta=eta,
-        frac_vmax=frac_vmax,
-        slope=a, intercept=b, R2=r2,
+        eps_cos=eps_cos, eta=eta, frac_vmax=frac_vmax,
+        slope=a, intercept=b, R2=r2, k_est=a*eta,
+        y_source=y_source,
         csv=str(out_csv), png=str(out_png)
     )
     with open(Path(results_dir)/f"{out_prefix}_summary.json","w") as f:
         json.dump(summ, f, indent=2)
     return summ
+
 
 def kappa_radius_resolved(results_dir: str,
                           data_path: str,
