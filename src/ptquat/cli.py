@@ -127,18 +127,8 @@ def main(argv=None):
     kgal.add_argument("--frac-vmax", type=float, default=0.9)
     kgal.add_argument("--nsamp", type=int, default=300)
     kgal.add_argument("--prefix", default="kappa_gal")
-    # add after existing args in kgal parser
+    # NEW: source of y
     kgal.add_argument("--y-source", choices=["model","obs","obs-debias"], default="model")
-
-    # and when calling EXP.kappa_per_galaxy(...)
-    out = EXP.kappa_per_galaxy(
-        results_dir=args.results, data_path=args.data,
-        eta=args.eta, frac_vmax=args.frac_vmax, nsamp=args.nsamp,
-        epsilon_cos=args.epsilon_cos, omega_lambda=args.omega_lambda,
-        y_source=args.y_source,
-        out_prefix=args.prefix
-    )
-
     grp_k = kgal.add_mutually_exclusive_group(required=False)
     grp_k.add_argument("--epsilon-cos", type=float, default=None)
     grp_k.add_argument("--omega-lambda", type=float, default=None)
@@ -174,7 +164,8 @@ def main(argv=None):
             f"--data-path={args.data}",
             f"--outdir={args.outdir}",
             f"--prior={args.prior}",
-            f"--sigma-sys={args.sigma_sys}",
+            f"--sigma-sys={args.sigma_s
+ys}",
             f"--steps={args.steps}",
             f"--nwalkers={args.nwalkers}",
             f"--seed={args.seed}",
@@ -241,6 +232,7 @@ def main(argv=None):
                 results_dir=args.results, data_path=args.data,
                 eta=args.eta, frac_vmax=args.frac_vmax, nsamp=args.nsamp,
                 epsilon_cos=args.epsilon_cos, omega_lambda=args.omega_lambda,
+                y_source=args.y_source,        # NEW: plumb through
                 out_prefix=args.prefix
             )
             print(json.dumps(out, indent=2))
