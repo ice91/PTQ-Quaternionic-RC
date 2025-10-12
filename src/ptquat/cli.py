@@ -148,6 +148,20 @@ def main(argv=None):
     grp_k2.add_argument("--epsilon-cos", type=float, default=None)
     grp_k2.add_argument("--omega-lambda", type=float, default=None)
 
+    # exp kappa-fit（從 kappa_profile_* 估計 A,B 與 bootstrap）
+    kfit = sx.add_parser("kappa-fit", help="Fit y=A/x+B from kappa_profile outputs")
+    kfit.add_argument("--results", required=True)
+    kfit.add_argument("--prefix", default="kappa_profile")
+    kfit.add_argument("--eps-norm", choices=["fit","cos"], default="cos")
+    grp_k3 = kfit.add_mutually_exclusive_group(required=False)
+    grp_k3.add_argument("--epsilon-cos", type=float, default=None)
+    grp_k3.add_argument("--omega-lambda", type=float, default=None)
+    kfit.add_argument("--bootstrap", type=int, default=0, help="N bootstrap draws; 0 to skip")
+    kfit.add_argument("--min-per-bin", type=int, default=20)
+    kfit.add_argument("--seed", type=int, default=1234)
+
+
+
     args = ap.parse_args(argv)
 
     if args.cmd == "fetch":
@@ -248,3 +262,19 @@ def main(argv=None):
                 x_kind=args.x_kind, eps_norm=args.eps_norm, out_prefix=args.prefix
             )
             print(f"Saved: {png}")
+        elif args.exp_cmd == "kappa-fit":
+            out = EXP.kappa_two_param_fit(
+                results_dir=args.results, prefix=args.prefix,
+                eps_norm=args.eps_norm,
+                epsilon_cos=args.epsilon_cos, omega_lambda=args.omega_lambda
+            )
+            print(json.dumps(out, indent=2))
+            if args.bootstrap and args.bootstrap > 0:
+                boot = EXP.kappa_two_param_bootstrap(
+                    results_dir=args.results, prefix=args.prefix,
+                    eps_norm=args.eps_norm,
+                    epsilon_cos=args.epsilon_cos, omega_lambda=args.omega_lambda,
+                    n_boot=args.bootstrap, min_per_bin=args.min_per_bin, seed=args.seed
+                )
+                print(json.dumps(boot, indent=2))
+

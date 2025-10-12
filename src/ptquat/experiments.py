@@ -735,3 +735,176 @@ def kappa_radius_resolved(results_dir: str,
         json.dump(dict(x_kind=x_kind, eta=eta, xcheck=xcheck), f, indent=2)
 
     return binned, out_png
+
+# ====== 兩參數擬合與 bootstrap（從 kappa_profile_* 輸出檔就地完成） ======
+def _ab_fit_from_xy(x_mid: np.ndarray, y_med: np.ndarray) -> dict:
+    """線性最小平方法：y = A*(1/x) + B，回傳 A, B, R2, N。"""
+    import numpy as np
+    m = np.isfinite(x_mid) & np.isfinite(y_med) & (x_mid > 0)
+    x = x_mid[m]; y = y_med[m]
+    if x.size < 3:
+        return dict(A=np.nan, B=np.nan, R2=np.nan, N=int(x.size))
+    X = np.vstack([1.0/x, np.ones_like(x)]).T
+    A, B = np.linalg.lstsq(X, y, rcond=None)[0]
+    yhat = A*(1.0/x) + B
+    ss_res = float(np.sum((y - yhat)**2))
+    ss_tot = float(np.sum((y - y.mean())**2))
+    R2 = 1.0 - (ss_res / ss_tot if ss_tot > 0 else np.nan)
+    return dict(A=float(A), B=float(B), R2=float(R2), N=int(x.size))
+
+
+def kappa_two_param_fit(results_dir: str,
+                        prefix: str = "kappa_profile",
+                        eps_norm: str = "cos",
+                        epsilon_cos: float | None = None,
+                        omega_lambda: float | None = None,
+                        out_json: str | None = None) -> dict:
+    """
+    讀取 {results_dir}/{prefix}_binned.csv，對 q50 做 y=A/x+B 擬合。
+    - 若 eps_norm="cos"：eta_hat=A、B_cos=B。
+    - 若 eps_norm="fit"：需同時提供 epsilon_cos（或 omega_lambda），將
+        eta_hat = A * (eps_fit/eps_cos)， B_cos = B * (eps_fit/eps_cos)。
+    會把結果寫到 out_json（預設落在 results_dir 下，檔名 *_abfit.json）。
+    """
+    import json, numpy as np, pandas as pd, math
+    from pathlib import Path
+    res = Path(results_dir)
+    binned_csv = res / f"{prefix}_binned.csv"
+    if not binned_csv.exists():
+        raise FileNotFoundError(f"{binned_csv} not found. Run `ptquat exp kappa-prof` first.")
+
+    # 讀入 binned
+    b = pd.read_csv(binned_csv)
+    fit = _ab_fit_from_xy(b["x_mid"].values, b["q50"].values)
+
+    # 取得 eps_fit 與 eps_cos
+    summ = yaml.safe_load(open(res/"global_summary.yaml"))
+    eps_fit = float(summ.get("epsilon_median")) if summ.get("epsilon_median") is not None else np.nan
+    if epsilon_cos is None and omega_lambda is not None:
+        if not (0.0 < float(omega_lambda) < 1.0):
+            raise ValueError("omega_lambda must be in (0,1)")
+        epsilon_cos = float(math.sqrt(float(omega_lambda)/(1.0-float(omega_lambda))))
+    if epsilon_cos is None:
+        # fallback：與 kappa_profile 預設一致
+        epsilon_cos = 1.47
+
+    if eps_norm == "cos":
+        eta_hat = fit["A"]
+        B_cos   = fit["B"]
+        scale   = 1.0
+    elif eps_norm == "fit":
+        scale   = float(eps_fit) / float(epsilon_cos)
+        eta_hat = fit["A"] * scale
+        B_cos   = fit["B"] * scale
+    else:
+        raise ValueError("eps_norm must be 'fit' or 'cos'.")
+
+    out = dict(
+        prefix=prefix,
+        eps_norm=eps_norm,
+        A=fit["A"], B=fit["B"], R2=fit["R2"], N=fit["N"],
+        epsilon_fit=float(eps_fit), epsilon_cos=float(epsilon_cos),
+        scale_fit_to_cos=float(scale),
+        eta_hat=float(eta_hat), B_cos=float(B_cos),
+        binned_csv=str(binned_csv)
+    )
+    if out_json is None:
+        out_json = str(res / f"{prefix}_abfit.json")
+    with open(out_json, "w") as f:
+        json.dump(out, f, indent=2)
+    return out
+
+
+def kappa_two_param_bootstrap(results_dir: str,
+                              prefix: str = "kappa_profile",
+                              eps_norm: str = "cos",
+                              epsilon_cos: float | None = None,
+                              omega_lambda: float | None = None,
+                              n_boot: int = 2000,
+                              min_per_bin: int = 20,
+                              seed: int = 1234,
+                              out_json: str | None = None) -> dict:
+    """
+    從 {results_dir}/{prefix}_per_point.csv 作「按星系」bootstrap：
+      1) 以 galaxy 為單位重抽樣（同權重），
+      2) 依抽樣集重新分箱（與 kappa_profile 相同做法），取每箱 q50，
+      3) 對 (x_mid, q50) 擬合 y=A/x+B，保留 A, B。
+    產出 A, B 的 16/50/84 百分位，並轉成 (eta_hat, B_cos)。
+    """
+    import json, numpy as np, pandas as pd, math
+    from pathlib import Path
+    rng = np.random.default_rng(int(seed))
+    res = Path(results_dir)
+    per_csv = res / f"{prefix}_per_point.csv"
+    if not per_csv.exists():
+        raise FileNotFoundError(f"{per_csv} not found. Run `ptquat exp kappa-prof` first.")
+
+    df = pd.read_csv(per_csv)
+    # 只留必要欄位
+    need = {"galaxy","x","y"}
+    if not need.issubset(set(df.columns)):
+        raise ValueError(f"{per_csv} needs columns {need}")
+    # 取得 eps_fit / eps_cos
+    summ = yaml.safe_load(open(res/"global_summary.yaml"))
+    eps_fit = float(summ.get("epsilon_median")) if summ.get("epsilon_median") is not None else np.nan
+    if epsilon_cos is None and omega_lambda is not None:
+        if not (0.0 < float(omega_lambda) < 1.0):
+            raise ValueError("omega_lambda must be in (0,1)")
+        epsilon_cos = float(math.sqrt(float(omega_lambda)/(1.0-float(omega_lambda))))
+    if epsilon_cos is None:
+        epsilon_cos = 1.47
+
+    A_list, B_list = [], []
+    gals = np.array(sorted(df["galaxy"].unique()))
+    G = len(gals)
+
+    for _ in range(int(n_boot)):
+        # 以星系為單位重抽樣
+        pick = gals[rng.integers(0, G, size=G)]
+        sdf = pd.concat([df.loc[df["galaxy"]==g] for g in pick], ignore_index=True)
+
+        # 重新分箱（與 kappa_profile 相近）：用 bootstrap 樣本 x 的 2–98% 分位界線
+        x = sdf["x"].values
+        x_min = float(np.nanquantile(x, 0.02))
+        x_max = float(np.nanquantile(x, 0.98))
+        edges = np.linspace(x_min, x_max, 24+1)
+        mids  = 0.5*(edges[:-1]+edges[1:])
+        ymed = np.full_like(mids, np.nan, dtype=float)
+
+        for i in range(len(edges)-1):
+            m = (sdf["x"]>=edges[i]) & (sdf["x"]<edges[i+1])
+            vals = sdf.loc[m, "y"].values
+            if vals.size >= min_per_bin:
+                ymed[i] = float(np.nanpercentile(vals, 50))
+
+        fit = _ab_fit_from_xy(mids, ymed)
+        A_list.append(fit["A"]); B_list.append(fit["B"])
+
+    A_arr = np.asarray(A_list); B_arr = np.asarray(B_list)
+    def _q(a): 
+        return dict(p16=float(np.nanpercentile(a,16)),
+                    p50=float(np.nanpercentile(a,50)),
+                    p84=float(np.nanpercentile(a,84)))
+
+    if eps_norm == "cos":
+        scale = 1.0
+        eta_q  = _q(A_arr);  Bc_q = _q(B_arr)
+    elif eps_norm == "fit":
+        scale = float(eps_fit) / float(epsilon_cos)
+        eta_q = _q(A_arr*scale); Bc_q = _q(B_arr*scale)
+    else:
+        raise ValueError("eps_norm must be 'fit' or 'cos'.")
+
+    out = dict(
+        prefix=prefix, eps_norm=eps_norm,
+        epsilon_fit=float(eps_fit), epsilon_cos=float(epsilon_cos),
+        scale_fit_to_cos=float(scale), n_boot=int(n_boot), seed=int(seed),
+        A=_q(A_arr), B=_q(B_arr),
+        eta_hat=eta_q, B_cos=Bc_q,
+        per_point_csv=str(per_csv)
+    )
+    if out_json is None:
+        out_json = str(res / f"{prefix}_abfit_boot.json")
+    with open(out_json, "w") as f:
+        json.dump(out, f, indent=2)
+    return out
