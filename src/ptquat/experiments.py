@@ -53,6 +53,8 @@ def _call_fit(data_path: str,
         f"--c0={c0}",
         f"--c-slope={c_slope}",
         f"--thin-by={thin_by}",
+        f"--likelihood={likelihood}",
+        f"--t-dof={t_dof}",
     ]
     if H0_kms_mpc is not None: argv.append(f"--H0-kms-mpc={H0_kms_mpc}")
     if a0_si is not None:      argv.append(f"--a0-si={a0_si}")
