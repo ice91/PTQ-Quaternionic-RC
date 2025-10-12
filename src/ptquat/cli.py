@@ -162,6 +162,35 @@ def main(argv=None):
     kfit.add_argument("--min-per-bin", type=int, default=20)
     kfit.add_argument("--seed", type=int, default=1234)
 
+    # exp z-profile（零自由度：x=z=g_N/a0）
+    zp = sx.add_parser("zprof", help="Radius-resolved zero-parameter collapse in z=g_N/a0")
+    zp.add_argument("--results", required=True)
+    zp.add_argument("--data", default="dataset/sparc_tidy.csv")
+    zp.add_argument("--nbins", type=int, default=24)
+    zp.add_argument("--min-per-bin", type=int, default=20)
+    zp.add_argument("--eps-norm", choices=["fit","cos"], default="cos")
+    zp.add_argument("--prefix", default="z_profile")
+    zp.add_argument("--z-qlo", type=float, default=0.01, help="lower quantile clip for z")
+    zp.add_argument("--z-qhi", type=float, default=0.99, help="upper quantile clip for z")
+    zp.add_argument("--no-theory", action="store_true", help="do not draw zero-parameter theory even if ptq-screen")
+    grp_z1 = zp.add_mutually_exclusive_group(required=False)
+    grp_z1.add_argument("--epsilon-cos", type=float, default=None)
+    grp_z1.add_argument("--omega-lambda", type=float, default=None)
+
+    # exp z-gal（每星系在 r* 的單點）
+    zg = sx.add_parser("zgal", help="Per-galaxy single-point at r*: z=g_N/a0 vs y=eps_eff/eps_den")
+    zg.add_argument("--results", required=True)
+    zg.add_argument("--data", default="dataset/sparc_tidy.csv")
+    zg.add_argument("--frac-vmax", type=float, default=0.9)
+    zg.add_argument("--y-source", choices=["model","obs","obs-debias"], default="obs-debias")
+    zg.add_argument("--rstar-from", choices=["model","obs"], default="obs")
+    zg.add_argument("--eps-norm", choices=["fit","cos"], default="cos")
+    zg.add_argument("--nsamp", type=int, default=300)
+    zg.add_argument("--prefix", default="z_gal")
+    grp_z2 = zg.add_mutually_exclusive_group(required=False)
+    grp_z2.add_argument("--epsilon-cos", type=float, default=None)
+    grp_z2.add_argument("--omega-lambda", type=float, default=None)
+
     args = ap.parse_args(argv)
 
     if args.cmd == "fetch":
@@ -278,3 +307,25 @@ def main(argv=None):
                     n_boot=args.bootstrap, min_per_bin=args.min_per_bin, seed=args.seed
                 )
                 print(json.dumps(boot, indent=2))
+                
+        elif args.exp_cmd == "zprof":
+            df, png = EXP.z_profile(
+                results_dir=args.results, data_path=args.data,
+                nbins=args.nbins, min_per_bin=args.min_per_bin,
+                eps_norm=args.eps_norm,
+                epsilon_cos=args.epsilon_cos, omega_lambda=args.omega_lambda,
+                out_prefix=args.prefix,
+                z_quantile_clip=(args.z_qlo, args.z_qhi),
+                do_theory=(not args.no_theory)
+            )
+            print(f"Saved: {png}")
+
+        elif args.exp_cmd == "zgal":
+            out = EXP.z_per_galaxy(
+                results_dir=args.results, data_path=args.data,
+                frac_vmax=args.frac_vmax, y_source=args.y_source,
+                rstar_from=args.rstar_from, eps_norm=args.eps_norm,
+                epsilon_cos=args.epsilon_cos, omega_lambda=args.omega_lambda,
+                nsamp=args.nsamp, out_prefix=args.prefix
+            )
+            print(json.dumps(out, indent=2))

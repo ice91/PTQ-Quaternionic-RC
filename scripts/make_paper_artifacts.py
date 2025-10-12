@@ -71,7 +71,7 @@ def run_diagnostics_for(results_dir: Path,
                         omega_lambda: float,
                         eta: float,
                         nbins: int) -> None:
-    """在 results_dir 上跑 plateau/ppc/closure + kappa (fit & cos) 圖與擬合，並拷貝主圖到 figdir。"""
+    """在 results_dir 上跑 plateau/ppc/closure + kappa (fit & cos) + z-space 主圖。"""
     # 1) plateau
     _, plateau_png = EXP.residual_plateau(str(results_dir), str(tidy_csv), nbins=nbins, out_prefix="plateau")
     # 2) PPC coverage
@@ -90,14 +90,13 @@ def run_diagnostics_for(results_dir: Path,
             x_kind="r_over_Rd", eps_norm=eps_norm, out_prefix=prefix
         )
         _copy_if_exists(png, figdir / f"{prefix}_{results_dir.name}.png")
-        # y=A/x+B 擬合 + bootstrap
         fit_sum = EXP.kappa_profile_fit(
             results_dir=str(results_dir), prefix=prefix, eps_norm=eps_norm,
             omega_lambda=(omega_lambda if eps_norm=="cos" else None), bootstrap=2000, seed=1234
         )
         with open(results_dir/f"{prefix}_fit_summary.json","w") as f: json.dump(fit_sum, f, indent=2)
 
-    # 5) per-galaxy：obs-debias + cos（主要論文本體），另附 model + fit（補充）
+    # 5) per-galaxy κ（論文補充）
     _ = EXP.kappa_per_galaxy(
         results_dir=str(results_dir), data_path=str(tidy_csv),
         eta=eta, frac_vmax=0.9, nsamp=300, omega_lambda=omega_lambda,
@@ -106,16 +105,26 @@ def run_diagnostics_for(results_dir: Path,
     )
     _copy_if_exists(results_dir/"kappa_gal_obsdebiased_cos.png", figdir / f"kappa_gal_obsdebiased_cos_{results_dir.name}.png")
 
-    _ = EXP.kappa_per_galaxy(
+    # 6) 新增：z-profile（cos, 零參數理論曲線）
+    _, zpng = EXP.z_profile(
         results_dir=str(results_dir), data_path=str(tidy_csv),
-        eta=eta, frac_vmax=0.9, nsamp=300,
-        y_source="model", eps_norm="fit", rstar_from="model",
-        out_prefix="kappa_gal_model_fit"
+        nbins=nbins, min_per_bin=20, eps_norm="cos",
+        omega_lambda=omega_lambda, out_prefix="z_profile_cos",
+        z_quantile_clip=(0.01, 0.99), do_theory=True
     )
-    _copy_if_exists(results_dir/"kappa_gal_model_fit.png", figdir / f"kappa_gal_model_fit_{results_dir.name}.png")
+    _copy_if_exists(zpng, figdir / f"z_profile_cos_{results_dir.name}.png")
 
-    # 6) 拷貝主圖
+    # 7) 新增：z-gal（每星系 r* 單點，cos）
+    _ = EXP.z_per_galaxy(
+        results_dir=str(results_dir), data_path=str(tidy_csv),
+        frac_vmax=0.9, y_source="obs-debias", rstar_from="obs",
+        eps_norm="cos", omega_lambda=omega_lambda, nsamp=300, out_prefix="z_gal_cos"
+    )
+    _copy_if_exists(results_dir/"z_gal_cos.png", figdir / f"z_gal_cos_{results_dir.name}.png")
+
+    # 8) 收尾拷貝 plateau
     _copy_if_exists(plateau_png, figdir / f"plateau_{results_dir.name}.png")
+
 
 def parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description="Build EJPC artifacts: fits, diagnostics, κ-profiles (fit & cos), and model-compare.")
