@@ -86,7 +86,7 @@ def ppc_check(results_dir: str, data_path: str, out_prefix: str = "ppc") -> dict
     nu   = float(summ.get("t_dof", 8.0))
     H0_si = float(summ.get("H0_si", H0_SI))
     model = summ["model"]
-    sig_med = float(summ["sigma_sys_median"])
+    sig_med = float(summ.get("sigma_sys_median", 0.0))
     eps_med = summ.get("epsilon_median", None)
     q_med   = summ.get("q_median", None)
     a0_med  = summ.get("a0_median", None)
@@ -454,6 +454,9 @@ def kappa_per_galaxy(results_dir: str,
       y = eps_eff / eps_den
         - eps_den = epsilon_median (eps_norm=fit) 或 ε_cos (eps_norm=cos)
       y_source 決定 eps_eff 來源；rstar_from 決定 r* 用模型或觀測曲線選點。
+
+    修正版（obs-debias）：
+      只扣除點對點「量測噪音」的方差 v_err^2，不能混入 D/i 的相關項與 sigma_sys。
     """
     assert y_source in ("model", "obs", "obs-debias")
     assert eps_norm in ("fit", "cos")
@@ -462,7 +465,7 @@ def kappa_per_galaxy(results_dir: str,
     res = yaml.safe_load(open(Path(results_dir)/"global_summary.yaml"))
     model  = res["model"]
     H0_si  = float(res.get("H0_si", H0_SI))
-    sig_med = float(res["sigma_sys_median"])
+    sig_med = float(res.get("sigma_sys_median", 0.0))
     eps_fit_global = float(res.get("epsilon_median")) if res.get("epsilon_median") is not None else np.nan
     q    = res.get("q_median")
     a0   = res.get("a0_median")
@@ -500,13 +503,7 @@ def kappa_per_galaxy(results_dir: str,
         i_star = max(0, min(i_star, len(r)-1))
         r_star = float(r[i_star])
 
-        # 協方差：抽樣用完整 C；去偏時用只含測量變異的 C_meas
-        C = build_covariance(v_mod, r, g.v_err, g.D_Mpc, g.D_err_Mpc,
-                             g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med)
-        C_meas = build_covariance(v_mod, r, g.v_err, g.D_Mpc, g.D_err_Mpc,
-                                  g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=0.0)
-        sig_i2_meas = float(np.clip(np.diag(C_meas)[i_star], 1e-30, np.inf))
-
+        # 分母 (c H0) r*
         denom   = float(linear_term_kms2(1.0, np.asarray([r_star]), H0_si=H0_si)[0])   # (cH0) r*
         vbar2_i = float(vbar2[i_star])
 
@@ -514,28 +511,39 @@ def kappa_per_galaxy(results_dir: str,
         if y_source == "model":
             eps_eff_med = (v_mod[i_star]**2 - vbar2_i) / denom
             eps_lo = np.nan; eps_hi = np.nan
+
         elif y_source == "obs":
+            # 用完整 C 抽樣（包含 D/i 與系統樓層）
+            C_full = build_covariance(v_mod, r, g.v_err, g.D_Mpc, g.D_err_Mpc,
+                                      g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med)
             try:
-                Vs = rng.multivariate_normal(mean=v_obs, cov=C, size=nsamp)
+                Vs = rng.multivariate_normal(mean=v_obs, cov=C_full, size=nsamp)
                 eps_samp = (Vs[:, i_star]**2 - vbar2_i) / denom
                 eps_eff_med = float(np.percentile(eps_samp, 50))
                 eps_lo      = float(np.percentile(eps_samp, 16))
                 eps_hi      = float(np.percentile(eps_samp, 84))
             except np.linalg.LinAlgError:
-                sig_i = float(np.sqrt(np.clip(np.diag(C)[i_star], 1e-30, np.inf)))
+                sig_i = float(np.sqrt(np.clip(np.diag(C_full)[i_star], 1e-30, np.inf)))
                 eps_eff_med = (v_obs[i_star]**2 - vbar2_i) / denom
                 eps_lo  = eps_eff_med - (2*v_obs[i_star]*sig_i)/denom
                 eps_hi  = eps_eff_med + (2*v_obs[i_star]*sig_i)/denom
-        else:  # "obs-debias"：只扣測量變異
+
+        else:  # "obs-debias"：只扣測量變異（量測 v_err），不含 D/i 與 sigma_sys
+            sig_i2_meas = float(g.v_err[i_star]**2)
+
+            # 解析式（推薦）：E[v_obs^2] = v_true^2 + sigma_meas^2
+            eps_eff_med = ((v_obs[i_star]**2 - sig_i2_meas) - vbar2_i) / denom
+
+            # 若需要不確定度區間：只用 diag(meas) 來抽樣
             try:
-                Vs = rng.multivariate_normal(mean=v_obs, cov=C, size=nsamp)
+                C_meas_diag = np.diag(np.asarray(g.v_err, float)**2)
+                Vs = rng.multivariate_normal(mean=v_obs, cov=C_meas_diag, size=nsamp)
                 eps_samp = ((Vs[:, i_star]**2 - sig_i2_meas) - vbar2_i) / denom
-                eps_eff_med = float(np.percentile(eps_samp, 50))
                 eps_lo      = float(np.percentile(eps_samp, 16))
                 eps_hi      = float(np.percentile(eps_samp, 84))
             except np.linalg.LinAlgError:
-                eps_eff_med = ((v_obs[i_star]**2 - sig_i2_meas) - vbar2_i) / denom
-                sig_i = float(np.sqrt(np.clip(np.diag(C)[i_star], 1e-30, np.inf)))
+                # 解析 fallback：以量測噪音近似
+                sig_i = float(np.sqrt(max(sig_i2_meas, 1e-30)))
                 base  = max(v_obs[i_star]**2 - sig_i2_meas, 0.0)**0.5
                 eps_lo  = eps_eff_med - (2*base*sig_i)/denom
                 eps_hi  = eps_eff_med + (2*base*sig_i)/denom
@@ -617,8 +625,8 @@ def kappa_radius_resolved(results_dir: str,
 
     res = yaml.safe_load(open(Path(results_dir)/"global_summary.yaml"))
     model = res["model"]
-    H0_si = float(res.get("H0_si", H0_SI))
-    sig_med = float(res["sigma_sys_median"])
+    H0_si = float(res.get("H0_si", H0_SI))   # ← Patch B：用擬合結果的 H0
+    sig_med = float(res.get("sigma_sys_median", 0.0))
     eps_fit_global = float(res.get("epsilon_median")) if res.get("epsilon_median") is not None else np.nan
     q   = res.get("q_median")
     a0  = res.get("a0_median")
@@ -643,6 +651,7 @@ def kappa_radius_resolved(results_dir: str,
                              g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med)
         sig_pt = np.sqrt(np.clip(np.diag(C), 1e-30, np.inf))
 
+        # ← Patch B：用同一個 H0_si
         denom = linear_term_kms2(1.0, g.r_kpc, H0_si=H0_si)  # (cH0) r
         eps_eff = (g.v_obs**2 - vbar2) / np.maximum(denom, 1e-30)
         Rd = _get_Rd_kpc_safe(g)
@@ -652,8 +661,6 @@ def kappa_radius_resolved(results_dir: str,
         for xi, yi, ri, si in zip(x, y, g.r_kpc, sig_pt):
             if np.isfinite(xi) and np.isfinite(yi) and si < 100.0:
                 pts.append(dict(galaxy=name, r_kpc=float(ri), x=float(xi), y=float(yi), Rd_kpc=float(Rd)))
-
-
 
     df = pd.DataFrame(pts)
     per_csv = Path(results_dir)/f"{out_prefix}_per_point.csv"
@@ -700,7 +707,6 @@ def kappa_radius_resolved(results_dir: str,
     ax.fill_between(binned["x_mid"], binned["q16"], binned["q84"], alpha=0.25, label="stacked 16–84%")
     ax.plot(binned["x_mid"], binned["q50"], linewidth=1.6, label="stacked median")
     ax.set_xlabel("x = r/Rd" if x_kind=="r_over_Rd" else "r [kpc]")
-    #ax.set_ylabel(r"$\varepsilon_{\rm eff}(r)/\varepsilon_{\rm cos}$")
     ax.set_ylabel(rf"$\varepsilon_{{\rm eff}}(r)/{'\\varepsilon_{\\rm fit}' if eps_norm=='fit' else '\\varepsilon_{\\rm cos}'}$")
     ax.grid(True, alpha=0.25)
 
