@@ -1120,7 +1120,7 @@ def z_profile(results_dir: str,
     dfx = df.loc[mkeep].copy()
     edges = np.linspace(float(z_lo), float(z_hi), nbins+1)
     mids  = 0.5*(edges[:-1]+edges[1:])
-    q16=q50=q84=npts=[],[],[],[]
+    q16, q50, q84, npts = [], [], [], []
     for i in range(nbins):
         m = (dfx["z"]>=edges[i]) & (dfx["z"]<edges[i+1])
         vals = dfx.loc[m, "y"].values
