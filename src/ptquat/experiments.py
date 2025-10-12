@@ -908,3 +908,100 @@ def kappa_two_param_bootstrap(results_dir: str,
     with open(out_json, "w") as f:
         json.dump(out, f, indent=2)
     return out
+
+# --- Add to: src/ptquat/experiments.py ---
+
+def kappa_profile_fit(results_dir: str,
+                      prefix: str,
+                      eps_norm: str = "cos",                 # "cos" or "fit"
+                      epsilon_cos: Optional[float] = None,
+                      omega_lambda: Optional[float] = None,
+                      bootstrap: int = 0,
+                      seed: int = 1234) -> Dict[str, Any]:
+    """
+    讀取 {results_dir}/{prefix}_binned.csv 的 (x_mid, q50)，以 y = A*(1/x) + B 做 OLS。
+    輸出 A, B, R2, N，並報告換算到 cosmology（/ε_cos）後的 η_hat 與 B_cos。
+    若 bootstrap>0，回傳/儲存 p16/p50/p84。
+    """
+    import numpy as np, pandas as pd, json, yaml
+    from pathlib import Path
+
+    res = Path(results_dir)
+    binned_csv = res / f"{prefix}_binned.csv"
+    if not binned_csv.exists():
+        raise FileNotFoundError(f"{binned_csv} not found. Run kappa-prof first with the same prefix.")
+
+    # 讀 global summary 取 epsilon_fit
+    summ = yaml.safe_load(open(res/"global_summary.yaml"))
+    eps_fit = float(summ.get("epsilon_median", np.nan))
+    if eps_norm not in ("cos", "fit"):
+        raise ValueError("eps_norm must be 'cos' or 'fit'.")
+
+    # 目標 ε_cos
+    if eps_norm == "cos":
+        eps_cos = _eps_cos_from_args(epsilon_cos, omega_lambda)
+    else:
+        eps_cos = float(_eps_cos_from_args(None, 0.685))  # 只用來做比例換算輸出，值不影響 A,B
+
+    df = pd.read_csv(binned_csv)
+    m = np.isfinite(df.q50) & np.isfinite(df.x_mid) & (df.x_mid > 0)
+    x = df.loc[m, "x_mid"].to_numpy()
+    y = df.loc[m, "q50"].to_numpy()           # 已是 /ε_den（跟 kappa-prof 的 eps_norm 一致）
+    if x.size < 3:
+        raise RuntimeError("Not enough bins to fit (need >=3).")
+    X = np.vstack([1.0/x, np.ones_like(x)]).T
+    A, B = np.linalg.lstsq(X, y, rcond=None)[0]
+
+    # R2（對 y 的 OLS 拟合）
+    yhat = X @ np.array([A, B])
+    ss_res = float(np.sum((y - yhat)**2))
+    ss_tot = float(np.sum((y - y.mean())**2))
+    R2 = 1.0 - (ss_res/ss_tot if ss_tot>0 else np.nan)
+
+    # 轉成 cosmology 口徑
+    # 若 eps_norm=="cos"，則 A 就是 η_hat，B 就是 B_cos。
+    # 若 eps_norm=="fit"，需乘比例 scale = eps_fit/eps_cos。
+    scale = float(eps_fit/eps_cos) if np.isfinite(eps_fit) and eps_cos else 1.0
+    eta_hat = (A * scale) if (eps_norm=="fit") else A
+    B_cos   = (B * scale) if (eps_norm=="fit") else B
+
+    out_main = dict(
+        prefix=prefix, eps_norm=eps_norm,
+        A=float(A), B=float(B), R2=float(R2), N=int(x.size),
+        epsilon_fit=float(eps_fit), epsilon_cos=float(eps_cos),
+        scale_fit_to_cos=(float(scale) if eps_norm=="fit" else 1.0),
+        eta_hat=float(eta_hat), B_cos=float(B_cos),
+        binned_csv=str(binned_csv)
+    )
+    with open(res/f"{prefix}_fit_summary.json", "w") as f:
+        json.dump(out_main, f, indent=2)
+
+    # bootstrap
+    if bootstrap and bootstrap>0:
+        rng = np.random.default_rng(seed)
+        A_s, B_s = [], []
+        idx = np.arange(x.size)
+        for _ in range(int(bootstrap)):
+            bs = rng.choice(idx, size=idx.size, replace=True)
+            Xb = np.vstack([1.0/x[bs], np.ones_like(x[bs])]).T
+            Ab, Bb = np.linalg.lstsq(Xb, y[bs], rcond=None)[0]
+            A_s.append(float(Ab)); B_s.append(float(Bb))
+        def qnt(v): 
+            v = np.asarray(v); 
+            q16, q50, q84 = np.percentile(v, [16,50,84])
+            return dict(p16=float(q16), p50=float(q50), p84=float(q84))
+        out_boot = dict(
+            prefix=prefix, eps_norm=eps_norm,
+            epsilon_fit=float(eps_fit), epsilon_cos=float(eps_cos),
+            scale_fit_to_cos=(float(scale) if eps_norm=="fit" else 1.0),
+            n_boot=int(bootstrap), seed=int(seed),
+            A=qnt(A_s), B=qnt(B_s),
+            eta_hat=(qnt(np.asarray(A_s)*scale) if eps_norm=="fit" else qnt(A_s)),
+            B_cos=(qnt(np.asarray(B_s)*scale) if eps_norm=="fit" else qnt(B_s)),
+            per_point_csv=str(res / f"{prefix}_per_point.csv")
+        )
+        with open(res/f"{prefix}_fit_bootstrap.json","w") as f:
+            json.dump(out_boot, f, indent=2)
+        out_main["bootstrap_json"] = str(res/f"{prefix}_fit_bootstrap.json")
+
+    return out_main

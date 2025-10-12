@@ -161,7 +161,6 @@ def main(argv=None):
     kfit.add_argument("--seed", type=int, default=1234)
 
 
-
     args = ap.parse_args(argv)
 
     if args.cmd == "fetch":
