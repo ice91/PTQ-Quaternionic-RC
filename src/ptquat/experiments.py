@@ -450,13 +450,13 @@ def kappa_per_galaxy(results_dir: str,
                      out_prefix: str = "kappa_gal") -> Dict[str, Any]:
     """
     檢核A：以特徵半徑 r* 做 y 對 x 的迴歸。
-      x = kappa_pred = eta * Rd / r*
+      x = kappa_pred = (eta_phys/eps_den) * (Rd / r*)
       y = eps_eff / eps_den
         - eps_den = epsilon_median (eps_norm=fit) 或 ε_cos (eps_norm=cos)
       y_source 決定 eps_eff 來源；rstar_from 決定 r* 用模型或觀測曲線選點。
 
-    修正版（obs-debias）：
-      只扣除點對點「量測噪音」的方差 v_err^2，不能混入 D/i 的相關項與 sigma_sys。
+    注意：這裡的 eta 是「物理振幅」eta_phys；因縱軸已除 eps_den，
+         我們需用 (eta_phys/eps_den) 來構造自變數，期望斜率 ~ 1。
     """
     assert y_source in ("model", "obs", "obs-debias")
     assert eps_norm in ("fit", "cos")
@@ -530,11 +530,7 @@ def kappa_per_galaxy(results_dir: str,
 
         else:  # "obs-debias"：只扣測量變異（量測 v_err），不含 D/i 與 sigma_sys
             sig_i2_meas = float(g.v_err[i_star]**2)
-
-            # 解析式（推薦）：E[v_obs^2] = v_true^2 + sigma_meas^2
             eps_eff_med = ((v_obs[i_star]**2 - sig_i2_meas) - vbar2_i) / denom
-
-            # 若需要不確定度區間：只用 diag(meas) 來抽樣
             try:
                 C_meas_diag = np.diag(np.asarray(g.v_err, float)**2)
                 Vs = rng.multivariate_normal(mean=v_obs, cov=C_meas_diag, size=nsamp)
@@ -542,14 +538,15 @@ def kappa_per_galaxy(results_dir: str,
                 eps_lo      = float(np.percentile(eps_samp, 16))
                 eps_hi      = float(np.percentile(eps_samp, 84))
             except np.linalg.LinAlgError:
-                # 解析 fallback：以量測噪音近似
                 sig_i = float(np.sqrt(max(sig_i2_meas, 1e-30)))
                 base  = max(v_obs[i_star]**2 - sig_i2_meas, 0.0)**0.5
                 eps_lo  = eps_eff_med - (2*base*sig_i)/denom
                 eps_hi  = eps_eff_med + (2*base*sig_i)/denom
 
         Rd = _get_Rd_kpc_safe(g)
-        kappa_pred = float(eta * Rd / r_star)
+
+        # **修正點 B**：自變數必須與縱軸正規化一致
+        kappa_pred = float((eta/eps_den) * Rd / r_star)
 
         rows.append(dict(
             galaxy=name,
@@ -575,7 +572,7 @@ def kappa_per_galaxy(results_dir: str,
         yhat = a*df["kappa_pred"].values + b
         r2 = float(1.0 - np.sum((df["eps_eff_over_epsden"].values - yhat)**2) /
                           np.sum((df["eps_eff_over_epsden"].values - df["eps_eff_over_epsden"].mean())**2))
-        k_est = a*eta
+        k_est = a*eta  # 留作舊欄位：a 對應到 A/(eta/eps_den)，乘回 eta 僅供參考
     else:
         a = b = r2 = k_est = np.nan
 
@@ -583,19 +580,23 @@ def kappa_per_galaxy(results_dir: str,
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots(figsize=(5.2, 4.2), dpi=150)
     ax.scatter(df["kappa_pred"], df["eps_eff_over_epsden"], s=18, alpha=0.7, label="galaxies")
+
+    # 參考線：y=x（若 eta/eps_den 等於真實 A，斜率應 ~1）
     xgrid = np.linspace(0.0, max(1.05*df["kappa_pred"].max(), 0.2), 200) if len(df)>0 else np.linspace(0.0, 0.2, 200)
     ax.plot(xgrid, xgrid, linestyle="--", linewidth=1.2, label="y = x")
+
     if np.isfinite(a):
         ax.plot(xgrid, a*xgrid + b, linewidth=1.4,
-                label=f"fit: y={a:.2f}x+{b:.2f}, R²={r2:.2f}, k≈{k_est:.2f}")
-    ax.set_xlabel(r"$\kappa_{\rm pred}=\eta\,R_d/r_\ast$")
+                label=f"fit: y={a:.2f}x+{b:.2f}, R²={r2:.2f}")
+
     ylab_den = r"\varepsilon_{\rm fit}" if eps_norm=="fit" else r"\varepsilon_{\rm cos}"
+    ax.set_xlabel(r"$\kappa_{\rm pred}=(\eta/\varepsilon_{\rm den})\,R_d/r_\ast$")
     ax.set_ylabel(rf"$\varepsilon_{{\rm eff}}(r_\ast)/{ylab_den}$")
     ax.legend(); ax.grid(True, alpha=0.25)
     out_png = Path(results_dir)/f"{out_prefix}.png"
     fig.tight_layout(); fig.savefig(out_png); plt.close(fig)
 
-    # 總結（沿用你之前的鍵值，方便對照）
+    # 總結
     summ = dict(
         N=len(df),
         eta=eta, frac_vmax=frac_vmax, y_source=y_source,
@@ -618,14 +619,17 @@ def kappa_radius_resolved(results_dir: str,
                           nbins: int = 24,
                           min_per_bin: int = 20,
                           x_kind: str = "r_over_Rd",
-                          eps_norm: str = "fit",         # 新增
+                          eps_norm: str = "fit",
                           out_prefix: str = "kappa_profile",
                           x_markers: Optional[List[float]] = None) -> Tuple[pd.DataFrame, Path]:
+    """
+    堆疊半徑剖面。圖上的理論參考線必須用 A = eta_phys/eps_den。
+    """
     assert eps_norm in ("fit","cos")
 
     res = yaml.safe_load(open(Path(results_dir)/"global_summary.yaml"))
     model = res["model"]
-    H0_si = float(res.get("H0_si", H0_SI))   # ← Patch B：用擬合結果的 H0
+    H0_si = float(res.get("H0_si", H0_SI))
     sig_med = float(res.get("sigma_sys_median", 0.0))
     eps_fit_global = float(res.get("epsilon_median")) if res.get("epsilon_median") is not None else np.nan
     q   = res.get("q_median")
@@ -651,7 +655,6 @@ def kappa_radius_resolved(results_dir: str,
                              g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med)
         sig_pt = np.sqrt(np.clip(np.diag(C), 1e-30, np.inf))
 
-        # ← Patch B：用同一個 H0_si
         denom = linear_term_kms2(1.0, g.r_kpc, H0_si=H0_si)  # (cH0) r
         eps_eff = (g.v_obs**2 - vbar2) / np.maximum(denom, 1e-30)
         Rd = _get_Rd_kpc_safe(g)
@@ -689,18 +692,18 @@ def kappa_radius_resolved(results_dir: str,
     bin_csv = Path(results_dir)/f"{out_prefix}_binned.csv"
     binned.to_csv(bin_csv, index=False)
 
-    # 預測曲線 y_pred = eta / x  (若 x=r_kpc，則用樣本 Rd 的中位數換成 eta*Rd_med/x)
+    # **修正點 A**：參考曲線用 A = eta_phys/eps_den
     if x_kind == "r_over_Rd":
         xgrid = np.linspace(max(x_min, 1e-3), x_max, 400)
-        ypred = eta / np.maximum(xgrid, 1e-6)
-        pred_label = r"$\eta/x$"
+        ypred = (eta/eps_den) / np.maximum(xgrid, 1e-6)
+        pred_label = r"$({\eta}/{\varepsilon_{\rm den}})/x$"
     else:
         Rd_med = float(np.median(df["Rd_kpc"]))
         xgrid = np.linspace(max(x_min, 1e-3), x_max, 400)
-        ypred = (eta * Rd_med) / np.maximum(xgrid, 1e-6)
-        pred_label = r"$\eta\,R_{d,{\rm med}}/r$"
+        ypred = (eta/eps_den) * (Rd_med) / np.maximum(xgrid, 1e-6)
+        pred_label = r"$({\eta}/{\varepsilon_{\rm den}})\,R_{d,{\rm med}}/r$"
 
-    # 圖與 x=2.2 檢查
+    # 圖與（可選）x 標記
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots(figsize=(5.6, 4.0), dpi=150)
     ax.plot(xgrid, ypred, linestyle="--", linewidth=1.2, label=pred_label)
@@ -712,7 +715,6 @@ def kappa_radius_resolved(results_dir: str,
 
     xcheck = {}
     if x_kind == "r_over_Rd":
-        # 線性內插 binned median 取得 y_med at 指定 x
         def _interp(xs, ys, x0):
             xs = np.asarray(xs); ys = np.asarray(ys)
             m = np.isfinite(xs) & np.isfinite(ys)
@@ -721,24 +723,21 @@ def kappa_radius_resolved(results_dir: str,
             return float(np.interp(x0, xs[m], ys[m]))
         for x0 in (x_markers or []):
             y_med = _interp(binned["x_mid"], binned["q50"], float(x0))
-            y_th  = float(eta / max(x0, 1e-6))
+            y_th  = float((eta/eps_den) / max(x0, 1e-6))
             xcheck[str(x0)] = dict(y_median=y_med, y_pred=y_th, delta=y_med - y_th)
-            # 視覺標記
             ax.axvline(x0, linestyle=":", linewidth=1.0, alpha=0.6)
             if np.isfinite(y_med):
                 ax.scatter([x0],[y_med], s=28, zorder=5, label=f"median @ x={x0:g}")
             ax.scatter([x0],[y_th], s=28, marker="x", zorder=5, label=f"pred @ x={x0:g}")
 
-    # 圖例與輸出
     ax.legend()
     out_png = Path(results_dir)/f"{out_prefix}.png"
     fig.tight_layout()
     fig.savefig(out_png)
     plt.close(fig)
 
-    # 寫出 x=2.2 檢查摘要
     with open(Path(results_dir)/f"{out_prefix}_xcheck.json","w") as f:
-        json.dump(dict(x_kind=x_kind, eta=eta, xcheck=xcheck), f, indent=2)
+        json.dump(dict(x_kind=x_kind, eta=eta, eps_den=float(eps_den), xcheck=xcheck), f, indent=2)
 
     return binned, out_png
 
@@ -767,10 +766,7 @@ def kappa_two_param_fit(results_dir: str,
                         out_json: str | None = None) -> dict:
     """
     讀取 {results_dir}/{prefix}_binned.csv，對 q50 做 y=A/x+B 擬合。
-    - 若 eps_norm="cos"：eta_hat=A、B_cos=B。
-    - 若 eps_norm="fit"：需同時提供 epsilon_cos（或 omega_lambda），將
-        eta_hat = A * (eps_fit/eps_cos)， B_cos = B * (eps_fit/eps_cos)。
-    會把結果寫到 out_json（預設落在 results_dir 下，檔名 *_abfit.json）。
+    注意：A 是「圖上」的幅度（已除 eps_den）。物理振幅 ~ A * eps_den。
     """
     import json, numpy as np, pandas as pd, math
     from pathlib import Path
@@ -795,12 +791,12 @@ def kappa_two_param_fit(results_dir: str,
         epsilon_cos = 1.47
 
     if eps_norm == "cos":
-        eta_hat = fit["A"]
+        eta_hat = fit["A"]            # 這是「圖上」的幅度；物理 ~ A*eps_cos
         B_cos   = fit["B"]
         scale   = 1.0
     elif eps_norm == "fit":
         scale   = float(eps_fit) / float(epsilon_cos)
-        eta_hat = fit["A"] * scale
+        eta_hat = fit["A"] * scale    # 換算到 /ε_cos 的口徑
         B_cos   = fit["B"] * scale
     else:
         raise ValueError("eps_norm must be 'fit' or 'cos'.")
@@ -846,11 +842,10 @@ def kappa_two_param_bootstrap(results_dir: str,
         raise FileNotFoundError(f"{per_csv} not found. Run `ptquat exp kappa-prof` first.")
 
     df = pd.read_csv(per_csv)
-    # 只留必要欄位
     need = {"galaxy","x","y"}
     if not need.issubset(set(df.columns)):
         raise ValueError(f"{per_csv} needs columns {need}")
-    # 取得 eps_fit / eps_cos
+
     summ = yaml.safe_load(open(res/"global_summary.yaml"))
     eps_fit = float(summ.get("epsilon_median")) if summ.get("epsilon_median") is not None else np.nan
     if epsilon_cos is None and omega_lambda is not None:
@@ -865,11 +860,9 @@ def kappa_two_param_bootstrap(results_dir: str,
     G = len(gals)
 
     for _ in range(int(n_boot)):
-        # 以星系為單位重抽樣
         pick = gals[rng.integers(0, G, size=G)]
         sdf = pd.concat([df.loc[df["galaxy"]==g] for g in pick], ignore_index=True)
 
-        # 重新分箱（與 kappa_profile 相近）：用 bootstrap 樣本 x 的 2–98% 分位界線
         x = sdf["x"].values
         x_min = float(np.nanquantile(x, 0.02))
         x_max = float(np.nanquantile(x, 0.98))
@@ -915,7 +908,6 @@ def kappa_two_param_bootstrap(results_dir: str,
         json.dump(out, f, indent=2)
     return out
 
-# --- Add to: src/ptquat/experiments.py ---
 
 def kappa_profile_fit(results_dir: str,
                       prefix: str,
@@ -926,8 +918,7 @@ def kappa_profile_fit(results_dir: str,
                       seed: int = 1234) -> Dict[str, Any]:
     """
     讀取 {results_dir}/{prefix}_binned.csv 的 (x_mid, q50)，以 y = A*(1/x) + B 做 OLS。
-    輸出 A, B, R2, N，並報告換算到 cosmology（/ε_cos）後的 η_hat 與 B_cos。
-    若 bootstrap>0，回傳/儲存 p16/p50/p84。
+    A 為圖上幅度（已除 eps_den）；物理幅度 ≈ A * eps_den。
     """
     import numpy as np, pandas as pd, json, yaml
     from pathlib import Path
@@ -937,36 +928,30 @@ def kappa_profile_fit(results_dir: str,
     if not binned_csv.exists():
         raise FileNotFoundError(f"{binned_csv} not found. Run kappa-prof first with the same prefix.")
 
-    # 讀 global summary 取 epsilon_fit
     summ = yaml.safe_load(open(res/"global_summary.yaml"))
     eps_fit = float(summ.get("epsilon_median", np.nan))
     if eps_norm not in ("cos", "fit"):
         raise ValueError("eps_norm must be 'cos' or 'fit'.")
 
-    # 目標 ε_cos
     if eps_norm == "cos":
         eps_cos = _eps_cos_from_args(epsilon_cos, omega_lambda)
     else:
-        eps_cos = float(_eps_cos_from_args(None, 0.685))  # 只用來做比例換算輸出，值不影響 A,B
+        eps_cos = float(_eps_cos_from_args(None, 0.685))  # 僅用於輸出換算
 
     df = pd.read_csv(binned_csv)
     m = np.isfinite(df.q50) & np.isfinite(df.x_mid) & (df.x_mid > 0)
     x = df.loc[m, "x_mid"].to_numpy()
-    y = df.loc[m, "q50"].to_numpy()           # 已是 /ε_den（跟 kappa-prof 的 eps_norm 一致）
+    y = df.loc[m, "q50"].to_numpy()
     if x.size < 3:
         raise RuntimeError("Not enough bins to fit (need >=3).")
     X = np.vstack([1.0/x, np.ones_like(x)]).T
     A, B = np.linalg.lstsq(X, y, rcond=None)[0]
 
-    # R2（對 y 的 OLS 拟合）
     yhat = X @ np.array([A, B])
     ss_res = float(np.sum((y - yhat)**2))
     ss_tot = float(np.sum((y - y.mean())**2))
     R2 = 1.0 - (ss_res/ss_tot if ss_tot>0 else np.nan)
 
-    # 轉成 cosmology 口徑
-    # 若 eps_norm=="cos"，則 A 就是 η_hat，B 就是 B_cos。
-    # 若 eps_norm=="fit"，需乘比例 scale = eps_fit/eps_cos。
     scale = float(eps_fit/eps_cos) if np.isfinite(eps_fit) and eps_cos else 1.0
     eta_hat = (A * scale) if (eps_norm=="fit") else A
     B_cos   = (B * scale) if (eps_norm=="fit") else B
@@ -982,7 +967,6 @@ def kappa_profile_fit(results_dir: str,
     with open(res/f"{prefix}_fit_summary.json", "w") as f:
         json.dump(out_main, f, indent=2)
 
-    # bootstrap
     if bootstrap and bootstrap>0:
         rng = np.random.default_rng(seed)
         A_s, B_s = [], []

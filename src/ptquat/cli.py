@@ -120,10 +120,11 @@ def main(argv=None):
     group.add_argument("--omega-lambda", type=float, default=None)
 
     # exp kappa-gal（每星系）
-    kgal = sx.add_parser("kappa-gal", help="Per-galaxy kappa check")
+    kgal = sx.add_parser("kappa-gal", help="Per-galaxy kappa check (eta is physical; code scales by eps_den)")
     kgal.add_argument("--results", required=True)
     kgal.add_argument("--data", default="dataset/sparc_tidy.csv")
-    kgal.add_argument("--eta", type=float, default=0.15)
+    kgal.add_argument("--eta", type=float, default=0.15,
+        help="PHYSICAL eta. Because y is normalized by eps_den, the code uses (eta/eps_den) internally.")
     kgal.add_argument("--frac-vmax", type=float, default=0.9)
     kgal.add_argument("--nsamp", type=int, default=300)
     kgal.add_argument("--prefix", default="kappa_gal")
@@ -135,10 +136,11 @@ def main(argv=None):
     grp_k.add_argument("--omega-lambda", type=float, default=None)
 
     # exp kappa-prof（半徑解析）
-    kpro = sx.add_parser("kappa-prof", help="Radius-resolved stacked kappa profile")
+    kpro = sx.add_parser("kappa-prof", help="Radius-resolved stacked kappa profile (eta is physical; plot uses eta/eps_den)")
     kpro.add_argument("--results", required=True)
     kpro.add_argument("--data", default="dataset/sparc_tidy.csv")
-    kpro.add_argument("--eta", type=float, default=0.15)
+    kpro.add_argument("--eta", type=float, default=0.15,
+        help="PHYSICAL eta. The reference curve is (eta/eps_den)/x.")
     kpro.add_argument("--nbins", type=int, default=24)
     kpro.add_argument("--min-per-bin", type=int, default=20)
     kpro.add_argument("--x-kind", choices=["r_over_Rd","r_kpc"], default="r_over_Rd")
@@ -159,7 +161,6 @@ def main(argv=None):
     kfit.add_argument("--bootstrap", type=int, default=0, help="N bootstrap draws; 0 to skip")
     kfit.add_argument("--min-per-bin", type=int, default=20)
     kfit.add_argument("--seed", type=int, default=1234)
-
 
     args = ap.parse_args(argv)
 
@@ -261,6 +262,7 @@ def main(argv=None):
                 x_kind=args.x_kind, eps_norm=args.eps_norm, out_prefix=args.prefix
             )
             print(f"Saved: {png}")
+
         elif args.exp_cmd == "kappa-fit":
             out = EXP.kappa_two_param_fit(
                 results_dir=args.results, prefix=args.prefix,
@@ -276,4 +278,3 @@ def main(argv=None):
                     n_boot=args.bootstrap, min_per_bin=args.min_per_bin, seed=args.seed
                 )
                 print(json.dumps(boot, indent=2))
-
