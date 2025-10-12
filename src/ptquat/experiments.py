@@ -36,6 +36,8 @@ def _call_fit(data_path: str,
               logM200_range: str = "9,13",
               c0: float = 10.0,
               c_slope: float = -0.1,
+              likelihood: str = "gauss",
+              t_dof: float = 8.0,
               backend_hdf5: Optional[str] = None,  # 型別修正：字串路徑
               thin_by: int = 10,
               resume: bool = False) -> Dict:
