@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-# scripts/make_paper_artifacts.py
+# scripts/make_paper_artifacts.py  (finalized pipeline w/ gates)
 from __future__ import annotations
-import argparse
+import argparse, json, shutil, subprocess, sys, platform
+from dataclasses import dataclass
 from pathlib import Path
-import shutil
-import json
+from datetime import datetime
 import yaml
 import pandas as pd
 
@@ -12,6 +12,7 @@ from ptquat.fit_global import run as run_fit_direct
 from ptquat import experiments as EXP
 
 
+# ---------- utils ----------
 def _ensure_dir(p: Path) -> None:
     p.mkdir(parents=True, exist_ok=True)
 
@@ -19,6 +20,16 @@ def _copy_if_exists(src: Path, dst: Path) -> None:
     if src.exists():
         shutil.copyfile(src, dst)
 
+def _git_head() -> str | None:
+    try:
+        return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"]).decode().strip()
+    except Exception:
+        return None
+
+def _now_iso() -> str:
+    return datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+
+# ---------- fitting ----------
 def _run_fit(model: str, tidy_csv: Path, outdir: Path,
              likelihood: str, fast: bool, prior: str = "galaxies-only") -> Path:
     _ensure_dir(outdir)
@@ -65,23 +76,27 @@ def build_compare_csv(run_root: Path, out_csv: Path, models: list[str], like: st
     df.to_csv(out_csv, index=False)
     return df
 
+# ---------- diagnostics on a chosen results_dir ----------
 def run_diagnostics_for(results_dir: Path,
                         tidy_csv: Path,
                         figdir: Path,
                         omega_lambda: float,
                         eta: float,
                         nbins: int) -> None:
-    """在 results_dir 上跑 plateau/ppc/closure + kappa (fit & cos) + z-space 主圖。"""
+    """
+    在 results_dir 上跑 plateau/ppc/closure + κ-profiles（fit & cos）
+    + z-space 主圖/單點，並把主圖拷貝到 figdir。
+    """
     # 1) plateau
     _, plateau_png = EXP.residual_plateau(str(results_dir), str(tidy_csv), nbins=nbins, out_prefix="plateau")
     # 2) PPC coverage
     ppc_json = EXP.ppc_check(str(results_dir), str(tidy_csv), out_prefix="ppc")
-    with open(results_dir/"ppc_coverage.json","w") as f: json.dump(ppc_json, f, indent=2)
+    (results_dir/"ppc_coverage.json").write_text(json.dumps(ppc_json, indent=2))
     # 3) closure
     cl = EXP.closure_test(str(results_dir), omega_lambda=omega_lambda)
-    with open(results_dir/"closure_test.json","w") as f: json.dump(cl, f, indent=2)
+    (results_dir/"closure_test.json").write_text(json.dumps(cl, indent=2))
 
-    # 4) kappa-profile（fit 與 cos）
+    # 4) κ-profile（fit 與 cos）+ AB 擬合（含 bootstrap）
     for eps_norm, prefix in [("fit", "kappa_profile_A_fit"), ("cos","kappa_profile_A_cos")]:
         _, png = EXP.kappa_radius_resolved(
             results_dir=str(results_dir), data_path=str(tidy_csv),
@@ -94,9 +109,9 @@ def run_diagnostics_for(results_dir: Path,
             results_dir=str(results_dir), prefix=prefix, eps_norm=eps_norm,
             omega_lambda=(omega_lambda if eps_norm=="cos" else None), bootstrap=2000, seed=1234
         )
-        with open(results_dir/f"{prefix}_fit_summary.json","w") as f: json.dump(fit_sum, f, indent=2)
+        (results_dir/f"{prefix}_fit_summary.json").write_text(json.dumps(fit_sum, indent=2))
 
-    # 5) per-galaxy κ（論文補充）
+    # 5) per-galaxy κ（obs-debias + cos）
     _ = EXP.kappa_per_galaxy(
         results_dir=str(results_dir), data_path=str(tidy_csv),
         eta=eta, frac_vmax=0.9, nsamp=300, omega_lambda=omega_lambda,
@@ -105,7 +120,7 @@ def run_diagnostics_for(results_dir: Path,
     )
     _copy_if_exists(results_dir/"kappa_gal_obsdebiased_cos.png", figdir / f"kappa_gal_obsdebiased_cos_{results_dir.name}.png")
 
-    # 6) 新增：z-profile（cos, 零參數理論曲線）
+    # 6) z-profile（cos, 附理論零參數曲線）
     _, zpng = EXP.z_profile(
         results_dir=str(results_dir), data_path=str(tidy_csv),
         nbins=nbins, min_per_bin=20, eps_norm="cos",
@@ -114,7 +129,7 @@ def run_diagnostics_for(results_dir: Path,
     )
     _copy_if_exists(zpng, figdir / f"z_profile_cos_{results_dir.name}.png")
 
-    # 7) 新增：z-gal（每星系 r* 單點，cos）
+    # 7) z-gal（每星系 r* 單點，obs-debias + cos）
     _ = EXP.z_per_galaxy(
         results_dir=str(results_dir), data_path=str(tidy_csv),
         frac_vmax=0.9, y_source="obs-debias", rstar_from="obs",
@@ -126,8 +141,101 @@ def run_diagnostics_for(results_dir: Path,
     _copy_if_exists(plateau_png, figdir / f"plateau_{results_dir.name}.png")
 
 
+# ---------- gating / summary ----------
+@dataclass
+class Gates:
+    A_abs_max: float = 0.015      # |A| should be small (A≈0)
+    B_min: float = 0.015          # B should be positive and not tiny
+    B_max: float = 0.10           # generous upper bound
+    ppc68_min: float = 0.20       # PPC 68% coverage reasonable lower bound
+    ppc68_max: float = 0.60       # and upper bound (too-wide means overestimated errors)
+    expect_closure_pass: bool = False  # we currently expect closure to fail
+
+def _evaluate_and_write_summary(run_root: Path, results_dir: Path,
+                                like: str, omega_lambda: float,
+                                gates: Gates) -> dict:
+    """Collect key numbers, check gates, and write one consolidated JSON + Markdown."""
+    # load AB fit (cos)
+    fit_json = results_dir / "kappa_profile_A_cos_fit_summary.json"
+    if not fit_json.exists():
+        raise FileNotFoundError(f"{fit_json} not found; was kappa_profile_fit() run?")
+    fit = json.loads(fit_json.read_text())
+
+    # closure
+    clo = json.loads((results_dir/"closure_test.json").read_text())
+
+    # ppc
+    ppc = json.loads((results_dir/"ppc_coverage.json").read_text())
+
+    # global (for H0)
+    gsum = yaml.safe_load((results_dir/"global_summary.yaml").read_text())
+    H0_si = float(gsum.get("H0_si"))
+
+    # derive baseline Δa ≈ B*ε_cos*cH0
+    eps_cos = float(fit["epsilon_cos"])
+    A = float(fit["A"]); B = float(fit["B"])
+    c = 299792458.0  # m/s
+    delta_a = B * eps_cos * c * H0_si  # m s^-2
+
+    # gates
+    checks = {
+        "A_small": (abs(A) <= gates.A_abs_max, {"A": A, "thresh": gates.A_abs_max}),
+        "B_positive": (B >= gates.B_min, {"B": B, "min": gates.B_min}),
+        "B_not_huge": (B <= gates.B_max, {"B": B, "max": gates.B_max}),
+        "PPC68_reasonable": (gates.ppc68_min <= ppc["coverage68"] <= gates.ppc68_max,
+                             {"coverage68": ppc["coverage68"], "range": [gates.ppc68_min, gates.ppc68_max]}),
+        "Closure_expectation": ((clo["pass_within_3sigma"] is True) == gates.expect_closure_pass,
+                                {"pass_within_3sigma": clo["pass_within_3sigma"],
+                                 "expected": gates.expect_closure_pass})
+    }
+    status = "PASS" if all(ok for ok, _ in checks.values()) else "WARN"
+
+    summary = dict(
+        created_at=_now_iso(),
+        platform=dict(python=sys.version.split()[0], system=platform.platform(), git=_git_head()),
+        settings=dict(likelihood=like, omega_lambda=omega_lambda),
+        paths=dict(results_dir=str(results_dir)),
+        metrics=dict(
+            A=A, B=B, R2=float(fit["R2"]),
+            epsilon_cos=eps_cos, epsilon_fit=float(fit["epsilon_fit"]),
+            H0_si=H0_si, delta_a_m_s2=delta_a,
+            ppc_coverage68=float(ppc["coverage68"]), ppc_coverage95=float(ppc["coverage95"]),
+            closure=clo,
+        ),
+        gates=dict(
+            config=gates.__dict__,
+            checks={k: dict(ok=ok, **info) for k,(ok,info) in checks.items()},
+            overall=status
+        )
+    )
+
+    out_json = run_root / "paper_artifacts_summary.json"
+    out_md   = run_root / "paper_artifacts_summary.md"
+    out_json.write_text(json.dumps(summary, indent=2))
+
+    # a short human-readable MD
+    lines = []
+    lines.append(f"# Paper artifacts summary ({status})\n")
+    lines.append(f"- git: `{summary['platform']['git']}`  | like: **{like}**  | ΩΛ={omega_lambda}\n")
+    lines.append(f"- κ-profile (cos) fit: **A={A:.4f}**, **B={B:.4f}**, R²={summary['metrics']['R2']:.2f}")
+    lines.append(f"- Δa baseline ≈ **{delta_a:.2e} m s⁻²**  (B·ε_cos·cH₀)\n")
+    lines.append(f"- PPC 68/95% coverage: {ppc['coverage68']:.3f} / {ppc['coverage95']:.3f}")
+    lines.append(f"- Closure pass_within_3σ: **{clo['pass_within_3sigma']}**  (expected: {gates.expect_closure_pass})\n")
+    lines.append("## Gate checks\n")
+    for k,(ok,info) in checks.items():
+        lines.append(f"- {k}: **{'OK' if ok else 'WARN'}** — {json.dumps(info)}")
+    out_md.write_text("\n".join(lines))
+
+    print(f"[make] Wrote summary: {out_json}")
+    print(f"[make]          MD : {out_md}")
+    print(f"[make] Overall gate: {status}")
+    return summary
+
+
+# ---------- CLI ----------
 def parse_args() -> argparse.Namespace:
-    ap = argparse.ArgumentParser(description="Build EJPC artifacts: fits, diagnostics, κ-profiles (fit & cos), and model-compare.")
+    ap = argparse.ArgumentParser(
+        description="Build EJPC artifacts: fits, diagnostics, κ-profiles (fit & cos), z-space, and model-compare; then run gate checks.")
     ap.add_argument("--data", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--figdir", required=True)
@@ -137,6 +245,14 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--omega-lambda", type=float, default=0.685)
     ap.add_argument("--eta", type=float, default=0.15)
     ap.add_argument("--nbins", type=int, default=24)
+
+    # optional gate overrides
+    ap.add_argument("--gate-A-abs-max", type=float, default=Gates.A_abs_max)
+    ap.add_argument("--gate-B-min", type=float, default=Gates.B_min)
+    ap.add_argument("--gate-B-max", type=float, default=Gates.B_max)
+    ap.add_argument("--gate-ppc68-min", type=float, default=Gates.ppc68_min)
+    ap.add_argument("--gate-ppc68-max", type=float, default=Gates.ppc68_max)
+    ap.add_argument("--gate-closure-should-pass", action="store_true", help="If set, expect closure to pass (defaults to expecting fail).")
     return ap.parse_args()
 
 def main():
@@ -165,6 +281,18 @@ def main():
     print(df.to_string(index=False))
     print(f"\n[make] Compare CSV: {cmp_csv}")
     print(f"[make] Figures collected in: {figdir}")
+
+    # 4) Gate checks + consolidated summary
+    gates = Gates(
+        A_abs_max=args.gate_A_abs_max,
+        B_min=args.gate_B_min,
+        B_max=args.gate_B_max,
+        ppc68_min=args.gate_ppc68_min,
+        ppc68_max=args.gate_ppc68_max,
+        expect_closure_pass=args.gate_closure_should_pass
+    )
+    _evaluate_and_write_summary(run_root, results_dirs[diag_model], like, args.omega_lambda, gates)
+
 
 if __name__ == "__main__":
     main()
