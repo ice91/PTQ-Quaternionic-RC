@@ -196,10 +196,15 @@ def make_rar(results_dir: Path, data_csv: Path, out_name: str = "rar.png") -> Pa
 # ---------- BTFR helpers ----------
 def _guess_scale_1e9(series: pd.Series) -> float:
     """多數 SPARC 的 L3.6 / MHI 以 10^9 單位提供：若中位數 < 1e6，視為 *1e9。"""
-    if series is None or series.empty: return 1.0
+    if series is None or series.empty:
+        return 1.0
     vals = pd.to_numeric(series, errors="coerce")
-    med = np.nanmedian(vals)
-    return 1e9 if np.isfinite(med) and med < 1e6 else 1.0
+    vals = vals[np.isfinite(vals)]
+    if vals.size == 0:
+        return 1.0
+    med = np.median(vals)
+    return 1e9 if med < 1e6 else 1.0
+
 
 def _load_aux_from_table1(table1_path: Path) -> Optional[pd.DataFrame]:
     """從 raw table1 讀 L3.6 -> L36_tot、MHI -> M_HI；如有分量也帶出。"""
