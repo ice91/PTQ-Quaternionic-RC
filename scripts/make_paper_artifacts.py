@@ -292,6 +292,14 @@ def main():
         expect_closure_pass=args.gate_closure_should_pass
     )
     _evaluate_and_write_summary(run_root, results_dirs[diag_model], like, args.omega_lambda, gates)
+    # 產生 closure_strict_panel.pdf（與論文一致）
+    try:
+        from scripts.make_extra_figs import make_closure_panel
+        make_closure_panel(results_dirs[diag_model], Path(figdir), out_name="closure_strict_panel.pdf")
+        print(f"[make] Closure panel written to: {Path(figdir) / 'closure_strict_panel.pdf'}")
+    except Exception as e:
+        print("[make][warn] failed to generate closure panel:", repr(e))
+
 
 
 if __name__ == "__main__":

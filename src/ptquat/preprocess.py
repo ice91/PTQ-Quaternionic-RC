@@ -57,9 +57,54 @@ def build_tidy_csv(
         if b not in t2.columns:
             t2[b] = 0.0
 
+    # 嘗試抽取 BTFR 輔助欄位（支援多別名與 log 欄位）
+    def _pick(df, names: set[str]) -> str | None:
+        for c in df.columns:
+            if c.lower() in names:
+                return c
+        return None
+
+    t1_btfr = t1_raw.rename(columns={"Name":"galaxy"}).copy()
+    cand_Ld = _pick(t1_raw, {"l36_disk","l36d","l3.6d","ldisk","l_d","l36,disc","l36_disc"})
+    cand_Lb = _pick(t1_raw, {"l36_bulge","l36b","l3.6b","lbulge","l_b"})
+    cand_MH = _pick(t1_raw, {"m_hi","mhi","m_gas","mgas","mhi_tot","mhi,tot"})
+    cand_logLd = _pick(t1_raw, {"logl36_disk","logl36d","logl3.6d","logldisk"})
+    cand_logLb = _pick(t1_raw, {"logl36_bulge","logl36b","logl3.6b","loglbulge"})
+    cand_logMH = _pick(t1_raw, {"logm_hi","logmhi","logmgas"})
+
+    extra = None
+    if "galaxy" in t1_btfr.columns:
+        extra = pd.DataFrame({"galaxy": t1_btfr["galaxy"]})
+        if cand_Ld:
+            if "log" in cand_Ld.lower():
+                extra["L36_disk"] = 10.0 ** pd.to_numeric(t1_btfr[cand_Ld], errors="coerce")
+            else:
+                extra["L36_disk"] = pd.to_numeric(t1_btfr[cand_Ld], errors="coerce")
+        elif cand_logLd:
+            extra["L36_disk"] = 10.0 ** pd.to_numeric(t1_btfr[cand_logLd], errors="coerce")
+
+        if cand_Lb:
+            if "log" in cand_Lb.lower():
+                extra["L36_bulge"] = 10.0 ** pd.to_numeric(t1_btfr[cand_Lb], errors="coerce")
+            else:
+                extra["L36_bulge"] = pd.to_numeric(t1_btfr[cand_Lb], errors="coerce")
+        elif cand_logLb:
+            extra["L36_bulge"] = 10.0 ** pd.to_numeric(t1_btfr[cand_logLb], errors="coerce")
+
+        if cand_MH:
+            if "log" in cand_MH.lower():
+                extra["M_HI"] = 10.0 ** pd.to_numeric(t1_btfr[cand_MH], errors="coerce")
+            else:
+                extra["M_HI"] = pd.to_numeric(t1_btfr[cand_MH], errors="coerce")
+        elif cand_logMH:
+            extra["M_HI"] = 10.0 ** pd.to_numeric(t1_btfr[cand_logMH], errors="coerce")
+
+        # 如果全是 NaN/不存在，就放棄 extra
+        if set(extra.columns) <= {"galaxy"}:
+            extra = None
+
     # 處理距離與其不確定度
     if "D_Mpc" not in t1.columns:
-        # 試著從 table2 搬運
         if "Dist" in t2_raw.columns and "Name" in t2_raw.columns:
             t1_fallback = t2_raw[["Name","Dist"]].rename(columns={"Name":"galaxy","Dist":"D_Mpc"}).drop_duplicates("galaxy")
             t1 = t1.merge(t1_fallback, on="galaxy", how="outer")
@@ -77,7 +122,6 @@ def build_tidy_csv(
     cols1 = ["galaxy","D_Mpc","D_err_Mpc","i_deg","i_err_deg","Qual"]
     for c in cols1:
         if c not in t1.columns:
-            # 缺的欄給保守值（Qual 給 9 以便被切掉；其他給 NaN）
             t1[c] = 9 if c == "Qual" else np.nan
 
     tidy = (t2.merge(t1[cols1], on="galaxy", how="left")
@@ -86,14 +130,22 @@ def build_tidy_csv(
               .query("i_deg > @i_min_deg and relD <= @relD_max and Qual <= @qual_max")
               .drop(columns=["relD"]))
 
-    # 最終欄位順序與型別
+    if extra is not None:
+        tidy = tidy.merge(extra, on="galaxy", how="left")
+
+    # 最終欄位（若沒有 BTFR 欄位就補 NaN，避免下游選欄報錯）
     wanted = ["galaxy","r_kpc","v_obs_kms","v_err_kms",
               "v_disk_kms","v_bulge_kms","v_gas_kms",
-              "D_Mpc","D_err_Mpc","i_deg","i_err_deg"]
+              "D_Mpc","D_err_Mpc","i_deg","i_err_deg",
+              "L36_disk","L36_bulge","M_HI"]
+    for c in ["L36_disk","L36_bulge","M_HI"]:
+        if c not in tidy.columns:
+            tidy[c] = np.nan
     tidy = tidy[wanted].copy()
+
     for c in ["r_kpc","v_obs_kms","v_err_kms","v_disk_kms","v_bulge_kms","v_gas_kms","D_Mpc","D_err_Mpc","i_deg","i_err_deg"]:
         tidy[c] = pd.to_numeric(tidy[c], errors="coerce")
-    tidy = tidy.dropna()
+    tidy = tidy.dropna(subset=["r_kpc","v_obs_kms","v_err_kms","D_Mpc","D_err_Mpc","i_deg","i_err_deg"])
 
     out_csv = Path(out_csv)
     out_csv.parent.mkdir(parents=True, exist_ok=True)

@@ -78,16 +78,14 @@ def _sb_classes_from_csv(csv_path: Path, per: pd.DataFrame, gdict: Dict[str,Gala
     key = None
     for k in ("sb_class","SBclass","sbClass","SB_CLASS"):
         if k in df.columns: key = k; break
-    # explicit label provided
     if key is not None:
         m = df.groupby("galaxy")[key].first().to_dict()
         return {str(k): str(v).upper() for k,v in m.items() if k in per.index}
-    # fallback: proxy mu0 ~ U_med * Vdisk^2(2.2 Rd) / Rd
+    # fallback proxy: mu0 ~ U_med * Vdisk^2(2.2Rd) / Rd
     proxy = []
     for name, g in gdict.items():
         if name not in per.index: continue
         Rd = _get_Rd_kpc_safe(g)
-        # 取最貼近 2.2 Rd 的點
         idx = int(np.argmin(np.abs(g.r_kpc - 2.2*Rd)))
         Vd2 = float(g.v_disk[idx]**2) if len(g.v_disk)>0 else np.nan
         U   = float(per.loc[name,"Upsilon_med"]) if "Upsilon_med" in per.columns else np.nan
@@ -116,10 +114,9 @@ def plot_rc_by_sb(results_dir: Path, data_csv: Path) -> List[Path]:
 
     sbmap = _sb_classes_from_csv(data_csv, per, gdict)
     if not sbmap:
-        print("[warn] no sb_class in CSV and proxy failed; skip RC-by-SB.")
+        print("[rc-sb][warn] no sb_class in CSV and proxy failed; skip RC-by-SB.")
         return out_paths
 
-    # 先收集 r/Rd - v_obs
     rows = []
     for name, g in gdict.items():
         if name not in per.index or name not in sbmap: continue
@@ -132,11 +129,9 @@ def plot_rc_by_sb(results_dir: Path, data_csv: Path) -> List[Path]:
     for cls in ("HSB","MSB","LSB"):
         sub = df[df["cls"]==cls].copy()
         if sub.empty: continue
-        # 分箱統計
         edges = np.linspace(max(0.1, sub["x"].quantile(0.02)), sub["x"].quantile(0.98), 24+1)
         mids  = 0.5*(edges[:-1]+edges[1:])
-        q16=q50=q84=None
-        q16=[]; q50=[]; q84=[]
+        q16, q50, q84 = [], [], []
         for i in range(len(edges)-1):
             m = (sub["x"]>=edges[i]) & (sub["x"]<edges[i+1])
             vv = sub.loc[m,"v"].values
@@ -147,7 +142,6 @@ def plot_rc_by_sb(results_dir: Path, data_csv: Path) -> List[Path]:
                 q50.append(float(np.nanpercentile(vv,50)))
                 q84.append(float(np.nanpercentile(vv,84)))
 
-        # 畫圖
         fig, ax = plt.subplots(figsize=(5.6,4.0), dpi=150)
         ax.scatter(sub["x"], sub["v"], s=4, alpha=0.08, label=f"{cls} points")
         ax.fill_between(mids, q16, q84, alpha=0.25, label="16–84%")
@@ -181,7 +175,6 @@ def make_rar(results_dir: Path, data_csv: Path, out_name: str = "rar.png") -> Pa
     df = pd.DataFrame(rows, columns=["gbar","gobs"])
     if df.empty: raise RuntimeError("No valid points for RAR.")
 
-    # 分箱（log gbar）
     logg = np.log10(df["gbar"].values)
     lo, hi = np.nanpercentile(logg, [2,98])
     edges = np.linspace(lo, hi, 26)
@@ -197,12 +190,10 @@ def make_rar(results_dir: Path, data_csv: Path, out_name: str = "rar.png") -> Pa
             q50.append(float(np.nanpercentile(vals,50)))
             q84.append(float(np.nanpercentile(vals,84)))
 
-    # 圖
     fig, ax = plt.subplots(figsize=(5.2,4.6), dpi=150)
     ax.scatter(df["gbar"], df["gobs"], s=4, alpha=0.08, label="points")
     ax.plot(10**mids, 10**np.asarray(q50), linewidth=1.6, label="median")
     ax.fill_between(10**mids, 10**np.asarray(q16), 10**np.asarray(q84), alpha=0.25, label="16–84%")
-    # 1:1
     xs = np.logspace(lo, hi, 200)
     ax.plot(xs, xs, linestyle="--", linewidth=1.0, label="1:1")
     ax.set_xscale("log"); ax.set_yscale("log")
@@ -213,43 +204,114 @@ def make_rar(results_dir: Path, data_csv: Path, out_name: str = "rar.png") -> Pa
     fig.tight_layout(); fig.savefig(out); plt.close(fig)
     return out
 
+# ---------- BTFR utils ----------
+def _load_btfr_aux_from_table1(table1_path: Path) -> Optional[pd.DataFrame]:
+    """從 raw table1 嘗試抽取 L36_disk / L36_bulge / M_HI；支援多別名與 log 欄位。"""
+    if not table1_path.exists():
+        return None
+    t1_raw = pd.read_csv(table1_path)
+    if "Name" not in t1_raw.columns:
+        return None
+    t1 = t1_raw.rename(columns={"Name":"galaxy"}).copy()
+
+    # 常見別名（不分大小寫）
+    def _pick(cands): 
+        for c in t1_raw.columns:
+            lc = c.lower()
+            if lc in cands: return c
+        return None
+
+    Ld  = _pick({"l36_disk","l36d","l3.6d","ldisk","l_d","l36,disc","l36_disc"})
+    Lb  = _pick({"l36_bulge","l36b","l3.6b","lbulge","l_b"})
+    MHI = _pick({"m_hi","mhi","m_gas","mgas","mhi_tot","mhi,tot"})
+
+    logLd  = _pick({"logl36_disk","logl36d","logl3.6d","logldisk"})
+    logLb  = _pick({"logl36_bulge","logl36b","logl3.6b","loglbulge"})
+    logMHI = _pick({"logm_hi","logmhi","logmgas"})
+
+    out = pd.DataFrame()
+    out["galaxy"] = t1["galaxy"]
+
+    if Ld and Ld in t1.columns:
+        out["L36_disk"] = pd.to_numeric(t1[Ld], errors="coerce")
+    elif logLd and logLd in t1.columns:
+        out["L36_disk"] = 10.0 ** pd.to_numeric(t1[logLd], errors="coerce")
+
+    if Lb and Lb in t1.columns:
+        out["L36_bulge"] = pd.to_numeric(t1[Lb], errors="coerce")
+    elif logLb and logLb in t1.columns:
+        out["L36_bulge"] = 10.0 ** pd.to_numeric(t1[logLb], errors="coerce")
+
+    if MHI and MHI in t1.columns:
+        out["M_HI"] = pd.to_numeric(t1[MHI], errors="coerce")
+    elif logMHI and logMHI in t1.columns:
+        out["M_HI"] = 10.0 ** pd.to_numeric(t1[logMHI], errors="coerce")
+
+    keep = {"galaxy","L36_disk","L36_bulge","M_HI"} & set(out.columns)
+    if len(keep) <= 1:
+        return None
+    return out[list(keep)]
+
 # ---------- BTFR ----------
-def make_btfr(results_dir: Path, data_csv: Path, out_name: str = "btfr.png") -> Path:
+def make_btfr(results_dir: Path, data_csv: Path, out_name: str = "btfr.png") -> Optional[Path]:
     summ, per = _read_summary(results_dir)
     gdict = load_tidy_sparc(str(data_csv))
     base = pd.read_csv(data_csv)
     base_grp = base.groupby("galaxy").first()
 
+    # 先嘗試從 tidy 取得 L36_* / M_HI
+    have_tidy_aux = {"L36_disk","L36_bulge","M_HI"} <= set(base_grp.columns)
+
+    # 若 tidy 缺，嘗試讀 raw table1（dataset/raw/vizier_table1.csv）
+    aux_df = None
+    if not have_tidy_aux:
+        cand = [
+            data_csv.parent / "raw" / "vizier_table1.csv",
+            Path("dataset") / "raw" / "vizier_table1.csv"
+        ]
+        for p in cand:
+            aux_df = _load_btfr_aux_from_table1(p)
+            if aux_df is not None:
+                break
+        if aux_df is not None:
+            base_grp = base_grp.merge(aux_df.set_index("galaxy"), left_index=True, right_index=True, how="left")
+
     rows = []
     for name, g in gdict.items():
-        if name not in per.index or name not in base_grp.index: continue
-        # V_flat：最後 20% 半徑的中位數
+        if name not in per.index or name not in base_grp.index: 
+            continue
+
+        # V_flat：最後 20% 半徑區段的中位數
         n = len(g.v_obs)
-        if n < 5: continue
+        if n < 5: 
+            continue
         take = max(3, n//5)
         Vflat = float(np.nanmedian(g.v_obs[-take:]))
 
-        # M_b：星 + 氣（需要 CSV 有 L36_* / M_HI / Mgas）
+        # M_b：星 + 氣
         U  = float(per.loc[name, "Upsilon_med"]) if "Upsilon_med" in per.columns else np.nan
         Ub = float(per.loc[name, "Upsilon_bulge_med"]) if "Upsilon_bulge_med" in per.columns else 0.0
-        row = base_grp.loc[name]
-        Ld  = float(row.get("L36_disk", np.nan))
-        Lb  = float(row.get("L36_bulge", 0.0))
-        MHI = float(row.get("M_HI", row.get("MHI", row.get("Mgas", np.nan))))
-        if not np.isfinite(U) or not np.isfinite(Ld): 
+
+        Ld  = float(base_grp.loc[name].get("L36_disk", np.nan))
+        Lb  = float(base_grp.loc[name].get("L36_bulge", 0.0))
+        MHI = float(base_grp.loc[name].get("M_HI", base_grp.loc[name].get("MHI", base_grp.loc[name].get("Mgas", np.nan))))
+
+        if not np.isfinite(U) or not np.isfinite(Ld):
             continue
+
         Mstar = U*Ld + (Ub*Lb if (np.isfinite(Ub) and np.isfinite(Lb)) else 0.0)
         Mgas  = 1.33*MHI if np.isfinite(MHI) else 0.0
         Mb    = Mstar + Mgas
         if Mb <= 0 or not np.isfinite(Mb): 
             continue
+
         rows.append((float(Vflat), float(Mb)))
 
     if not rows:
-        raise RuntimeError("BTFR needs L36_* and M_HI/Mgas columns in CSV; none found.")
-    df = pd.DataFrame(rows, columns=["Vflat","Mb"])
+        print("[btfr][warn] Missing L36_* and/or M_HI/Mgas columns after tidy+raw fallback; skip BTFR.")
+        return None
 
-    # log–log OLS
+    df = pd.DataFrame(rows, columns=["Vflat","Mb"])
     x = np.log10(df["Vflat"].values); y = np.log10(df["Mb"].values)
     A = np.vstack([x, np.ones_like(x)]).T
     slope, intercept = np.linalg.lstsq(A, y, rcond=None)[0]
@@ -269,7 +331,6 @@ def make_btfr(results_dir: Path, data_csv: Path, out_name: str = "btfr.png") -> 
 
 # ---------- closure strict panel (PDF) ----------
 def make_closure_panel(results_dir: Path, figdir: Path, out_name: str = "closure_strict_panel.pdf") -> Path:
-    # JSON（若無則讀 YAML）
     cjson = results_dir/"closure_test.json"
     if cjson.exists():
         clo = json.loads(cjson.read_text())
@@ -282,7 +343,6 @@ def make_closure_panel(results_dir: Path, figdir: Path, out_name: str = "closure
 
     _ensure_dir(figdir)
     fig, ax = plt.subplots(figsize=(4.5,3.6), dpi=150)
-    # 畫 ε_RC ± 1σ 與 ε_cos，並標示 3σ 帶
     ax.axvline(eps_cos, color="k", linestyle="--", linewidth=1.2, label=r"$\varepsilon_{\rm cos}$")
     ax.errorbar([0],[eps_rc], yerr=[[sig],[sig]], fmt="o", capsize=4, label=r"$\varepsilon_{\rm RC}\pm1\sigma$")
     ax.fill_between([-0.5,0.5], eps_rc-3*sig, eps_rc+3*sig, alpha=0.15, label=r"$\pm3\sigma$")
@@ -315,12 +375,17 @@ def main():
     if args.do_rar:
         out = make_rar(results, data_csv)
         print("[rar] wrote:", out)
-    if args.do_btfr:
-        out = make_btfr(results, data_csv)
-        print("[btfr] wrote:", out)
+    # 先產 closure，避免後面某步失敗而中斷
     if args.make_closure_panel:
         out = make_closure_panel(results, Path(args.figdir))
         print("[closure] wrote:", out)
+    if args.do_btfr:
+        try:
+            out = make_btfr(results, data_csv)
+            if out is not None:
+                print("[btfr] wrote:", out)
+        except Exception as e:
+            print("[btfr][warn]", repr(e))
 
 if __name__ == "__main__":
     main()
