@@ -35,63 +35,17 @@ def _rename_safe(df, mapping):
     return df.rename(columns=cols)
 
 def _norm(s: str) -> str:
-    """欄名正規化：小寫、只留英數"""
-    return re.sub(r'[^a-z0-9]+', '', str(s).lower())
+    return re.sub(r'[^a-z0-9]+', '', s.lower())
 
 def _find_col_regex(cols, must_all: list[str], any_of: list[str] | None = None):
     """在 columns 中找同時包含 must_all（皆需出現）、且（可選）包含 any_of 任一的欄。
-       使用正規化欄名判斷；回傳第一個命中的『原始欄名』或 None。"""
+       使用規則：先正規化欄名再判斷。回傳第一個命中的原始欄名或 None。"""
     any_of = any_of or []
     ncols = {c: _norm(c) for c in cols}
     for c, n in ncols.items():
         if all(k in n for k in must_all) and (not any_of or any(k in n for k in any_of)):
             return c
     return None
-
-def _extract_btfr_aux_from_table1(t1_raw: pd.DataFrame) -> pd.DataFrame | None:
-    """
-    從 VizieR table1 擷取 BTFR 需要的欄位：
-    - L36_total（由 L3.6 或其變體取得）
-    - L36_disk（若無分量，fallback= L36_total）
-    - L36_bulge（若無分量，fallback= 0）
-    - M_HI（由 MHI/M_HI 或其 log 欄取得；log 會轉回線性）
-    回傳含 [galaxy, L36_total, L36_disk, L36_bulge, M_HI] 的 dataframe；若皆拿不到則回傳 None。
-    """
-    if "Name" not in t1_raw.columns:
-        return None
-    t1 = t1_raw.rename(columns={"Name": "galaxy"}).copy()
-    cols = list(t1.columns)
-
-    # 先找「線性」欄；若找不到再找 log 欄
-    c_Ltot   = _find_col_regex(cols, must_all=["l","36"])  # e.g., "L3.6"
-    c_logL   = _find_col_regex(cols, must_all=["log","l","36"])
-
-    c_MHI    = _find_col_regex(cols, must_all=["m","hi"]) or _find_col_regex(cols, must_all=["m","gas"])
-    c_logMHI = _find_col_regex(cols, must_all=["log","m","hi"]) or _find_col_regex(cols, must_all=["log","m","gas"])
-
-    extra = pd.DataFrame({"galaxy": t1["galaxy"]})
-
-    # 亮度：總量
-    if c_Ltot is not None:
-        extra["L36_total"] = pd.to_numeric(t1[c_Ltot], errors="coerce")
-    elif c_logL is not None:
-        extra["L36_total"] = 10.0 ** pd.to_numeric(t1[c_logL], errors="coerce")
-
-    # 拆成 disk/bulge：若沒有分量，採用 fallback
-    if "L36_total" in extra.columns:
-        extra["L36_disk"]  = extra["L36_total"]
-        extra["L36_bulge"] = 0.0
-
-    # 氣體：M_HI
-    if c_MHI is not None:
-        extra["M_HI"] = pd.to_numeric(t1[c_MHI], errors="coerce")
-    elif c_logMHI is not None:
-        extra["M_HI"] = 10.0 ** pd.to_numeric(t1[c_logMHI], errors="coerce")
-
-    useful = set(extra.columns) - {"galaxy"}
-    if not useful:
-        return None
-    return extra
 
 def build_tidy_csv(
     table1_csv: str | Path,
@@ -137,6 +91,7 @@ def build_tidy_csv(
     cols1 = ["galaxy","D_Mpc","D_err_Mpc","i_deg","i_err_deg","Qual"]
     for c in cols1:
         if c not in t1.columns:
+            # 缺的欄給保守值（Qual 給 9 以便被切掉；其他給 NaN）
             t1[c] = 9 if c == "Qual" else np.nan
 
     tidy = (t2.merge(t1[cols1], on="galaxy", how="left")
@@ -145,25 +100,45 @@ def build_tidy_csv(
               .query("i_deg > @i_min_deg and relD <= @relD_max and Qual <= @qual_max")
               .drop(columns=["relD"]))
 
-    # 追加 BTFR 輔助欄位（從 table1 擷取）
-    extra = _extract_btfr_aux_from_table1(t1_raw)
-    if extra is not None:
-        tidy = tidy.merge(extra, on="galaxy", how="left")
+    # --- 把 table1 的 L3.6（總 3.6µm 光度）與 MHI 併到 tidy ---
+    # 欄名：VizieR/ReadMe 顯示為 L3.6（單位通常為 10^9 Lsun），MHI（10^9 Msun）
+    t1_aux = t1_raw.rename(columns={"Name":"galaxy"}).copy()
+    extra = pd.DataFrame({"galaxy": t1_aux["galaxy"]})
+
+    col_L36 = None
+    if "L3.6" in t1_aux.columns:
+        col_L36 = "L3.6"
+    else:
+        # 保險：若不同寫法，做規則搜尋
+        c = _find_col_regex(t1_aux.columns, must_all=["l","36"])
+        col_L36 = c
+
+    if col_L36 is not None:
+        extra["L36_tot"] = pd.to_numeric(t1_aux[col_L36], errors="coerce")
+
+    col_MHI = "MHI" if "MHI" in t1_aux.columns else _find_col_regex(t1_aux.columns, must_all=["m","hi"])
+    if col_MHI is not None:
+        extra["M_HI"] = pd.to_numeric(t1_aux[col_MHI], errors="coerce")
+
+    tidy = tidy.merge(extra, on="galaxy", how="left")
 
     # 最終欄位順序與型別
-    wanted = ["galaxy","r_kpc","v_obs_kms","v_err_kms",
-              "v_disk_kms","v_bulge_kms","v_gas_kms",
-              "D_Mpc","D_err_Mpc","i_deg","i_err_deg",
-              "L36_total","L36_disk","L36_bulge","M_HI"]
-    for c in wanted:
+    base_cols = ["galaxy","r_kpc","v_obs_kms","v_err_kms",
+                 "v_disk_kms","v_bulge_kms","v_gas_kms",
+                 "D_Mpc","D_err_Mpc","i_deg","i_err_deg"]
+    # 附上 BTFR 需要但可為空的欄位
+    opt_cols = ["L36_tot","M_HI","L36_disk","L36_bulge"]
+    for c in opt_cols:
         if c not in tidy.columns:
             tidy[c] = np.nan
 
-    tidy = tidy[wanted].copy()
+    tidy = tidy[base_cols + opt_cols].copy()
+
     for c in ["r_kpc","v_obs_kms","v_err_kms","v_disk_kms","v_bulge_kms","v_gas_kms",
-              "D_Mpc","D_err_Mpc","i_deg","i_err_deg","L36_total","L36_disk","L36_bulge","M_HI"]:
+              "D_Mpc","D_err_Mpc","i_deg","i_err_deg","L36_tot","M_HI","L36_disk","L36_bulge"]:
         tidy[c] = pd.to_numeric(tidy[c], errors="coerce")
-    tidy = tidy.dropna(subset=["galaxy","r_kpc","v_obs_kms","v_err_kms","D_Mpc","D_err_Mpc","i_deg","i_err_deg"])
+
+    tidy = tidy.dropna(subset=["r_kpc","v_obs_kms","v_err_kms","D_Mpc","D_err_Mpc","i_deg","i_err_deg"])
 
     out_csv = Path(out_csv)
     out_csv.parent.mkdir(parents=True, exist_ok=True)
