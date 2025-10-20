@@ -49,7 +49,7 @@ def _make_vfun(model: str, H0_si: float, per_row: pd.Series, g: GalaxyData,
         return (lambda rk: model_v_ptq_screen(U, eps, qq, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si),
                 vbar_squared_kms2(U, g.v_disk, g.v_bulge, g.v_gas))
     if model == "ptq-split":
-        Ud = float(per_row["Upsilon_med"]); Ub = float(per_row["Upsilon_bulge_med"])
+        Ud = float(per_row["Upsilon_med"]); Ub = float(per_row.get("Upsilon_bulge_med", Ud))
         return (lambda rk: model_v_ptq_split(Ud, Ub, eps, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si),
                 Ud*(g.v_disk**2) + Ub*(g.v_bulge**2) + g.v_gas**2)
     if model == "baryon":
@@ -78,10 +78,11 @@ def _sb_classes_from_csv(csv_path: Path, per: pd.DataFrame, gdict: Dict[str,Gala
     key = None
     for k in ("sb_class","SBclass","sbClass","SB_CLASS"):
         if k in df.columns: key = k; break
+    # explicit label provided
     if key is not None:
         m = df.groupby("galaxy")[key].first().to_dict()
         return {str(k): str(v).upper() for k,v in m.items() if k in per.index}
-    # fallback proxy: mu0 ~ U_med * Vdisk^2(2.2Rd) / Rd
+    # fallback: proxy mu0 ~ U_med * Vdisk^2(2.2 Rd) / Rd
     proxy = []
     for name, g in gdict.items():
         if name not in per.index: continue
@@ -114,7 +115,7 @@ def plot_rc_by_sb(results_dir: Path, data_csv: Path) -> List[Path]:
 
     sbmap = _sb_classes_from_csv(data_csv, per, gdict)
     if not sbmap:
-        print("[rc-sb][warn] no sb_class in CSV and proxy failed; skip RC-by-SB.")
+        print("[warn] no sb_class in CSV and proxy failed; skip RC-by-SB.")
         return out_paths
 
     rows = []
@@ -131,7 +132,7 @@ def plot_rc_by_sb(results_dir: Path, data_csv: Path) -> List[Path]:
         if sub.empty: continue
         edges = np.linspace(max(0.1, sub["x"].quantile(0.02)), sub["x"].quantile(0.98), 24+1)
         mids  = 0.5*(edges[:-1]+edges[1:])
-        q16, q50, q84 = [], [], []
+        q16=[]; q50=[]; q84=[]
         for i in range(len(edges)-1):
             m = (sub["x"]>=edges[i]) & (sub["x"]<edges[i+1])
             vv = sub.loc[m,"v"].values
@@ -165,7 +166,6 @@ def make_rar(results_dir: Path, data_csv: Path, out_name: str = "rar.png") -> Pa
     for name, g in gdict.items():
         if name not in per.index: continue
         vfun, vbar2 = _make_vfun(model, H0_si, per.loc[name], g, eps, q, a0)
-        vmod = vfun(g.r_kpc)  # 未直接用，但保留以便擴充
         r_m  = np.maximum(g.r_kpc*KPC, 1e-30)
         gobs = (g.v_obs**2) * (KM**2) / r_m
         gbar = (vbar2)       * (KM**2) / r_m
@@ -204,123 +204,119 @@ def make_rar(results_dir: Path, data_csv: Path, out_name: str = "rar.png") -> Pa
     fig.tight_layout(); fig.savefig(out); plt.close(fig)
     return out
 
-# ---------- BTFR utils ----------
-def _load_btfr_aux_from_table1(table1_path: Path) -> Optional[pd.DataFrame]:
-    """從 raw table1 嘗試抽取 L36_disk / L36_bulge / M_HI；支援多別名與 log 欄位。"""
-    if not table1_path.exists():
-        return None
-    t1_raw = pd.read_csv(table1_path)
-    if "Name" not in t1_raw.columns:
-        return None
-    t1 = t1_raw.rename(columns={"Name":"galaxy"}).copy()
-
-    # 常見別名（不分大小寫）
-    def _pick(cands): 
-        for c in t1_raw.columns:
-            lc = c.lower()
-            if lc in cands: return c
-        return None
-
-    Ld  = _pick({"l36_disk","l36d","l3.6d","ldisk","l_d","l36,disc","l36_disc"})
-    Lb  = _pick({"l36_bulge","l36b","l3.6b","lbulge","l_b"})
-    MHI = _pick({"m_hi","mhi","m_gas","mgas","mhi_tot","mhi,tot"})
-
-    logLd  = _pick({"logl36_disk","logl36d","logl3.6d","logldisk"})
-    logLb  = _pick({"logl36_bulge","logl36b","logl3.6b","loglbulge"})
-    logMHI = _pick({"logm_hi","logmhi","logmgas"})
-
-    out = pd.DataFrame()
-    out["galaxy"] = t1["galaxy"]
-
-    if Ld and Ld in t1.columns:
-        out["L36_disk"] = pd.to_numeric(t1[Ld], errors="coerce")
-    elif logLd and logLd in t1.columns:
-        out["L36_disk"] = 10.0 ** pd.to_numeric(t1[logLd], errors="coerce")
-
-    if Lb and Lb in t1.columns:
-        out["L36_bulge"] = pd.to_numeric(t1[Lb], errors="coerce")
-    elif logLb and logLb in t1.columns:
-        out["L36_bulge"] = 10.0 ** pd.to_numeric(t1[logLb], errors="coerce")
-
-    if MHI and MHI in t1.columns:
-        out["M_HI"] = pd.to_numeric(t1[MHI], errors="coerce")
-    elif logMHI and logMHI in t1.columns:
-        out["M_HI"] = 10.0 ** pd.to_numeric(t1[logMHI], errors="coerce")
-
-    keep = {"galaxy","L36_disk","L36_bulge","M_HI"} & set(out.columns)
-    if len(keep) <= 1:
-        return None
-    return out[list(keep)]
-
 # ---------- BTFR ----------
+def _guess_scale_1e9(series: pd.Series) -> float:
+    """若中位數 < 1e6，視為以 10^9 單位提供，需乘 1e9。否則回傳 1。"""
+    if series is None:
+        return 1.0
+    vals = pd.to_numeric(series, errors="coerce")
+    if vals.dropna().empty:
+        return 1.0
+    med = np.nanmedian(vals)
+    return 1e9 if np.isfinite(med) and med < 1e6 else 1.0
+
 def make_btfr(results_dir: Path, data_csv: Path, out_name: str = "btfr.png") -> Optional[Path]:
     summ, per = _read_summary(results_dir)
     gdict = load_tidy_sparc(str(data_csv))
     base = pd.read_csv(data_csv)
     base_grp = base.groupby("galaxy").first()
 
-    # 先嘗試從 tidy 取得 L36_* / M_HI
-    have_tidy_aux = {"L36_disk","L36_bulge","M_HI"} <= set(base_grp.columns)
-
-    # 若 tidy 缺，嘗試讀 raw table1（dataset/raw/vizier_table1.csv）
-    aux_df = None
-    if not have_tidy_aux:
-        cand = [
-            data_csv.parent / "raw" / "vizier_table1.csv",
-            Path("dataset") / "raw" / "vizier_table1.csv"
-        ]
-        for p in cand:
-            aux_df = _load_btfr_aux_from_table1(p)
-            if aux_df is not None:
-                break
-        if aux_df is not None:
-            base_grp = base_grp.merge(aux_df.set_index("galaxy"), left_index=True, right_index=True, how="left")
+    # 單位偵測（一次決定整欄是否需要 ×1e9）
+    s_Ld = _guess_scale_1e9(base_grp.get("L36_disk"))
+    s_Lb = _guess_scale_1e9(base_grp.get("L36_bulge"))
+    s_Lt = _guess_scale_1e9(base_grp.get("L36_total"))
+    s_H  = _guess_scale_1e9(base_grp.get("M_HI"))
 
     rows = []
+    used_names = []
     for name, g in gdict.items():
         if name not in per.index or name not in base_grp.index: 
             continue
 
-        # V_flat：最後 20% 半徑區段的中位數
+        # V_flat：最後 20% 半徑的中位數
         n = len(g.v_obs)
         if n < 5: 
             continue
         take = max(3, n//5)
         Vflat = float(np.nanmedian(g.v_obs[-take:]))
 
-        # M_b：星 + 氣
-        U  = float(per.loc[name, "Upsilon_med"]) if "Upsilon_med" in per.columns else np.nan
-        Ub = float(per.loc[name, "Upsilon_bulge_med"]) if "Upsilon_bulge_med" in per.columns else 0.0
+        # 讀亮度與氣體（容忍多種欄位與 fallback）
+        row = base_grp.loc[name]
+        # 亮度優先序：L36_disk/L36_bulge -> L36_total -> L3.6
+        Ld  = row.get("L36_disk",  np.nan)
+        Lb  = row.get("L36_bulge", np.nan)
+        Ltot= row.get("L36_total", row.get("L3.6", np.nan))
 
-        Ld  = float(base_grp.loc[name].get("L36_disk", np.nan))
-        Lb  = float(base_grp.loc[name].get("L36_bulge", 0.0))
-        MHI = float(base_grp.loc[name].get("M_HI", base_grp.loc[name].get("MHI", base_grp.loc[name].get("Mgas", np.nan))))
+        # 套用欄位縮放
+        if np.isfinite(Ld):   Ld   = float(Ld)   * s_Ld
+        if np.isfinite(Lb):   Lb   = float(Lb)   * s_Lb
+        if np.isfinite(Ltot): Ltot = float(Ltot) * s_Lt
 
-        if not np.isfinite(U) or not np.isfinite(Ld):
+        # 若沒有分量：用總量當 disk、bulge=0
+        if not np.isfinite(Ld) and np.isfinite(Ltot):
+            Ld = Ltot
+        if not np.isfinite(Lb):
+            Lb = 0.0
+
+        # 氣體
+        MHI = row.get("M_HI", row.get("MHI", row.get("Mgas", np.nan)))
+        if np.isfinite(MHI): 
+            MHI = float(MHI) * s_H
+
+        # M_*：若沒有分量或沒有 Ub，就用 U 統一
+        U  = float(per.loc[name].get("Upsilon_med", np.nan))
+        Ub = float(per.loc[name].get("Upsilon_bulge_med", U))
+        if not (np.isfinite(U) and np.isfinite(Ld)) and not (np.isfinite(U) and np.isfinite(Ltot)):
+            # 沒有足夠的星光資訊
             continue
 
-        Mstar = U*Ld + (Ub*Lb if (np.isfinite(Ub) and np.isfinite(Lb)) else 0.0)
-        Mgas  = 1.33*MHI if np.isfinite(MHI) else 0.0
-        Mb    = Mstar + Mgas
+        if np.isfinite(Ld) and np.isfinite(Lb):
+            Mstar = U*Ld + (Ub if np.isfinite(Ub) else U)*Lb
+        elif np.isfinite(Ltot):
+            Mstar = U * Ltot
+        else:
+            continue
+
+        Mgas = 1.33*MHI if np.isfinite(MHI) else 0.0
+        Mb   = Mstar + Mgas
         if Mb <= 0 or not np.isfinite(Mb): 
             continue
 
         rows.append((float(Vflat), float(Mb)))
+        used_names.append(name)
 
     if not rows:
-        print("[btfr][warn] Missing L36_* and/or M_HI/Mgas columns after tidy+raw fallback; skip BTFR.")
+        print("[btfr][warn] no usable galaxies (need L3.6 or L36_* and M_HI/MHI). Skip BTFR.")
         return None
 
     df = pd.DataFrame(rows, columns=["Vflat","Mb"])
+
+    # log–log OLS
     x = np.log10(df["Vflat"].values); y = np.log10(df["Mb"].values)
     A = np.vstack([x, np.ones_like(x)]).T
     slope, intercept = np.linalg.lstsq(A, y, rcond=None)[0]
+    yfit = slope*x + intercept
+    scatter = float(np.sqrt(np.nanmean((y - yfit)**2)))  # RMS dex
 
-    fig, ax = plt.subplots(figsize=(5.2,4.6), dpi=150)
-    ax.scatter(df["Vflat"], df["Mb"], s=12, alpha=0.6, label="galaxies")
-    xs = np.logspace(np.nanmin(x), np.nanmax(x), 200, base=10.0)
+    # 存 fit 結果
+    fit = dict(
+        N=len(df),
+        galaxies=used_names,
+        slope=float(slope),
+        intercept=float(intercept),
+        rms_dex=scatter,
+        x_median=float(np.nanmedian(df["Vflat"])),
+        y_median=float(np.nanmedian(df["Mb"])),
+        note="Units scaled to Msun via 1e9-heuristic when needed."
+    )
+    with open(results_dir/"btfr_fit.json","w") as f:
+        json.dump(fit, f, indent=2)
+
+    fig, ax = plt.subplots(figsize=(5.6,4.8), dpi=150)
+    ax.scatter(df["Vflat"], df["Mb"], s=14, alpha=0.7, label=f"galaxies (N={len(df)})")
+    xs = np.logspace(np.nanmin(x), np.nanmax(x), 220, base=10.0)
     ax.plot(xs, 10**(slope*np.log10(xs)+intercept),
-            linewidth=1.6, label=rf"fit: $\log M_b={slope:.2f}\log V_f+{intercept:.2f}$")
+            linewidth=1.8, label=rf"fit: $\log M_b={slope:.2f}\log V_f+{intercept:.2f}$")
     ax.set_xscale("log"); ax.set_yscale("log")
     ax.set_xlabel(r"$V_f\,[{\rm km\,s^{-1}}]$")
     ax.set_ylabel(r"$M_b\,[M_\odot]$")
@@ -375,17 +371,15 @@ def main():
     if args.do_rar:
         out = make_rar(results, data_csv)
         print("[rar] wrote:", out)
-    # 先產 closure，避免後面某步失敗而中斷
+    if args.do_btfr:
+        out = make_btfr(results, data_csv)
+        if out is None:
+            print("[btfr] skipped.")
+        else:
+            print("[btfr] wrote:", out)
     if args.make_closure_panel:
         out = make_closure_panel(results, Path(args.figdir))
         print("[closure] wrote:", out)
-    if args.do_btfr:
-        try:
-            out = make_btfr(results, data_csv)
-            if out is not None:
-                print("[btfr] wrote:", out)
-        except Exception as e:
-            print("[btfr][warn]", repr(e))
 
 if __name__ == "__main__":
     main()
