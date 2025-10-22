@@ -8,7 +8,6 @@ from .preprocess import build_tidy_csv
 from .fit_global import run as run_fit
 from . import experiments as EXP
 
-
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="ptquat", description="PT-Quaternionic SPARC workflow")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -47,24 +46,23 @@ def main(argv=None):
     p2.add_argument("--likelihood", choices=["gauss","t"], default="gauss")
     p2.add_argument("--t-dof", type=float, default=8.0)
 
-    # experiments group (單一 "exp" 子命令)
+    # experiments group
     exp = sub.add_parser("exp", help="Supplementary experiments & robustness")
     sx = exp.add_subparsers(dest="exp_cmd", required=True)
 
-    # exp ppc
+    # ppc
     ppc = sx.add_parser("ppc", help="Posterior(-like) predictive check on an existing results dir")
     ppc.add_argument("--results", required=True, help="Path to a finished results dir")
     ppc.add_argument("--data",   default="dataset/sparc_tidy.csv")
     ppc.add_argument("--prefix", default="ppc")
 
-    # exp stress
+    # stress
     pst = sx.add_parser("stress", help="Inflate i_err/D_err and re-fit")
     pst.add_argument("--data", default="dataset/sparc_tidy.csv")
     pst.add_argument("--outroot", default="results/stress")
     pst.add_argument("--model", choices=["ptq","ptq-nu","ptq-screen","ptq-split","baryon","mond","nfw1p"], default="ptq-screen")
     pst.add_argument("--scale-i", type=float, default=2.0)
     pst.add_argument("--scale-D", type=float, default=2.0)
-    # passthrough fit args
     pst.add_argument("--prior", choices=["galaxies-only","planck-anchored"], default="galaxies-only")
     pst.add_argument("--sigma-sys", type=float, default=4.0)
     pst.add_argument("--H0-kms-mpc", type=float, default=None)
@@ -74,13 +72,12 @@ def main(argv=None):
     pst.add_argument("--likelihood", choices=["gauss","t"], default="gauss")
     pst.add_argument("--t-dof", type=float, default=8.0)
 
-    # exp mask
+    # mask
     pmk = sx.add_parser("mask", help="Mask inner radii r<rmin_kpc and re-fit")
     pmk.add_argument("--data", default="dataset/sparc_tidy.csv")
     pmk.add_argument("--outroot", default="results/mask")
     pmk.add_argument("--model", choices=["ptq","ptq-nu","ptq-screen","ptq-split","baryon","mond","nfw1p"], default="ptq-screen")
     pmk.add_argument("--rmin-kpc", type=float, default=2.0)
-    # passthrough
     pmk.add_argument("--prior", choices=["galaxies-only","planck-anchored"], default="galaxies-only")
     pmk.add_argument("--sigma-sys", type=float, default=4.0)
     pmk.add_argument("--H0-kms-mpc", type=float, default=None)
@@ -90,13 +87,12 @@ def main(argv=None):
     pmk.add_argument("--likelihood", choices=["gauss","t"], default="gauss")
     pmk.add_argument("--t-dof", type=float, default=8.0)
 
-    # exp H0
+    # H0
     ph0 = sx.add_parser("H0", help="Scan H0 sensitivity")
     ph0.add_argument("--data", default="dataset/sparc_tidy.csv")
     ph0.add_argument("--outroot", default="results/H0_scan")
     ph0.add_argument("--model", choices=["ptq","ptq-nu","ptq-screen"], default="ptq-screen")
     ph0.add_argument("--H0-list", type=float, nargs="+", default=[60.0, 67.4, 70.0, 73.0, 76.0])
-    # passthrough
     ph0.add_argument("--prior", choices=["galaxies-only","planck-anchored"], default="galaxies-only")
     ph0.add_argument("--sigma-sys", type=float, default=4.0)
     ph0.add_argument("--nwalkers", default="4x")
@@ -105,52 +101,58 @@ def main(argv=None):
     ph0.add_argument("--likelihood", choices=["gauss","t"], default="gauss")
     ph0.add_argument("--t-dof", type=float, default=8.0)
 
-    # exp plateau
+    # plateau
     ppl = sx.add_parser("plateau", help="Make stacked residual-acceleration plateau plot from a results dir")
     ppl.add_argument("--results", required=True)
     ppl.add_argument("--data", default="dataset/sparc_tidy.csv")
     ppl.add_argument("--nbins", type=int, default=24)
     ppl.add_argument("--prefix", default="plateau")
 
-    # exp closure
+    # closure
     pcl = sx.add_parser("closure", help="Cross-scale closure test: epsilon_cos vs epsilon_RC")
     pcl.add_argument("--results", required=True)
     group = pcl.add_mutually_exclusive_group(required=True)
     group.add_argument("--epsilon-cos", type=float, default=None)
     group.add_argument("--omega-lambda", type=float, default=None)
 
-    # exp kappa-gal（每星系）
-    kgal = sx.add_parser("kappa-gal", help="Per-galaxy kappa check (eta is physical; code scales by eps_den)")
+    # kappa-gal（G.2）
+    kgal = sx.add_parser("kappa-gal", help="Per-galaxy kappa check (x=h/r*, y=eps_eff/eps_den)")
     kgal.add_argument("--results", required=True)
     kgal.add_argument("--data", default="dataset/sparc_tidy.csv")
-    kgal.add_argument("--eta", type=float, default=0.15,
-        help="PHYSICAL eta. Because y is normalized by eps_den, the code uses (eta/eps_den) internally.")
+    kgal.add_argument("--eta", type=float, default=0.15)
     kgal.add_argument("--frac-vmax", type=float, default=0.9)
     kgal.add_argument("--nsamp", type=int, default=300)
     kgal.add_argument("--prefix", default="kappa_gal")
     kgal.add_argument("--y-source", choices=["model","obs","obs-debias"], default="model")
-    kgal.add_argument("--eps-norm", choices=["fit","cos"], default="fit")
+    kgal.add_argument("--eps-norm", choices=["fit","cos"], default="cos")  # 改預設
     kgal.add_argument("--rstar-from", choices=["model","obs"], default="model")
+    # 新增：厚度來源與回歸
+    kgal.add_argument("--h-mode", choices=["obs","const","bytype"], default="const")
+    kgal.add_argument("--zeta-const", type=float, default=0.12)
+    kgal.add_argument("--zeta-disk", type=float, default=0.10)
+    kgal.add_argument("--zeta-early", type=float, default=0.20)
+    kgal.add_argument("--regression", choices=["deming","ols"], default="deming")
     grp_k = kgal.add_mutually_exclusive_group(required=False)
     grp_k.add_argument("--epsilon-cos", type=float, default=None)
     grp_k.add_argument("--omega-lambda", type=float, default=None)
 
-    # exp kappa-prof（半徑解析）
-    kpro = sx.add_parser("kappa-prof", help="Radius-resolved stacked kappa profile (eta is physical; plot uses eta/eps_den)")
+    # kappa-prof（G.3）
+    kpro = sx.add_parser("kappa-prof", help="Radius-resolved stacked kappa profile (outer disk, eps_norm=cos)")
     kpro.add_argument("--results", required=True)
     kpro.add_argument("--data", default="dataset/sparc_tidy.csv")
-    kpro.add_argument("--eta", type=float, default=0.15,
-        help="PHYSICAL eta. The reference curve is (eta/eps_den)/x.")
+    kpro.add_argument("--eta", type=float, default=0.15)
     kpro.add_argument("--nbins", type=int, default=24)
     kpro.add_argument("--min-per-bin", type=int, default=20)
     kpro.add_argument("--x-kind", choices=["r_over_Rd","r_kpc"], default="r_over_Rd")
-    kpro.add_argument("--eps-norm", choices=["fit","cos"], default="fit")
+    kpro.add_argument("--eps-norm", choices=["fit","cos"], default="cos")  # 改預設
     kpro.add_argument("--prefix", default="kappa_profile")
+    kpro.add_argument("--x-range", type=float, nargs=2, metavar=("XMIN","XMAX"), default=(2.0, 5.0),
+                      help="outer-disk mask range when x-kind=r_over_Rd")
     grp_k2 = kpro.add_mutually_exclusive_group(required=False)
     grp_k2.add_argument("--epsilon-cos", type=float, default=None)
     grp_k2.add_argument("--omega-lambda", type=float, default=None)
 
-    # exp kappa-fit（從 kappa_profile_* 估計 A,B 與 bootstrap）
+    # kappa-fit / bootstrap
     kfit = sx.add_parser("kappa-fit", help="Fit y=A/x+B from kappa_profile outputs")
     kfit.add_argument("--results", required=True)
     kfit.add_argument("--prefix", default="kappa_profile")
@@ -162,7 +164,7 @@ def main(argv=None):
     kfit.add_argument("--min-per-bin", type=int, default=20)
     kfit.add_argument("--seed", type=int, default=1234)
 
-    # exp z-profile（零自由度：x=z=g_N/a0）
+    # z-profile
     zp = sx.add_parser("zprof", help="Radius-resolved zero-parameter collapse in z=g_N/a0")
     zp.add_argument("--results", required=True)
     zp.add_argument("--data", default="dataset/sparc_tidy.csv")
@@ -177,7 +179,7 @@ def main(argv=None):
     grp_z1.add_argument("--epsilon-cos", type=float, default=None)
     grp_z1.add_argument("--omega-lambda", type=float, default=None)
 
-    # exp z-gal（每星系在 r* 的單點）
+    # z-gal
     zg = sx.add_parser("zgal", help="Per-galaxy single-point at r*: z=g_N/a0 vs y=eps_eff/eps_den")
     zg.add_argument("--results", required=True)
     zg.add_argument("--data", default="dataset/sparc_tidy.csv")
@@ -276,9 +278,11 @@ def main(argv=None):
                 results_dir=args.results, data_path=args.data,
                 eta=args.eta, frac_vmax=args.frac_vmax, nsamp=args.nsamp,
                 epsilon_cos=args.epsilon_cos, omega_lambda=args.omega_lambda,
-                y_source=args.y_source,
-                eps_norm=args.eps_norm,
+                y_source=args.y_source, eps_norm=args.eps_norm,
                 rstar_from=args.rstar_from,
+                h_mode=args.h_mode, zeta_const=args.zeta_const,
+                zeta_disk=args.zeta_disk, zeta_early=args.zeta_early,
+                regression=args.regression,
                 out_prefix=args.prefix
             )
             print(json.dumps(out, indent=2))
@@ -288,7 +292,8 @@ def main(argv=None):
                 results_dir=args.results, data_path=args.data,
                 eta=args.eta, epsilon_cos=args.epsilon_cos, omega_lambda=args.omega_lambda,
                 nbins=args.nbins, min_per_bin=args.min_per_bin,
-                x_kind=args.x_kind, eps_norm=args.eps_norm, out_prefix=args.prefix
+                x_kind=args.x_kind, eps_norm=args.eps_norm, out_prefix=args.prefix,
+                x_range=tuple(args.x_range)
             )
             print(f"Saved: {png}")
 
@@ -307,7 +312,7 @@ def main(argv=None):
                     n_boot=args.bootstrap, min_per_bin=args.min_per_bin, seed=args.seed
                 )
                 print(json.dumps(boot, indent=2))
-                
+
         elif args.exp_cmd == "zprof":
             df, png = EXP.z_profile(
                 results_dir=args.results, data_path=args.data,

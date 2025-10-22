@@ -64,3 +64,37 @@ def plot_residual_plateau(df_points, df_binned, outpath: Path):
     fig.tight_layout()
     fig.savefig(outpath, dpi=160)
     plt.close(fig)
+
+# --- 新增：BTFR 在正確座標（y=V_f^4, x=M_b），理論斜率=1 ---
+def plot_btfr_one2one(Mb: np.ndarray,
+                      Vf: np.ndarray,
+                      outpath_png: str,
+                      Mb_label: str = r"$M_b\,[M_\odot]$",
+                      epsilon: float | None = None):
+    """
+    以理論座標繪製 BTFR：y=V_f^4、x=M_b。參考線固定斜率=1。
+    若提供 epsilon=a0/(cH0)，會在圖中標註（僅作資訊顯示）。
+    """
+    x = np.asarray(Mb, float)
+    y = np.asarray(Vf, float)**4
+
+    fig, ax = plt.subplots(figsize=(6.2, 5.0), dpi=160)
+    ax.scatter(x, y, s=22, alpha=0.85, label=f"galaxies (N={len(x)})")
+
+    xmin = max(np.nanmin(x[x>0]), 1e6)
+    xmax = np.nanmax(x) * 1.2
+    xx = np.logspace(np.log10(xmin), np.log10(xmax), 256)
+    ax.plot(xx, xx, lw=1.6, label="theory: slope = 1")
+
+    ax.set_xscale("log"); ax.set_yscale("log")
+    ax.set_xlabel(Mb_label)
+    ax.set_ylabel(r"$V_f^4\,[{\rm km}^4\,{\rm s}^{-4}]$")
+    if epsilon is not None and np.isfinite(epsilon):
+        ax.text(0.03, 0.06, rf"$\epsilon=a_0/(cH_0)\approx {epsilon:.3f}$",
+                transform=ax.transAxes)
+
+    ax.grid(True, which="both", ls=":", alpha=0.3)
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig(outpath_png)
+    plt.close(fig)

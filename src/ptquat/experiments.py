@@ -18,7 +18,6 @@ from .models import (
 from .fit_global import run as run_fit
 from .plotting import plot_residual_plateau, plot_ppc_hist
 
-
 # -------------------------------
 # 共用：呼叫全域擬合並回傳 summary dict
 # -------------------------------
@@ -38,7 +37,7 @@ def _call_fit(data_path: str,
               c_slope: float = -0.1,
               likelihood: str = "gauss",
               t_dof: float = 8.0,
-              backend_hdf5: Optional[str] = None,  # 型別修正：字串路徑
+              backend_hdf5: Optional[str] = None,
               thin_by: int = 10,
               resume: bool = False) -> Dict:
     argv = [
@@ -63,12 +62,11 @@ def _call_fit(data_path: str,
     if backend_hdf5 is not None: argv.append(f"--backend-hdf5={backend_hdf5}")
     if resume: argv.append("--resume")
 
-    run_fit(argv)  # 會把結果寫到 outdir 下
+    run_fit(argv)
     summ_path = Path(outdir) / "global_summary.yaml"
     if not summ_path.exists():
         raise RuntimeError(f"global_summary.yaml not found at {summ_path}")
     return yaml.safe_load(open(summ_path, "r"))
-
 
 # -------------------------------
 # S1 Posterior(-like) Predictive Check（以中位數參數 + 完整協方差）
@@ -91,7 +89,6 @@ def ppc_check(results_dir: str, data_path: str, out_prefix: str = "ppc") -> dict
     q_med   = summ.get("q_median", None)
     a0_med  = summ.get("a0_median", None)
 
-    # critical multipliers for 68/95
     k68, k95 = 1.0, 1.96
     if like == "t":
         try:
@@ -99,7 +96,7 @@ def ppc_check(results_dir: str, data_path: str, out_prefix: str = "ppc") -> dict
             k68 = float(_t.ppf(0.84, df=nu))
             k95 = float(_t.ppf(0.975, df=nu))
         except Exception:
-            pass  # fallback to Gaussian multipliers
+            pass
 
     gdict = load_tidy_sparc(data_path)
     galaxies = [gdict[k] for k in sorted(gdict.keys())]
@@ -149,9 +146,8 @@ def ppc_check(results_dir: str, data_path: str, out_prefix: str = "ppc") -> dict
         json.dump(out, f, indent=2)
     return out
 
-
 # -------------------------------
-# S2 誤差壓力測試：倍增 i_err / D_err 並重跑
+# S2 誤差壓力測試
 # -------------------------------
 def stress_errors(data_path: str,
                   out_root: str,
@@ -159,9 +155,6 @@ def stress_errors(data_path: str,
                   scale_i: float = 2.0,
                   scale_D: float = 2.0,
                   **fit_kwargs) -> Dict:
-    """
-    複製 CSV，將 i_err_deg 與 D_err_Mpc 乘上給定因子，重跑並回傳 summary。
-    """
     base = pd.read_csv(data_path)
     for col in ["i_err_deg", "D_err_Mpc"]:
         if col not in base.columns:
@@ -178,18 +171,14 @@ def stress_errors(data_path: str,
     summary = _call_fit(str(tmp_csv), str(outdir), model=model, **fit_kwargs)
     return summary
 
-
 # -------------------------------
-# S3 內盤遮罩敏感度：移除 r < rmin_kpc 的資料點
+# S3 內盤遮罩敏感度
 # -------------------------------
 def mask_inner(data_path: str,
                out_root: str,
                model: str,
                rmin_kpc: float = 2.0,
                **fit_kwargs) -> Dict:
-    """
-    製作一份新的 tidy CSV，把半徑小於 rmin_kpc 的觀測點去掉，重跑。
-    """
     base = pd.read_csv(data_path)
     if "r_kpc" not in base.columns:
         raise ValueError("Need 'r_kpc' column in tidy csv.")
@@ -203,18 +192,14 @@ def mask_inner(data_path: str,
     summary = _call_fit(str(tmp_csv), str(outdir), model=model, **fit_kwargs)
     return summary
 
-
 # -------------------------------
-# S4 H0 敏感度：掃過不同 H0 比較 ε/資訊準則
+# S4 H0 掃描
 # -------------------------------
 def scan_H0(data_path: str,
             out_root: str,
             model: str,
             H0_list: List[float],
             **fit_kwargs) -> pd.DataFrame:
-    """
-    對多個 H0 值進行擬合，輸出彙整表格（epsilon, AIC/BIC,...）。
-    """
     out_dir = Path(out_root); out_dir.mkdir(parents=True, exist_ok=True)
     rows = []
     for H0 in H0_list:
@@ -236,7 +221,6 @@ def scan_H0(data_path: str,
     df.to_csv(out_dir / f"{model}_H0_scan.csv", index=False)
     return df
 
-
 # -------------------------------
 # 殘差加速度平臺（堆疊）
 # -------------------------------
@@ -244,13 +228,6 @@ def residual_plateau(results_dir: str,
                      data_path: str,
                      nbins: int = 24,
                      out_prefix: str = "plateau") -> Tuple[pd.DataFrame, Path]:
-    """
-    計算每個資料點的 Δa = v^2/r - a_bar(r)，並以 r_kpc 分箱後取中位數與 16/84 百分位。
-    產出：
-      - {results_dir}/{out_prefix}_per_point.csv
-      - {results_dir}/{out_prefix}_binned.csv
-      - {results_dir}/{out_prefix}.png
-    """
     results = yaml.safe_load(open(Path(results_dir) / "global_summary.yaml"))
     model = results["model"]
     H0_si = float(results.get("H0_si", H0_SI))
@@ -262,7 +239,6 @@ def residual_plateau(results_dir: str,
     gdict = load_tidy_sparc(data_path)
     pts = []
 
-    # helper 取得 v_mod 與 vbar2
     def get_vmod_vbar2(gname: str, g: GalaxyData):
         if model == "ptq":
             U = float(per.loc[gname, "Upsilon_med"])
@@ -293,7 +269,7 @@ def residual_plateau(results_dir: str,
         elif model == "nfw1p":
             U  = float(per.loc[gname, "Upsilon_med"])
             lM = float(per.loc[gname, "log10_M200_med"])
-            vmod = model_v_nfw1p(U, lM, g.r_kpc, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+            vmod = model_v_nfw1p(U, lM, g.r_kpc, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_SI)
             vbar2 = vbar_squared_kms2(U, g.v_disk, g.v_bulge, g.v_gas)
         else:
             raise ValueError(model)
@@ -309,7 +285,6 @@ def residual_plateau(results_dir: str,
     per_csv = Path(results_dir) / f"{out_prefix}_per_point.csv"
     df.to_csv(per_csv, index=False)
 
-    # 分箱統計
     rmin, rmax = float(df["r_kpc"].min()), float(df["r_kpc"].max())
     edges = np.linspace(rmin, rmax, nbins+1)
     mids  = 0.5*(edges[:-1]+edges[1:])
@@ -328,21 +303,16 @@ def residual_plateau(results_dir: str,
     bin_csv = Path(results_dir) / f"{out_prefix}_binned.csv"
     binned.to_csv(bin_csv, index=False)
 
-    # 畫圖
     out_png = Path(results_dir) / f"{out_prefix}.png"
     plot_residual_plateau(df, binned, out_png)
     return df, out_png
 
-
 # -------------------------------
-# 交叉尺度閉合檢驗：ε_cos v.s. ε_RC
+# 交叉尺度閉合檢驗
 # -------------------------------
 def closure_test(results_dir: str,
                  epsilon_cos: Optional[float]=None,
                  omega_lambda: Optional[float]=None) -> Dict:
-    """
-    若給 ωΛ，則 ε_cos = sqrt(ωΛ/(1-ωΛ))；與 results_dir 的 ε_RC 做 3σ 比較。
-    """
     results = yaml.safe_load(open(Path(results_dir)/"global_summary.yaml"))
     eps_rc, eps16, eps84 = results.get("epsilon_median"), results.get("epsilon_p16"), results.get("epsilon_p84")
     if eps_rc is None:
@@ -355,7 +325,6 @@ def closure_test(results_dir: str,
             raise ValueError("omega_lambda must be in (0,1).")
         epsilon_cos = math.sqrt(omega_lambda/(1.0-omega_lambda))
 
-    # 取 1σ ≈ (p84 - p16)/2
     sig = 0.5*abs(float(eps84)-float(eps16)) if (eps16 is not None and eps84 is not None) else np.nan
     diff = float(eps_rc) - float(epsilon_cos)
     result = dict(
@@ -370,11 +339,8 @@ def closure_test(results_dir: str,
         yaml.safe_dump(result, f)
     return result
 
-
-# ====== Kappa checks: per-galaxy & radius-resolved ======
-
+# ====== Util ======
 def _get_Rd_kpc_safe(g: GalaxyData) -> float:
-    """Try to read Rd from GalaxyData; fallback to r_peak(v_disk)/2.2."""
     for attr in ("Rd_kpc", "R_d_kpc", "R_d", "Rd"):
         if hasattr(g, attr):
             val = getattr(g, attr)
@@ -384,14 +350,12 @@ def _get_Rd_kpc_safe(g: GalaxyData) -> float:
                     return v
             except Exception:
                 pass
-    # Fallback: exponential disk peaks ~ at 2.2 Rd
     i_pk = int(np.argmax(g.v_disk))
     rpk = float(g.r_kpc[i_pk]) if len(g.r_kpc) > 0 else 1.0
     return max(rpk / 2.2, 0.1)
 
 def _make_vfun(model: str, H0_si: float, per_row: pd.Series, g: GalaxyData,
                eps: Optional[float], q: Optional[float], a0: Optional[float]):
-    """Return (vfun, vbar2 array). vfun(r_kpc) -> model velocity [km/s]."""
     if model == "ptq":
         U = float(per_row["Upsilon_med"])
         vfun = lambda rk: model_v_ptq(U, eps, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
@@ -421,7 +385,7 @@ def _make_vfun(model: str, H0_si: float, per_row: pd.Series, g: GalaxyData,
     elif model == "nfw1p":
         U  = float(per_row["Upsilon_med"])
         lM = float(per_row["log10_M200_med"])
-        vfun = lambda rk: model_v_nfw1p(U, lM, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+        vfun = lambda rk: model_v_nfw1p(U, lM, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_SI)
         vbar2 = vbar_squared_kms2(U, g.v_disk, g.v_bulge, g.v_gas)
     else:
         raise ValueError(model)
@@ -434,9 +398,9 @@ def _eps_cos_from_args(epsilon_cos: Optional[float], omega_lambda: Optional[floa
         if not (0.0 < omega_lambda < 1.0):
             raise ValueError("omega_lambda must be in (0,1).")
         return float(np.sqrt(omega_lambda/(1.0-omega_lambda)))
-    # default anchor if not provided
     return 1.47
 
+# ====== G.2：每星系（x=h/r*） ======
 def kappa_per_galaxy(results_dir: str,
                      data_path: str,
                      eta: float = 0.15,
@@ -445,22 +409,21 @@ def kappa_per_galaxy(results_dir: str,
                      omega_lambda: Optional[float] = None,
                      nsamp: int = 300,
                      y_source: str = "model",      # "model" | "obs" | "obs-debias"
-                     eps_norm: str = "fit",        # "fit" | "cos"
+                     eps_norm: str = "cos",        # 預設改為 cos
                      rstar_from: str = "model",    # "model" | "obs"
+                     h_mode: str = "const",        # "obs" | "const" | "bytype"
+                     zeta_const: float = 0.12,
+                     zeta_disk: float = 0.10,
+                     zeta_early: float = 0.20,
+                     regression: str = "deming",   # "deming" | "ols"
                      out_prefix: str = "kappa_gal") -> Dict[str, Any]:
     """
-    檢核A：以特徵半徑 r* 做 y 對 x 的迴歸。
-      x = kappa_pred = (eta_phys/eps_den) * (Rd / r*)
-      y = eps_eff / eps_den
-        - eps_den = epsilon_median (eps_norm=fit) 或 ε_cos (eps_norm=cos)
-      y_source 決定 eps_eff 來源；rstar_from 決定 r* 用模型或觀測曲線選點。
-
-    注意：這裡的 eta 是「物理振幅」eta_phys；因縱軸已除 eps_den，
-         我們需用 (eta_phys/eps_den) 來構造自變數，期望斜率 ~ 1。
+    G.2：x = kappa_geom = h/r_*；y = eps_eff/eps_den。
     """
     assert y_source in ("model", "obs", "obs-debias")
     assert eps_norm in ("fit", "cos")
     assert rstar_from in ("model", "obs")
+    assert regression in ("deming", "ols")
 
     res = yaml.safe_load(open(Path(results_dir)/"global_summary.yaml"))
     model  = res["model"]
@@ -471,146 +434,144 @@ def kappa_per_galaxy(results_dir: str,
     a0   = res.get("a0_median")
     per  = pd.read_csv(Path(results_dir)/"per_galaxy_summary.csv").set_index("galaxy")
 
-    # 分母選擇
-    if eps_norm == "fit":
-        eps_den = float(eps_fit_global)
-    else:  # "cos"
-        eps_den = _eps_cos_from_args(epsilon_cos, omega_lambda)
-    if not np.isfinite(eps_den) or eps_den == 0.0:
-        raise ValueError("Invalid epsilon denominator (eps_den). Check --eps-norm / omega-lambda / epsilon-cos.")
+    eps_den = float(eps_fit_global) if (eps_norm=="fit") else _eps_cos_from_args(epsilon_cos, omega_lambda)
+    if not np.isfinite(eps_den) or eps_den <= 0:
+        raise ValueError("Invalid eps_den.")
 
     gdict = load_tidy_sparc(data_path)
     rng = np.random.default_rng(1234)
     rows = []
+
+    def _zeta_of(g: GalaxyData) -> float:
+        if h_mode == "const":
+            return float(zeta_const)
+        if h_mode == "bytype" and hasattr(g, "type_code"):
+            t = str(getattr(g, "type_code"))
+            if t.startswith(("S0","Sa","Sb","E")):
+                return float(zeta_early)
+            return float(zeta_disk)
+        return float(zeta_const)
 
     for name, g in sorted(gdict.items()):
         if name not in per.index:
             continue
         vfun, vbar2 = _make_vfun(model, H0_si, per.loc[name], g, res.get("epsilon_median"), q, a0)
 
-        v_obs = g.v_obs
-        r     = g.r_kpc
+        r = g.r_kpc
         if len(r) < 3:
             continue
-
         v_mod = vfun(r)
-
-        # r* 的選擇與 y_source 無關，由 rstar_from 控制
-        v_for_rstar = v_mod if (rstar_from == "model") else v_obs
+        v_for_rstar = v_mod if (rstar_from == "model") else g.v_obs
         vmax  = float(np.nanmax(v_for_rstar))
         idxs  = np.where(v_for_rstar >= frac_vmax * vmax)[0]
         i_star = int(idxs[0]) if len(idxs) > 0 else int(np.nanargmax(v_for_rstar))
         i_star = max(0, min(i_star, len(r)-1))
         r_star = float(r[i_star])
 
-        # 分母 (c H0) r*
         denom   = float(linear_term_kms2(1.0, np.asarray([r_star]), H0_si=H0_si)[0])   # (cH0) r*
         vbar2_i = float(vbar2[i_star])
 
-        # y_source：決定 eps_eff 的估計方式
         if y_source == "model":
             eps_eff_med = (v_mod[i_star]**2 - vbar2_i) / denom
-            eps_lo = np.nan; eps_hi = np.nan
-
+            eps_lo = eps_hi = np.nan
         elif y_source == "obs":
-            # 用完整 C 抽樣（包含 D/i 與系統樓層）
             C_full = build_covariance(v_mod, r, g.v_err, g.D_Mpc, g.D_err_Mpc,
                                       g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med)
             try:
-                Vs = rng.multivariate_normal(mean=v_obs, cov=C_full, size=nsamp)
+                Vs = rng.multivariate_normal(mean=g.v_obs, cov=C_full, size=nsamp)
                 eps_samp = (Vs[:, i_star]**2 - vbar2_i) / denom
                 eps_eff_med = float(np.percentile(eps_samp, 50))
                 eps_lo      = float(np.percentile(eps_samp, 16))
                 eps_hi      = float(np.percentile(eps_samp, 84))
             except np.linalg.LinAlgError:
                 sig_i = float(np.sqrt(np.clip(np.diag(C_full)[i_star], 1e-30, np.inf)))
-                eps_eff_med = (v_obs[i_star]**2 - vbar2_i) / denom
-                eps_lo  = eps_eff_med - (2*v_obs[i_star]*sig_i)/denom
-                eps_hi  = eps_eff_med + (2*v_obs[i_star]*sig_i)/denom
-
-        else:  # "obs-debias"：只扣測量變異（量測 v_err），不含 D/i 與 sigma_sys
+                eps_eff_med = (g.v_obs[i_star]**2 - vbar2_i) / denom
+                eps_lo  = eps_eff_med - (2*g.v_obs[i_star]*sig_i)/denom
+                eps_hi  = eps_eff_med + (2*g.v_obs[i_star]*sig_i)/denom
+        else:  # "obs-debias"
             sig_i2_meas = float(g.v_err[i_star]**2)
-            eps_eff_med = ((v_obs[i_star]**2 - sig_i2_meas) - vbar2_i) / denom
+            eps_eff_med = ((g.v_obs[i_star]**2 - sig_i2_meas) - vbar2_i) / denom
             try:
                 C_meas_diag = np.diag(np.asarray(g.v_err, float)**2)
-                Vs = rng.multivariate_normal(mean=v_obs, cov=C_meas_diag, size=nsamp)
+                Vs = rng.multivariate_normal(mean=g.v_obs, cov=C_meas_diag, size=nsamp)
                 eps_samp = ((Vs[:, i_star]**2 - sig_i2_meas) - vbar2_i) / denom
                 eps_lo      = float(np.percentile(eps_samp, 16))
                 eps_hi      = float(np.percentile(eps_samp, 84))
             except np.linalg.LinAlgError:
                 sig_i = float(np.sqrt(max(sig_i2_meas, 1e-30)))
-                base  = max(v_obs[i_star]**2 - sig_i2_meas, 0.0)**0.5
+                base  = max(g.v_obs[i_star]**2 - sig_i2_meas, 0.0)**0.5
                 eps_lo  = eps_eff_med - (2*base*sig_i)/denom
                 eps_hi  = eps_eff_med + (2*base*sig_i)/denom
 
         Rd = _get_Rd_kpc_safe(g)
 
-        # **修正點 B**：自變數必須與縱軸正規化一致
-        kappa_pred = float((eta/eps_den) * Rd / r_star)
+        # x = h/r*（優先 obs 厚度，否則以 zeta*Rd 近似）
+        if h_mode == "obs" and hasattr(g, "h_kpc"):
+            try:
+                h_kpc = float(getattr(g, "h_kpc"))
+                if not np.isfinite(h_kpc) or h_kpc <= 0:
+                    h_kpc = _zeta_of(g) * Rd
+            except Exception:
+                h_kpc = _zeta_of(g) * Rd
+        else:
+            h_kpc = _zeta_of(g) * Rd
+
+        x_geom = float(h_kpc / max(r_star, 1e-12))
 
         rows.append(dict(
             galaxy=name,
-            r_star_kpc=r_star,
-            Rd_kpc=Rd,
-            eps_eff_med=eps_eff_med,
-            eps_eff_p16=eps_lo,
-            eps_eff_p84=eps_hi,
-            eps_eff_over_epsden=eps_eff_med/eps_den,
-            kappa_pred=kappa_pred
+            r_star_kpc=r_star, Rd_kpc=Rd, h_kpc=h_kpc,
+            x_geom=x_geom,
+            y_ratio=eps_eff_med/eps_den,
+            y_p16=(eps_lo/eps_den if np.isfinite(eps_lo) else np.nan),
+            y_p84=(eps_hi/eps_den if np.isfinite(eps_hi) else np.nan),
         ))
 
-    # 組表、輸出
-    df = pd.DataFrame(rows)
-    df = df.replace([np.inf, -np.inf], np.nan).dropna(subset=["kappa_pred", "eps_eff_over_epsden"])
-
+    df = pd.DataFrame(rows).replace([np.inf,-np.inf], np.nan).dropna(subset=["x_geom","y_ratio"])
     out_csv = Path(results_dir)/f"{out_prefix}_per_galaxy.csv"
     df.to_csv(out_csv, index=False)
 
-    # OLS: y = a x + b
-    if len(df) >= 2:
-        a, b = np.polyfit(df["kappa_pred"].values, df["eps_eff_over_epsden"].values, 1)
-        yhat = a*df["kappa_pred"].values + b
-        r2 = float(1.0 - np.sum((df["eps_eff_over_epsden"].values - yhat)**2) /
-                          np.sum((df["eps_eff_over_epsden"].values - df["eps_eff_over_epsden"].mean())**2))
-        k_est = a*eta  # 留作舊欄位：a 對應到 A/(eta/eps_den)，乘回 eta 僅供參考
-    else:
-        a = b = r2 = k_est = np.nan
+    a=b=r2=np.nan
+    if len(df) >= 3:
+        x = df["x_geom"].to_numpy(); y = df["y_ratio"].to_numpy()
+        if regression == "deming":
+            sx = np.nanstd(x) if np.isfinite(x).any() else 1.0
+            sy = np.nanstd(y) if np.isfinite(y).any() else 1.0
+            lam = (sy/sx)**2 if np.isfinite(sx*sy) and sx>0 else 1.0
+            xm, ym = np.nanmean(x), np.nanmean(y)
+            Sxx = np.nanmean((x-xm)**2); Syy = np.nanmean((y-ym)**2); Sxy = np.nanmean((x-xm)*(y-ym))
+            a = (Syy - lam*Sxx + np.sqrt((Syy - lam*Sxx)**2 + 4*lam*Sxy**2)) / (2*Sxy)
+            b = ym - a*xm
+        else:
+            a, b = np.polyfit(x, y, 1)
+        yhat = a*x + b
+        r2 = float(1.0 - np.nansum((y - yhat)**2) / np.nansum((y - np.nanmean(y))**2))
 
-    # 圖
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots(figsize=(5.2, 4.2), dpi=150)
-    ax.scatter(df["kappa_pred"], df["eps_eff_over_epsden"], s=18, alpha=0.7, label="galaxies")
-
-    # 參考線：y=x（若 eta/eps_den 等於真實 A，斜率應 ~1）
-    xgrid = np.linspace(0.0, max(1.05*df["kappa_pred"].max(), 0.2), 200) if len(df)>0 else np.linspace(0.0, 0.2, 200)
-    ax.plot(xgrid, xgrid, linestyle="--", linewidth=1.2, label="y = x")
-
+    ax.scatter(df["x_geom"], df["y_ratio"], s=20, alpha=0.8, label="galaxies")
+    xgrid = np.linspace(0, max(1.05*df["x_geom"].max(), 0.25), 200) if len(df)>0 else np.linspace(0, 0.25, 200)
+    ax.plot(xgrid, xgrid, ls="--", lw=1.2, label="y=x")
     if np.isfinite(a):
-        ax.plot(xgrid, a*xgrid + b, linewidth=1.4,
-                label=f"fit: y={a:.2f}x+{b:.2f}, R²={r2:.2f}")
-
-    ylab_den = r"\varepsilon_{\rm fit}" if eps_norm=="fit" else r"\varepsilon_{\rm cos}"
-    ax.set_xlabel(r"$\kappa_{\rm pred}=(\eta/\varepsilon_{\rm den})\,R_d/r_\ast$")
+        ax.plot(xgrid, a*xgrid + b, lw=1.4, label=f"fit: y={a:.2f}x+{b:.2f}, R²={r2:.2f}")
+    ax.set_xlabel(r"$\kappa_{\rm geom}=h/r_\ast$")
+    ylab_den = r"\varepsilon_{\rm cos}" if eps_norm=="cos" else r"\varepsilon_{\rm fit}"
     ax.set_ylabel(rf"$\varepsilon_{{\rm eff}}(r_\ast)/{ylab_den}$")
     ax.legend(); ax.grid(True, alpha=0.25)
     out_png = Path(results_dir)/f"{out_prefix}.png"
     fig.tight_layout(); fig.savefig(out_png); plt.close(fig)
 
-    # 總結
     summ = dict(
-        N=len(df),
-        eta=eta, frac_vmax=frac_vmax, y_source=y_source,
-        slope=a, intercept=b, R2=r2, k_est=k_est,
-        eps_fit=eps_fit_global,
-        eps_den=eps_den,
-        ratio_epsfit_over_epsden=(float(eps_fit_global)/float(eps_den) if (np.isfinite(eps_fit_global) and np.isfinite(eps_den) and eps_den!=0) else np.nan),
+        N=len(df), eta=eta, frac_vmax=frac_vmax, y_source=y_source,
+        slope=float(a), intercept=float(b), R2=float(r2),
+        eps_fit=eps_fit_global, eps_den=float(eps_den),
         csv=str(out_csv), png=str(out_png)
     )
     with open(Path(results_dir)/f"{out_prefix}_summary.json","w") as f:
         json.dump(summ, f, indent=2)
     return summ
 
-
+# ====== G.3：半徑堆疊（外盤遮罩；預設 cos） ======
 def kappa_radius_resolved(results_dir: str,
                           data_path: str,
                           eta: float = 0.15,
@@ -619,9 +580,11 @@ def kappa_radius_resolved(results_dir: str,
                           nbins: int = 24,
                           min_per_bin: int = 20,
                           x_kind: str = "r_over_Rd",
-                          eps_norm: str = "fit",
+                          eps_norm: str = "cos",            # 改預設
                           out_prefix: str = "kappa_profile",
-                          x_markers: Optional[List[float]] = None) -> Tuple[pd.DataFrame, Path]:
+                          x_markers: Optional[List[float]] = None,
+                          x_range: Tuple[float,float] = (2.0, 5.0)  # 外盤遮罩
+                          ) -> Tuple[pd.DataFrame, Path]:
     """
     堆疊半徑剖面。圖上的理論參考線必須用 A = eta_phys/eps_den。
     """
@@ -636,7 +599,6 @@ def kappa_radius_resolved(results_dir: str,
     a0  = res.get("a0_median")
     per = pd.read_csv(Path(results_dir) / "per_galaxy_summary.csv").set_index("galaxy")
 
-    # 分母
     if eps_norm == "fit":
         eps_den = float(eps_fit_global)
     else:
@@ -669,9 +631,14 @@ def kappa_radius_resolved(results_dir: str,
     per_csv = Path(results_dir)/f"{out_prefix}_per_point.csv"
     df.to_csv(per_csv, index=False)
 
-    # 分箱
     if len(df) == 0:
         raise RuntimeError("No valid points for kappa profile.")
+
+    # 外盤遮罩
+    if x_kind == "r_over_Rd" and x_range is not None:
+        lo, hi = float(x_range[0]), float(x_range[1])
+        df = df.loc[(df["x"]>=lo) & (df["x"]<=hi)].copy()
+
     x_min = float(np.quantile(df["x"], 0.02))
     x_max = float(np.quantile(df["x"], 0.98))
     edges = np.linspace(x_min, x_max, nbins+1)
@@ -692,7 +659,7 @@ def kappa_radius_resolved(results_dir: str,
     bin_csv = Path(results_dir)/f"{out_prefix}_binned.csv"
     binned.to_csv(bin_csv, index=False)
 
-    # **修正點 A**：參考曲線用 A = eta_phys/eps_den
+    # 參考曲線：A = (eta/eps_den)
     if x_kind == "r_over_Rd":
         xgrid = np.linspace(max(x_min, 1e-3), x_max, 400)
         ypred = (eta/eps_den) / np.maximum(xgrid, 1e-6)
@@ -703,7 +670,6 @@ def kappa_radius_resolved(results_dir: str,
         ypred = (eta/eps_den) * (Rd_med) / np.maximum(xgrid, 1e-6)
         pred_label = r"$({\eta}/{\varepsilon_{\rm den}})\,R_{d,{\rm med}}/r$"
 
-    # 圖與（可選）x 標記
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots(figsize=(5.6, 4.0), dpi=150)
     ax.plot(xgrid, ypred, linestyle="--", linewidth=1.2, label=pred_label)
@@ -741,10 +707,8 @@ def kappa_radius_resolved(results_dir: str,
 
     return binned, out_png
 
-# ====== 兩參數擬合與 bootstrap（從 kappa_profile_* 輸出檔就地完成） ======
+# ====== 兩參數擬合與 bootstrap（維持你的實作） ======
 def _ab_fit_from_xy(x_mid: np.ndarray, y_med: np.ndarray) -> dict:
-    """線性最小平方法：y = A*(1/x) + B，回傳 A, B, R2, N。"""
-    import numpy as np
     m = np.isfinite(x_mid) & np.isfinite(y_med) & (x_mid > 0)
     x = x_mid[m]; y = y_med[m]
     if x.size < 3:
@@ -757,17 +721,12 @@ def _ab_fit_from_xy(x_mid: np.ndarray, y_med: np.ndarray) -> dict:
     R2 = 1.0 - (ss_res / ss_tot if ss_tot > 0 else np.nan)
     return dict(A=float(A), B=float(B), R2=float(R2), N=int(x.size))
 
-
 def kappa_two_param_fit(results_dir: str,
                         prefix: str = "kappa_profile",
                         eps_norm: str = "cos",
                         epsilon_cos: float | None = None,
                         omega_lambda: float | None = None,
                         out_json: str | None = None) -> dict:
-    """
-    讀取 {results_dir}/{prefix}_binned.csv，對 q50 做 y=A/x+B 擬合。
-    注意：A 是「圖上」的幅度（已除 eps_den）。物理振幅 ~ A * eps_den。
-    """
     import json, numpy as np, pandas as pd, math
     from pathlib import Path
     res = Path(results_dir)
@@ -775,11 +734,9 @@ def kappa_two_param_fit(results_dir: str,
     if not binned_csv.exists():
         raise FileNotFoundError(f"{binned_csv} not found. Run `ptquat exp kappa-prof` first.")
 
-    # 讀入 binned
     b = pd.read_csv(binned_csv)
     fit = _ab_fit_from_xy(b["x_mid"].values, b["q50"].values)
 
-    # 取得 eps_fit 與 eps_cos
     summ = yaml.safe_load(open(res/"global_summary.yaml"))
     eps_fit = float(summ.get("epsilon_median")) if summ.get("epsilon_median") is not None else np.nan
     if epsilon_cos is None and omega_lambda is not None:
@@ -787,16 +744,15 @@ def kappa_two_param_fit(results_dir: str,
             raise ValueError("omega_lambda must be in (0,1)")
         epsilon_cos = float(math.sqrt(float(omega_lambda)/(1.0-float(omega_lambda))))
     if epsilon_cos is None:
-        # fallback：與 kappa_profile 預設一致
         epsilon_cos = 1.47
 
     if eps_norm == "cos":
-        eta_hat = fit["A"]            # 這是「圖上」的幅度；物理 ~ A*eps_cos
+        eta_hat = fit["A"]
         B_cos   = fit["B"]
         scale   = 1.0
     elif eps_norm == "fit":
         scale   = float(eps_fit) / float(epsilon_cos)
-        eta_hat = fit["A"] * scale    # 換算到 /ε_cos 的口徑
+        eta_hat = fit["A"] * scale
         B_cos   = fit["B"] * scale
     else:
         raise ValueError("eps_norm must be 'fit' or 'cos'.")
@@ -816,7 +772,6 @@ def kappa_two_param_fit(results_dir: str,
         json.dump(out, f, indent=2)
     return out
 
-
 def kappa_two_param_bootstrap(results_dir: str,
                               prefix: str = "kappa_profile",
                               eps_norm: str = "cos",
@@ -826,13 +781,6 @@ def kappa_two_param_bootstrap(results_dir: str,
                               min_per_bin: int = 20,
                               seed: int = 1234,
                               out_json: str | None = None) -> dict:
-    """
-    從 {results_dir}/{prefix}_per_point.csv 作「按星系」bootstrap：
-      1) 以 galaxy 為單位重抽樣（同權重），
-      2) 依抽樣集重新分箱（與 kappa_profile 相同做法），取每箱 q50，
-      3) 對 (x_mid, q50) 擬合 y=A/x+B，保留 A, B。
-    產出 A, B 的 16/50/84 百分位，並轉成 (eta_hat, B_cos)。
-    """
     import json, numpy as np, pandas as pd, math
     from pathlib import Path
     rng = np.random.default_rng(int(seed))
