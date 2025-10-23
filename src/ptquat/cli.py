@@ -34,8 +34,10 @@ def main(argv=None):
     s4g.add_argument("--out", default="dataset/geometry/h_catalog.csv", help="Output h-catalog CSV path")
     s4g.add_argument("--prefer", choices=["thin","thick"], default="thin", help="Prefer thin or thick disk thickness")
     s4g.add_argument("--default-rel-err", type=float, default=0.25, help="Fallback relative error when no error column")
-
-
+    # NEW: explicit Vizier IDs & verbose
+    s4g.add_argument("--ids", nargs="+", default=None,
+                     help="Explicit VizieR catalog IDs (e.g. J/A+A/548/A126 J/A+A/533/A104)")
+    s4g.add_argument("--verbose", action="store_true", help="Print diagnostic info")
 
     # fit
     p2 = sub.add_parser("fit", help="Global fits (PTQ / PTQ-ν / PTQ-screen / Baryon / MOND / NFW-1p) with HDF5 backend")
@@ -251,6 +253,8 @@ def main(argv=None):
                 out_csv=args.out,
                 prefer=args.prefer,
                 default_rel_err=args.default_rel_err,
+                vizier_ids=args.ids,
+                verbose=args.verbose,
             )
             print(f"Saved {args.out}  (N={len(df)})")
             # 順便印出前幾列預覽
@@ -310,7 +314,7 @@ def main(argv=None):
                 regression=args.regression, deming_lambda=args.deming_lambda,
                 interpolate_rstar=args.interp_rstar,
                 out_prefix=args.prefix
-            );
+            )
             print(json.dumps(out, indent=2))
 
         elif args.exp_cmd == "kappa-prof":
