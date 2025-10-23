@@ -25,17 +25,16 @@ def main(argv=None):
     p1.add_argument("--reldmax", type=float, default=0.2)
     p1.add_argument("--qual-max", type=int, default=2)
 
-    # geometry 工具
-    g = sub.add_parser("geom", help="Geometry catalog utilities (h-catalog)")
-    gsub = g.add_subparsers(dest="geom_cmd", required=True)
+    # geometry tools
+    geom = sub.add_parser("geom", help="Geometry catalogs (e.g., vertical thickness h)")
+    gsub = geom.add_subparsers(dest="geom_cmd", required=True)
 
-    g_ing = gsub.add_parser("ingest", help="Assemble h-catalog from one or more source CSVs")
-    g_ing.add_argument("--sparc", default="dataset/sparc_tidy.csv")
-    g_ing.add_argument("--sources", nargs="+", default=None,
-                       help="CSV files or directories; if omitted, use dataset/geometry/sources/*.csv")
-    g_ing.add_argument("--out", default="dataset/geometry/h_catalog.csv")
-    g_ing.add_argument("--prefer-thin", action="store_true")
-    g_ing.add_argument("--default-rel-err", type=float, default=0.25)
+    s4g = gsub.add_parser("s4g-hcat", help="Assemble dataset/geometry/h_catalog.csv from S4G edge-on catalogs")
+    s4g.add_argument("--sparc", default="dataset/sparc_tidy.csv", help="Path to tidy SPARC CSV (for distances & name map)")
+    s4g.add_argument("--out", default="dataset/geometry/h_catalog.csv", help="Output h-catalog CSV path")
+    s4g.add_argument("--prefer", choices=["thin","thick"], default="thin", help="Prefer thin or thick disk thickness")
+    s4g.add_argument("--default-rel-err", type=float, default=0.25, help="Fallback relative error when no error column")
+
 
 
     # fit
@@ -243,6 +242,19 @@ def main(argv=None):
         + ([] if args.backend_hdf5 is None else [f"--backend-hdf5={args.backend_hdf5}"])
         + ([f"--thin-by={args.thin_by}"] if args.thin_by else [])
         + (["--resume"] if args.resume else []))
+
+    elif args.cmd == "geom":
+        if args.geom_cmd == "s4g-hcat":
+            from .geometry import build_s4g_h_catalog
+            df = build_s4g_h_catalog(
+                sparc_tidy_csv=args.sparc,
+                out_csv=args.out,
+                prefer=args.prefer,
+                default_rel_err=args.default_rel_err,
+            )
+            print(f"Saved {args.out}  (N={len(df)})")
+            # 順便印出前幾列預覽
+            print(df.head(10).to_string(index=False))
 
     elif args.cmd == "exp":
         if args.exp_cmd == "ppc":
