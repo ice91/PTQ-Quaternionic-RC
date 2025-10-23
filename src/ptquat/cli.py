@@ -8,7 +8,6 @@ from .preprocess import build_tidy_csv
 from .fit_global import run as run_fit
 from . import experiments as EXP
 
-
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="ptquat", description="PT-Quaternionic SPARC workflow")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -34,10 +33,12 @@ def main(argv=None):
     s4g.add_argument("--out", default="dataset/geometry/h_catalog.csv", help="Output h-catalog CSV path")
     s4g.add_argument("--prefer", choices=["thin","thick"], default="thin", help="Prefer thin or thick disk thickness")
     s4g.add_argument("--default-rel-err", type=float, default=0.25, help="Fallback relative error when no error column")
-    # NEW: explicit Vizier IDs & verbose
-    s4g.add_argument("--ids", nargs="+", default=None,
-                     help="Explicit VizieR catalog IDs (e.g. J/A+A/548/A126 J/A+A/533/A104)")
-    s4g.add_argument("--verbose", action="store_true", help="Print diagnostic info")
+    # ★ 新增：明確 IDs、鏡像、逾時、重試、verbose
+    s4g.add_argument("--ids", nargs="*", default=None, help="Explicit VizieR catalog IDs (e.g. J/A+A/548/A126)")
+    s4g.add_argument("--mirror", default=None, help="Preferred VizieR mirror host (e.g. vizier.cfa.harvard.edu)")
+    s4g.add_argument("--timeout", type=float, default=120.0, help="HTTP timeout (seconds) per request")
+    s4g.add_argument("--retries", type=int, default=2, help="Retries per catalog per mirror")
+    s4g.add_argument("--verbose", action="store_true")
 
     # fit
     p2 = sub.add_parser("fit", help="Global fits (PTQ / PTQ-ν / PTQ-screen / Baryon / MOND / NFW-1p) with HDF5 backend")
@@ -253,11 +254,13 @@ def main(argv=None):
                 out_csv=args.out,
                 prefer=args.prefer,
                 default_rel_err=args.default_rel_err,
-                vizier_ids=args.ids,
+                ids=args.ids,
+                mirror=args.mirror,
+                timeout_sec=args.timeout,
+                retries=args.retries,
                 verbose=args.verbose,
             )
             print(f"Saved {args.out}  (N={len(df)})")
-            # 順便印出前幾列預覽
             print(df.head(10).to_string(index=False))
 
     elif args.cmd == "exp":
