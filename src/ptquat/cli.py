@@ -24,6 +24,8 @@ def main(argv=None):
     p1.add_argument("--i-min", type=float, default=30.0)
     p1.add_argument("--reldmax", type=float, default=0.2)
     p1.add_argument("--qual-max", type=int, default=2)
+    p1.add_argument("--h-catalog", type=str, default=None, help="(optional) geometry catalog CSV with h_kpc to merge into tidy")
+
 
     # geometry 工具
     g = sub.add_parser("geom", help="Geometry catalog utilities (h-catalog)")
@@ -220,6 +222,12 @@ def main(argv=None):
         t2 = raw / "vizier_table2.csv"
         out = build_tidy_csv(t1, t2, args.out, i_min_deg=args.i_min, relD_max=args.reldmax, qual_max=args.qual_max)
         print(f"Tidy CSV saved to {out}")
+                # optional merge h
+        if args.h_catalog:
+            from .preprocess import merge_h_into_tidy
+            out_h = merge_h_into_tidy(out, args.h_catalog, tidy_csv_out=out)
+            print(f"Merged h_catalog into tidy: {out_h}")
+
 
     elif args.cmd == "fit":
         run_fit([
