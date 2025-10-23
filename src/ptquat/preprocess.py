@@ -27,7 +27,6 @@ _MAP1 = {
     "Qual": "Qual",
 }
 
-
 _DEFAULT_REL_D_BY_FLAG = {1: 0.20, 2: 0.10}
 _DEFAULT_I_ERR_DEG = 3.0
 
@@ -147,60 +146,3 @@ def build_tidy_csv(
     out_csv.parent.mkdir(parents=True, exist_ok=True)
     tidy.to_csv(out_csv, index=False)
     return out_csv
-
-def _add_name_norm_col(df: pd.DataFrame) -> pd.DataFrame:
-    from .data import _normalize_gal_name
-    df = df.copy()
-    df["galaxy_norm"] = df["galaxy"].astype(str).map(_normalize_gal_name)
-    return df
-
-def merge_h_into_tidy(tidy_csv_in: str | Path,
-                      h_catalog_csv: str | Path,
-                      tidy_csv_out: str | Path | None = None,
-                      name_only: bool = True,
-                      max_sep_arcmin: float = 2.0) -> Path:
-    """
-    將外部 h_catalog 以名稱（必要）／天球座標（若兩邊都有 RA/DEC）合併進 tidy。
-    產出欄位：h_kpc, h_err_kpc, h_match（'name-exact'|'name-loose'|'sky-near'|'unmatched'）
-    """
-    from .data import load_h_catalog, _normalize_gal_name
-    t = pd.read_csv(tidy_csv_in)
-    t = _add_name_norm_col(t)
-
-    H = load_h_catalog(h_catalog_csv)
-
-    # 先做名稱 exact 合併
-    t = t.merge(H[["galaxy_norm","h_kpc","h_err_kpc"]]
-                .dropna(subset=["galaxy_norm"]).drop_duplicates("galaxy_norm"),
-                on="galaxy_norm", how="left", suffixes=("",""))
-    t["h_match"] = np.where(t["h_kpc"].notna(), "name-exact", "unmatched")
-
-    # 若 tidy/H 兩側都有 RA/DEC，嘗試 sky-near 補
-    if (not name_only) and {"RA_deg","DEC_deg"}.issubset(set(t.columns)) and \
-       {"RA_deg","DEC_deg"}.issubset(set(H.columns)):
-        t_missing = t["h_kpc"].isna()
-        if t_missing.any():
-            # 建快速 KD-tree
-            try:
-                from scipy.spatial import cKDTree
-                # 近似：把 RA,DEC 轉成弧度後在球面小角度做近似
-                Hr = np.deg2rad(H[["RA_deg","DEC_deg"]].astype(float).values)
-                tree = cKDTree(Hr)
-                Tr = np.deg2rad(t.loc[t_missing, ["RA_deg","DEC_deg"]].astype(float).values)
-                d, idx = tree.query(Tr, k=1)
-                sep_arcmin = np.rad2deg(d) * 60.0
-                ok = sep_arcmin <= float(max_sep_arcmin)
-                matched = H.iloc[idx[ok]].reset_index(drop=True)
-                sel = t.loc[t_missing].iloc[np.where(ok)[0]].index
-                t.loc[sel, "h_kpc"] = matched["h_kpc"].values
-                t.loc[sel, "h_err_kpc"] = matched["h_err_kpc"].values
-                t.loc[sel, "h_match"] = "sky-near"
-            except Exception:
-                pass
-
-    if tidy_csv_out is None:
-        tidy_csv_out = Path(tidy_csv_in).with_suffix("").as_posix() + "_with_h.csv"
-    tidy_csv_out = Path(tidy_csv_out)
-    tidy_csv_out.parent.mkdir(parents=True, exist_ok=True)
-    t.drop(columns=[c for c in ["galaxy_norm"] if c in t.columns]).to_csv(tidy_csv_out, index=False)
-    return tidy_csv_out
