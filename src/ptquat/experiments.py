@@ -18,6 +18,7 @@ from .models import (
 from .fit_global import run as run_fit
 from .plotting import plot_residual_plateau, plot_ppc_hist
 
+
 # -------------------------------
 # 共用：呼叫全域擬合並回傳 summary dict
 # -------------------------------
@@ -37,7 +38,7 @@ def _call_fit(data_path: str,
               c_slope: float = -0.1,
               likelihood: str = "gauss",
               t_dof: float = 8.0,
-              backend_hdf5: Optional[str] = None,
+              backend_hdf5: Optional[str] = None,  # 型別修正：字串路徑
               thin_by: int = 10,
               resume: bool = False) -> Dict:
     argv = [
@@ -62,20 +63,17 @@ def _call_fit(data_path: str,
     if backend_hdf5 is not None: argv.append(f"--backend-hdf5={backend_hdf5}")
     if resume: argv.append("--resume")
 
-    run_fit(argv)
+    run_fit(argv)  # 會把結果寫到 outdir 下
     summ_path = Path(outdir) / "global_summary.yaml"
     if not summ_path.exists():
         raise RuntimeError(f"global_summary.yaml not found at {summ_path}")
     return yaml.safe_load(open(summ_path, "r"))
 
+
 # -------------------------------
 # S1 Posterior(-like) Predictive Check（以中位數參數 + 完整協方差）
 # -------------------------------
 def ppc_check(results_dir: str, data_path: str, out_prefix: str = "ppc") -> dict:
-    """
-    Posterior(-like) predictive coverage check using median params from results_dir.
-    Uses Student-t critical values if the fitted run used t-likelihood.
-    """
     res = Path(results_dir)
     summ = yaml.safe_load(open(res/"global_summary.yaml"))
     per  = pd.read_csv(res/"per_galaxy_summary.csv").set_index("galaxy")
@@ -89,6 +87,7 @@ def ppc_check(results_dir: str, data_path: str, out_prefix: str = "ppc") -> dict
     q_med   = summ.get("q_median", None)
     a0_med  = summ.get("a0_median", None)
 
+    # critical multipliers for 68/95
     k68, k95 = 1.0, 1.96
     if like == "t":
         try:
@@ -96,7 +95,7 @@ def ppc_check(results_dir: str, data_path: str, out_prefix: str = "ppc") -> dict
             k68 = float(_t.ppf(0.84, df=nu))
             k95 = float(_t.ppf(0.975, df=nu))
         except Exception:
-            pass
+            pass  # fallback to Gaussian multipliers
 
     gdict = load_tidy_sparc(data_path)
     galaxies = [gdict[k] for k in sorted(gdict.keys())]
@@ -146,8 +145,9 @@ def ppc_check(results_dir: str, data_path: str, out_prefix: str = "ppc") -> dict
         json.dump(out, f, indent=2)
     return out
 
+
 # -------------------------------
-# S2 誤差壓力測試
+# S2 誤差壓力測試：倍增 i_err / D_err 並重跑
 # -------------------------------
 def stress_errors(data_path: str,
                   out_root: str,
@@ -171,6 +171,7 @@ def stress_errors(data_path: str,
     summary = _call_fit(str(tmp_csv), str(outdir), model=model, **fit_kwargs)
     return summary
 
+
 # -------------------------------
 # S3 內盤遮罩敏感度
 # -------------------------------
@@ -192,8 +193,9 @@ def mask_inner(data_path: str,
     summary = _call_fit(str(tmp_csv), str(outdir), model=model, **fit_kwargs)
     return summary
 
+
 # -------------------------------
-# S4 H0 掃描
+# S4 H0 敏感度掃描
 # -------------------------------
 def scan_H0(data_path: str,
             out_root: str,
@@ -221,8 +223,9 @@ def scan_H0(data_path: str,
     df.to_csv(out_dir / f"{model}_H0_scan.csv", index=False)
     return df
 
+
 # -------------------------------
-# 殘差加速度平臺（堆疊）
+# 殘差加速度平臺
 # -------------------------------
 def residual_plateau(results_dir: str,
                      data_path: str,
@@ -269,7 +272,7 @@ def residual_plateau(results_dir: str,
         elif model == "nfw1p":
             U  = float(per.loc[gname, "Upsilon_med"])
             lM = float(per.loc[gname, "log10_M200_med"])
-            vmod = model_v_nfw1p(U, lM, g.r_kpc, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_SI)
+            vmod = model_v_nfw1p(U, lM, g.r_kpc, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
             vbar2 = vbar_squared_kms2(U, g.v_disk, g.v_bulge, g.v_gas)
         else:
             raise ValueError(model)
@@ -285,6 +288,7 @@ def residual_plateau(results_dir: str,
     per_csv = Path(results_dir) / f"{out_prefix}_per_point.csv"
     df.to_csv(per_csv, index=False)
 
+    # 分箱統計
     rmin, rmax = float(df["r_kpc"].min()), float(df["r_kpc"].max())
     edges = np.linspace(rmin, rmax, nbins+1)
     mids  = 0.5*(edges[:-1]+edges[1:])
@@ -303,12 +307,14 @@ def residual_plateau(results_dir: str,
     bin_csv = Path(results_dir) / f"{out_prefix}_binned.csv"
     binned.to_csv(bin_csv, index=False)
 
+    # 畫圖
     out_png = Path(results_dir) / f"{out_prefix}.png"
     plot_residual_plateau(df, binned, out_png)
     return df, out_png
 
+
 # -------------------------------
-# 交叉尺度閉合檢驗
+# 交叉尺度閉合檢驗：ε_cos v.s. ε_RC
 # -------------------------------
 def closure_test(results_dir: str,
                  epsilon_cos: Optional[float]=None,
@@ -339,18 +345,17 @@ def closure_test(results_dir: str,
         yaml.safe_dump(result, f)
     return result
 
-# ====== Util ======
+
+# ====== Kappa checks ======
+
 def _get_Rd_kpc_safe(g: GalaxyData) -> float:
-    for attr in ("Rd_kpc", "R_d_kpc", "R_d", "Rd"):
-        if hasattr(g, attr):
-            val = getattr(g, attr)
-            try:
-                v = float(val)
-                if np.isfinite(v) and v > 0:
-                    return v
-            except Exception:
-                pass
-    i_pk = int(np.argmax(g.v_disk))
+    """Prefer explicit Rd_kpc from data; fallback to r_peak(v_disk)/2.2."""
+    if getattr(g, "Rd_kpc", None) is not None:
+        v = float(g.Rd_kpc)
+        if np.isfinite(v) and v > 0:
+            return v
+    # Fallback: exponential disk peaks ~ at 2.2 Rd
+    i_pk = int(np.argmax(g.v_disk)) if len(g.v_disk) > 0 else 0
     rpk = float(g.r_kpc[i_pk]) if len(g.r_kpc) > 0 else 1.0
     return max(rpk / 2.2, 0.1)
 
@@ -385,7 +390,7 @@ def _make_vfun(model: str, H0_si: float, per_row: pd.Series, g: GalaxyData,
     elif model == "nfw1p":
         U  = float(per_row["Upsilon_med"])
         lM = float(per_row["log10_M200_med"])
-        vfun = lambda rk: model_v_nfw1p(U, lM, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_SI)
+        vfun = lambda rk: model_v_nfw1p(U, lM, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
         vbar2 = vbar_squared_kms2(U, g.v_disk, g.v_bulge, g.v_gas)
     else:
         raise ValueError(model)
@@ -398,9 +403,49 @@ def _eps_cos_from_args(epsilon_cos: Optional[float], omega_lambda: Optional[floa
         if not (0.0 < omega_lambda < 1.0):
             raise ValueError("omega_lambda must be in (0,1).")
         return float(np.sqrt(omega_lambda/(1.0-omega_lambda)))
-    return 1.47
+    return 1.47  # default anchor
 
-# ====== G.2：每星系（x=h/r*） ======
+def _rstar_linear_interp(r: np.ndarray, v: np.ndarray, frac_vmax: float) -> float:
+    """
+    Return r* where v crosses f*Vmax using linear interpolation between the first
+    pair (i-1, i) with v[i-1] < fV <= v[i]. If no crossing, fall back to argmax.
+    """
+    r = np.asarray(r, float); v = np.asarray(v, float)
+    if r.size < 2:
+        return float(r[0]) if r.size else 1.0
+    vmax = float(np.nanmax(v))
+    fV = float(frac_vmax) * vmax
+    idxs = np.where(v >= fV)[0]
+    if idxs.size == 0:
+        return float(r[int(np.nanargmax(v))])
+    i = int(idxs[0])
+    if i == 0:
+        return float(r[0])
+    v0, v1 = float(v[i-1]), float(v[i])
+    r0, r1 = float(r[i-1]), float(r[i])
+    if not np.isfinite(v0) or not np.isfinite(v1) or v1 == v0:
+        return float(r[i])
+    w = (fV - v0) / (v1 - v0)
+    return float(r0 + w * (r1 - r0))
+
+def _deming_fit(x: np.ndarray, y: np.ndarray, lam: float = 1.0) -> Tuple[float,float]:
+    """
+    Deming regression (measurement error in both variables), returns (slope, intercept).
+    lam = sigma_x^2 / sigma_y^2. Default 1.0 if unknown.
+    """
+    x = np.asarray(x, float); y = np.asarray(y, float)
+    xbar, ybar = np.nanmean(x), np.nanmean(y)
+    Sxx = np.nanmean((x - xbar)**2)
+    Syy = np.nanmean((y - ybar)**2)
+    Sxy = np.nanmean((x - xbar)*(y - ybar))
+    if not np.isfinite(Sxy) or Sxy == 0.0:
+        return np.nan, np.nan
+    term = (Syy - lam*Sxx)
+    beta = (term + np.sqrt(term*term + 4*lam*Sxy*Sxy)) / (2*Sxy)
+    alpha = ybar - beta*xbar
+    return float(beta), float(alpha)
+
+
 def kappa_per_galaxy(results_dir: str,
                      data_path: str,
                      eta: float = 0.15,
@@ -409,21 +454,21 @@ def kappa_per_galaxy(results_dir: str,
                      omega_lambda: Optional[float] = None,
                      nsamp: int = 300,
                      y_source: str = "model",      # "model" | "obs" | "obs-debias"
-                     eps_norm: str = "cos",        # 預設改為 cos
+                     eps_norm: str = "fit",        # "fit" | "cos"
                      rstar_from: str = "model",    # "model" | "obs"
-                     h_mode: str = "const",        # "obs" | "const" | "bytype"
-                     zeta_const: float = 0.12,
-                     zeta_disk: float = 0.10,
-                     zeta_early: float = 0.20,
-                     regression: str = "deming",   # "deming" | "ols"
+                     regression: str = "ols",      # "ols" | "deming"
+                     deming_lambda: float = 1.0,   # sigma_x^2 / sigma_y^2
+                     interpolate_rstar: bool = True,
                      out_prefix: str = "kappa_gal") -> Dict[str, Any]:
     """
-    G.2：x = kappa_geom = h/r_*；y = eps_eff/eps_den。
+    檢核A：以特徵半徑 r* 做 y 對 x 的迴歸。
+      x = kappa_pred = (eta/eps_den) * (Rd / r*)
+      y = eps_eff / eps_den
     """
     assert y_source in ("model", "obs", "obs-debias")
     assert eps_norm in ("fit", "cos")
     assert rstar_from in ("model", "obs")
-    assert regression in ("deming", "ols")
+    assert regression in ("ols", "deming")
 
     res = yaml.safe_load(open(Path(results_dir)/"global_summary.yaml"))
     model  = res["model"]
@@ -434,23 +479,17 @@ def kappa_per_galaxy(results_dir: str,
     a0   = res.get("a0_median")
     per  = pd.read_csv(Path(results_dir)/"per_galaxy_summary.csv").set_index("galaxy")
 
-    eps_den = float(eps_fit_global) if (eps_norm=="fit") else _eps_cos_from_args(epsilon_cos, omega_lambda)
-    if not np.isfinite(eps_den) or eps_den <= 0:
-        raise ValueError("Invalid eps_den.")
+    # 分母
+    if eps_norm == "fit":
+        eps_den = float(eps_fit_global)
+    else:
+        eps_den = _eps_cos_from_args(epsilon_cos, omega_lambda)
+    if not np.isfinite(eps_den) or eps_den == 0.0:
+        raise ValueError("Invalid epsilon denominator (eps_den).")
 
     gdict = load_tidy_sparc(data_path)
     rng = np.random.default_rng(1234)
     rows = []
-
-    def _zeta_of(g: GalaxyData) -> float:
-        if h_mode == "const":
-            return float(zeta_const)
-        if h_mode == "bytype" and hasattr(g, "type_code"):
-            t = str(getattr(g, "type_code"))
-            if t.startswith(("S0","Sa","Sb","E")):
-                return float(zeta_early)
-            return float(zeta_disk)
-        return float(zeta_const)
 
     for name, g in sorted(gdict.items()):
         if name not in per.index:
@@ -460,118 +499,138 @@ def kappa_per_galaxy(results_dir: str,
         r = g.r_kpc
         if len(r) < 3:
             continue
+        v_obs = g.v_obs
         v_mod = vfun(r)
-        v_for_rstar = v_mod if (rstar_from == "model") else g.v_obs
-        vmax  = float(np.nanmax(v_for_rstar))
-        idxs  = np.where(v_for_rstar >= frac_vmax * vmax)[0]
-        i_star = int(idxs[0]) if len(idxs) > 0 else int(np.nanargmax(v_for_rstar))
-        i_star = max(0, min(i_star, len(r)-1))
-        r_star = float(r[i_star])
 
+        # r*
+        v_for_rstar = v_mod if (rstar_from == "model") else v_obs
+        if interpolate_rstar:
+            r_star = _rstar_linear_interp(r, v_for_rstar, frac_vmax)
+        else:
+            vmax  = float(np.nanmax(v_for_rstar))
+            idxs  = np.where(v_for_rstar >= frac_vmax * vmax)[0]
+            i_star = int(idxs[0]) if len(idxs) > 0 else int(np.nanargmax(v_for_rstar))
+            i_star = max(0, min(i_star, len(r)-1))
+            r_star = float(r[i_star])
+
+        # 找到 r* 對應索引（最近點，僅用於讀 vbar2 與誤差）
+        i_near = int(np.nanargmin(np.abs(r - r_star)))
+        vbar2_i = float(vbar2[i_near])
         denom   = float(linear_term_kms2(1.0, np.asarray([r_star]), H0_si=H0_si)[0])   # (cH0) r*
-        vbar2_i = float(vbar2[i_star])
 
+        # y_source
         if y_source == "model":
-            eps_eff_med = (v_mod[i_star]**2 - vbar2_i) / denom
-            eps_lo = eps_hi = np.nan
+            v_pred2 = float(np.interp(r_star, r, v_mod)**2)  # 內插 v_mod 到 r*
+            eps_eff_med = (v_pred2 - vbar2_i) / denom
+            eps_lo = np.nan; eps_hi = np.nan
+
         elif y_source == "obs":
             C_full = build_covariance(v_mod, r, g.v_err, g.D_Mpc, g.D_err_Mpc,
                                       g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med)
             try:
-                Vs = rng.multivariate_normal(mean=g.v_obs, cov=C_full, size=nsamp)
-                eps_samp = (Vs[:, i_star]**2 - vbar2_i) / denom
+                Vs = rng.multivariate_normal(mean=v_obs, cov=C_full, size=nsamp)
+                v_star = np.interp(r_star, r, Vs)  # 對每條樣本曲線在 r* 內插
+                eps_samp = (v_star**2 - vbar2_i) / denom
                 eps_eff_med = float(np.percentile(eps_samp, 50))
                 eps_lo      = float(np.percentile(eps_samp, 16))
                 eps_hi      = float(np.percentile(eps_samp, 84))
             except np.linalg.LinAlgError:
-                sig_i = float(np.sqrt(np.clip(np.diag(C_full)[i_star], 1e-30, np.inf)))
-                eps_eff_med = (g.v_obs[i_star]**2 - vbar2_i) / denom
-                eps_lo  = eps_eff_med - (2*g.v_obs[i_star]*sig_i)/denom
-                eps_hi  = eps_eff_med + (2*g.v_obs[i_star]*sig_i)/denom
+                sig_i = float(np.sqrt(np.clip(np.diag(C_full)[i_near], 1e-30, np.inf)))
+                v0 = float(np.interp(r_star, r, v_obs))
+                eps_eff_med = (v0**2 - vbar2_i) / denom
+                eps_lo  = eps_eff_med - (2*v0*sig_i)/denom
+                eps_hi  = eps_eff_med + (2*v0*sig_i)/denom
+
         else:  # "obs-debias"
-            sig_i2_meas = float(g.v_err[i_star]**2)
-            eps_eff_med = ((g.v_obs[i_star]**2 - sig_i2_meas) - vbar2_i) / denom
+            sig_i2_meas = float(g.v_err[i_near]**2)
+            v0 = float(np.interp(r_star, r, v_obs))
+            eps_eff_med = ((v0**2 - sig_i2_meas) - vbar2_i) / denom
             try:
                 C_meas_diag = np.diag(np.asarray(g.v_err, float)**2)
-                Vs = rng.multivariate_normal(mean=g.v_obs, cov=C_meas_diag, size=nsamp)
-                eps_samp = ((Vs[:, i_star]**2 - sig_i2_meas) - vbar2_i) / denom
+                Vs = rng.multivariate_normal(mean=v_obs, cov=C_meas_diag, size=nsamp)
+                v_star = np.interp(r_star, r, Vs)
+                eps_samp = ((v_star**2 - sig_i2_meas) - vbar2_i) / denom
                 eps_lo      = float(np.percentile(eps_samp, 16))
                 eps_hi      = float(np.percentile(eps_samp, 84))
             except np.linalg.LinAlgError:
                 sig_i = float(np.sqrt(max(sig_i2_meas, 1e-30)))
-                base  = max(g.v_obs[i_star]**2 - sig_i2_meas, 0.0)**0.5
+                base  = max(v0**2 - sig_i2_meas, 0.0)**0.5
                 eps_lo  = eps_eff_med - (2*base*sig_i)/denom
                 eps_hi  = eps_eff_med + (2*base*sig_i)/denom
 
         Rd = _get_Rd_kpc_safe(g)
-
-        # x = h/r*（優先 obs 厚度，否則以 zeta*Rd 近似）
-        if h_mode == "obs" and hasattr(g, "h_kpc"):
-            try:
-                h_kpc = float(getattr(g, "h_kpc"))
-                if not np.isfinite(h_kpc) or h_kpc <= 0:
-                    h_kpc = _zeta_of(g) * Rd
-            except Exception:
-                h_kpc = _zeta_of(g) * Rd
-        else:
-            h_kpc = _zeta_of(g) * Rd
-
-        x_geom = float(h_kpc / max(r_star, 1e-12))
+        kappa_pred = float((eta/eps_den) * Rd / r_star)
 
         rows.append(dict(
             galaxy=name,
-            r_star_kpc=r_star, Rd_kpc=Rd, h_kpc=h_kpc,
-            x_geom=x_geom,
-            y_ratio=eps_eff_med/eps_den,
-            y_p16=(eps_lo/eps_den if np.isfinite(eps_lo) else np.nan),
-            y_p84=(eps_hi/eps_den if np.isfinite(eps_hi) else np.nan),
+            r_star_kpc=r_star,
+            Rd_kpc=Rd,
+            eps_eff_med=eps_eff_med,
+            eps_eff_p16=eps_lo,
+            eps_eff_p84=eps_hi,
+            eps_eff_over_epsden=eps_eff_med/eps_den,
+            kappa_pred=kappa_pred
         ))
 
-    df = pd.DataFrame(rows).replace([np.inf,-np.inf], np.nan).dropna(subset=["x_geom","y_ratio"])
+    df = pd.DataFrame(rows)
+    df = df.replace([np.inf, -np.inf], np.nan).dropna(subset=["kappa_pred", "eps_eff_over_epsden"])
     out_csv = Path(results_dir)/f"{out_prefix}_per_galaxy.csv"
     df.to_csv(out_csv, index=False)
 
-    a=b=r2=np.nan
-    if len(df) >= 3:
-        x = df["x_geom"].to_numpy(); y = df["y_ratio"].to_numpy()
+    # 回歸
+    if len(df) >= 2:
+        x = df["kappa_pred"].values
+        y = df["eps_eff_over_epsden"].values
         if regression == "deming":
-            sx = np.nanstd(x) if np.isfinite(x).any() else 1.0
-            sy = np.nanstd(y) if np.isfinite(y).any() else 1.0
-            lam = (sy/sx)**2 if np.isfinite(sx*sy) and sx>0 else 1.0
-            xm, ym = np.nanmean(x), np.nanmean(y)
-            Sxx = np.nanmean((x-xm)**2); Syy = np.nanmean((y-ym)**2); Sxy = np.nanmean((x-xm)*(y-ym))
-            a = (Syy - lam*Sxx + np.sqrt((Syy - lam*Sxx)**2 + 4*lam*Sxy**2)) / (2*Sxy)
-            b = ym - a*xm
+            a, b = _deming_fit(x, y, lam=float(deming_lambda))
         else:
             a, b = np.polyfit(x, y, 1)
         yhat = a*x + b
-        r2 = float(1.0 - np.nansum((y - yhat)**2) / np.nansum((y - np.nanmean(y))**2))
+        denom = np.sum((y - y.mean())**2)
+        r2 = float(1.0 - np.sum((y - yhat)**2) / denom) if denom > 0 else np.nan
+        k_est = a*eta
+    else:
+        a = b = r2 = k_est = np.nan
 
+    # 圖
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots(figsize=(5.2, 4.2), dpi=150)
-    ax.scatter(df["x_geom"], df["y_ratio"], s=20, alpha=0.8, label="galaxies")
-    xgrid = np.linspace(0, max(1.05*df["x_geom"].max(), 0.25), 200) if len(df)>0 else np.linspace(0, 0.25, 200)
-    ax.plot(xgrid, xgrid, ls="--", lw=1.2, label="y=x")
+    if len(df) > 0:
+        ax.scatter(df["kappa_pred"], df["eps_eff_over_epsden"], s=18, alpha=0.7, label="galaxies")
+    xgrid = np.linspace(0.0, max(1.05*df["kappa_pred"].max(), 0.2) if len(df)>0 else 0.2, 200)
+    ax.plot(xgrid, xgrid, linestyle="--", linewidth=1.2, label="y = x")
     if np.isfinite(a):
-        ax.plot(xgrid, a*xgrid + b, lw=1.4, label=f"fit: y={a:.2f}x+{b:.2f}, R²={r2:.2f}")
-    ax.set_xlabel(r"$\kappa_{\rm geom}=h/r_\ast$")
-    ylab_den = r"\varepsilon_{\rm cos}" if eps_norm=="cos" else r"\varepsilon_{\rm fit}"
+        ax.plot(xgrid, a*xgrid + b, linewidth=1.4,
+                label=f"{regression} fit: y={a:.2f}x+{b:.2f}, R²={r2:.2f}")
+    ylab_den = r"\varepsilon_{\rm fit}" if eps_norm=="fit" else r"\varepsilon_{\rm cos}"
+    ax.set_xlabel(r"$\kappa_{\rm pred}=(\eta/\varepsilon_{\rm den})\,R_d/r_\ast$")
     ax.set_ylabel(rf"$\varepsilon_{{\rm eff}}(r_\ast)/{ylab_den}$")
     ax.legend(); ax.grid(True, alpha=0.25)
     out_png = Path(results_dir)/f"{out_prefix}.png"
     fig.tight_layout(); fig.savefig(out_png); plt.close(fig)
 
+    # 總結
     summ = dict(
-        N=len(df), eta=eta, frac_vmax=frac_vmax, y_source=y_source,
-        slope=float(a), intercept=float(b), R2=float(r2),
-        eps_fit=eps_fit_global, eps_den=float(eps_den),
+        N=int(len(df)),
+        eta=float(eta),
+        frac_vmax=float(frac_vmax),
+        y_source=y_source,
+        eps_norm=eps_norm,
+        rstar_from=rstar_from,
+        interpolate_rstar=bool(interpolate_rstar),
+        regression=regression,
+        deming_lambda=float(deming_lambda),
+        slope=float(a), intercept=float(b), R2=float(r2), k_est=float(k_est),
+        eps_fit=float(eps_fit_global),
+        eps_den=float(eps_den),
+        ratio_epsfit_over_epsden=(float(eps_fit_global)/float(eps_den) if (np.isfinite(eps_fit_global) and np.isfinite(eps_den) and eps_den!=0) else np.nan),
         csv=str(out_csv), png=str(out_png)
     )
     with open(Path(results_dir)/f"{out_prefix}_summary.json","w") as f:
         json.dump(summ, f, indent=2)
     return summ
 
-# ====== G.3：半徑堆疊（外盤遮罩；預設 cos） ======
+
 def kappa_radius_resolved(results_dir: str,
                           data_path: str,
                           eta: float = 0.15,
@@ -580,14 +639,9 @@ def kappa_radius_resolved(results_dir: str,
                           nbins: int = 24,
                           min_per_bin: int = 20,
                           x_kind: str = "r_over_Rd",
-                          eps_norm: str = "cos",            # 改預設
+                          eps_norm: str = "fit",
                           out_prefix: str = "kappa_profile",
-                          x_markers: Optional[List[float]] = None,
-                          x_range: Tuple[float,float] = (2.0, 5.0)  # 外盤遮罩
-                          ) -> Tuple[pd.DataFrame, Path]:
-    """
-    堆疊半徑剖面。圖上的理論參考線必須用 A = eta_phys/eps_den。
-    """
+                          x_markers: Optional[List[float]] = None) -> Tuple[pd.DataFrame, Path]:
     assert eps_norm in ("fit","cos")
 
     res = yaml.safe_load(open(Path(results_dir)/"global_summary.yaml"))
@@ -633,12 +687,6 @@ def kappa_radius_resolved(results_dir: str,
 
     if len(df) == 0:
         raise RuntimeError("No valid points for kappa profile.")
-
-    # 外盤遮罩
-    if x_kind == "r_over_Rd" and x_range is not None:
-        lo, hi = float(x_range[0]), float(x_range[1])
-        df = df.loc[(df["x"]>=lo) & (df["x"]<=hi)].copy()
-
     x_min = float(np.quantile(df["x"], 0.02))
     x_max = float(np.quantile(df["x"], 0.98))
     edges = np.linspace(x_min, x_max, nbins+1)
@@ -659,7 +707,7 @@ def kappa_radius_resolved(results_dir: str,
     bin_csv = Path(results_dir)/f"{out_prefix}_binned.csv"
     binned.to_csv(bin_csv, index=False)
 
-    # 參考曲線：A = (eta/eps_den)
+    # 參考曲線 A = eta/eps_den
     if x_kind == "r_over_Rd":
         xgrid = np.linspace(max(x_min, 1e-3), x_max, 400)
         ypred = (eta/eps_den) / np.maximum(xgrid, 1e-6)
@@ -946,52 +994,36 @@ def kappa_profile_fit(results_dir: str,
 
 # ---- 追加到檔尾：z-space zero-parameter tests ----
 
+# ---- z-space ----
+
 def _cH0_SI_from_summary(H0_si: float) -> float:
-    """
-    用已存在的 linear_term_kms2(1.0, r_kpc=1) 反推出 cH0 (SI)：
-      (cH0) r |_{r=1kpc} [km^2/s^2]  =  cH0_SI * (1 kpc) / KM^2
-      => cH0_SI = ((cH0)r in km^2/s^2) * KM^2 / KPC
-    """
-    val = float(linear_term_kms2(1.0, np.asarray([1.0]), H0_si=H0_si)[0])  # (cH0) * (1 kpc) in km^2/s^2
-    return val * (KM**2) / KPC  # m/s^2
+    val = float(linear_term_kms2(1.0, np.asarray([1.0]), H0_si=H0_si)[0])
+    return val * (KM**2) / KPC
 
 def _a0_SI_from_summary(eps_fit: float, H0_si: float) -> float:
-    """a0 = ε_fit * cH0 (SI)."""
     return float(eps_fit) * _cH0_SI_from_summary(H0_si)
 
 def _nu_q_of_z(z: np.ndarray, q: float) -> np.ndarray:
-    """PTQ-screen 的插值：nu_q(z) = 1/2 + sqrt(1/4 + z^{-q})，數值上夾住 z。"""
     zz = np.clip(np.asarray(z, dtype=float), 1e-12, np.inf)
     return 0.5 + np.sqrt(0.25 + np.power(zz, -float(q)))
 
 def _f_q(z: np.ndarray, q: float) -> np.ndarray:
-    """f_q(z) = z * (nu_q(z) - 1). 高 z → 常數(約 0.5 z^{1-q})，低 z → ~ z^{1 - q/2}。"""
     return np.asarray(z, float) * (_nu_q_of_z(z, q) - 1.0)
 
 def _build_y_eps_eff_over_epsden(g: GalaxyData,
                                  vfun, vbar2: np.ndarray,
                                  eps_den: float,
                                  H0_si: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    回傳 (x=z, y=eps_eff/eps_den, sigma_y)：
-      z  = g_N/a0，g_N=(vbar^2 * KM^2)/(r*KPC)；a0=eps_fit*cH0
-      y  = (v_obs^2 - vbar^2)/((cH0) r) / eps_den
-      σy ≈ (2 * v_obs * σv) / ((cH0) r * eps_den)  （線性化近似）
-    """
     r_kpc = g.r_kpc
     r_m   = np.maximum(r_kpc * KPC, 1e-30)
     vbar2_kms2 = np.asarray(vbar2, float)
-    # g_N (SI)
     gN = (vbar2_kms2 * (KM**2)) / r_m
-    # (cH0) r in km^2/s^2
     denom = np.maximum(linear_term_kms2(1.0, r_kpc, H0_si=H0_si), 1e-30)
-    # y
     y = (g.v_obs**2 - vbar2_kms2) / denom
     y /= float(eps_den)
-    # σy（用測量誤差；保守不引入 D/i 相關項）
     sig_v = np.asarray(g.v_err, float)
     sigma_y = (2.0 * np.abs(g.v_obs) * sig_v) / (denom * float(eps_den))
-    return gN, y, sigma_y  # gN 仍未除以 a0；由呼叫端轉成 z
+    return gN, y, sigma_y
 
 def z_profile(results_dir: str,
               data_path: str,
@@ -1134,17 +1166,16 @@ def z_profile(results_dir: str,
 def z_per_galaxy(results_dir: str,
                  data_path: str,
                  frac_vmax: float = 0.9,
-                 y_source: str = "obs-debias",   # "model" | "obs" | "obs-debias"
-                 rstar_from: str = "obs",        # r* 取法
+                 y_source: str = "obs-debias",
+                 rstar_from: str = "obs",
                  eps_norm: str = "cos",
                  epsilon_cos: Optional[float] = None,
                  omega_lambda: Optional[float] = None,
                  nsamp: int = 300,
+                 interpolate_rstar: bool = True,
                  out_prefix: str = "z_gal") -> Dict[str, Any]:
     """
-    每星系在 r*（v>=f*Vmax 的第一點）抽一個點：
-      x=z(r*)=g_N/a0、y=ε_eff(r*)/ε_den。
-    y_source 同 kappa-gal；"obs-debias" 僅扣測量噪音 v_err^2。
+    每星系在 r* 的單點：x=z(r*)，y=ε_eff(r*)/ε_den；r* 可用內插。
     """
     assert y_source in ("model","obs","obs-debias")
     assert rstar_from in ("model","obs")
@@ -1176,78 +1207,89 @@ def z_per_galaxy(results_dir: str,
         r = g.r_kpc
         if len(r) < 3:
             continue
+        v_obs = g.v_obs
         v_mod = vfun(r)
-        v_ref = v_mod if rstar_from=="model" else g.v_obs
-        vmax = float(np.nanmax(v_ref)); idxs = np.where(v_ref >= frac_vmax*vmax)[0]
-        i_star = int(idxs[0]) if len(idxs)>0 else int(np.nanargmax(v_ref))
-        i_star = max(0, min(i_star, len(r)-1))
+        v_ref = v_mod if rstar_from=="model" else v_obs
+
+        # r*（可內插）
+        if interpolate_rstar:
+            r_star = _rstar_linear_interp(r, v_ref, frac_vmax)
+        else:
+            vmax = float(np.nanmax(v_ref)); idxs = np.where(v_ref >= frac_vmax*vmax)[0]
+            i_star = int(idxs[0]) if len(idxs)>0 else int(np.nanargmax(v_ref))
+            i_star = max(0, min(i_star, len(r)-1))
+            r_star = float(r[i_star])
+        i_near = int(np.nanargmin(np.abs(r - r_star)))
 
         # z(r*)
-        r_star = float(r[i_star])
         r_m    = max(r_star*KPC, 1e-30)
-        gN_i   = (float(vbar2[i_star]) * (KM**2)) / r_m
+        gN_i   = (float(vbar2[i_near]) * (KM**2)) / r_m
         z_star = gN_i / max(a0_SI, 1e-30)
 
         # y(r*)
-        denom_i = float(linear_term_kms2(1.0, np.asarray([r_star]), H0_si=H0_si)[0])  # (cH0) r*  (km^2/s^2)
+        denom_i = float(linear_term_kms2(1.0, np.asarray([r_star]), H0_si=H0_si)[0])
         if y_source == "model":
-            y_med = (v_mod[i_star]**2 - float(vbar2[i_star])) / denom_i
+            v0 = float(np.interp(r_star, r, v_mod))
+            y_med = (v0**2 - float(vbar2[i_near])) / denom_i
             y_lo = y_hi = np.nan
         elif y_source == "obs":
             C_full = build_covariance(v_mod, r, g.v_err, g.D_Mpc, g.D_err_Mpc,
                                       g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med)
             try:
                 Vs = rng.multivariate_normal(mean=g.v_obs, cov=C_full, size=nsamp)
-                v2 = Vs[:, i_star]**2
-                y_s = (v2 - float(vbar2[i_star])) / denom_i
+                v_star = np.interp(r_star, r, Vs)
+                y_s = (v_star**2 - float(vbar2[i_near])) / denom_i
                 y_med = float(np.nanpercentile(y_s, 50))
                 y_lo  = float(np.nanpercentile(y_s, 16))
                 y_hi  = float(np.nanpercentile(y_s, 84))
             except np.linalg.LinAlgError:
-                sig_i = float(np.sqrt(np.clip(np.diag(C_full)[i_star], 1e-30, np.inf)))
-                y_med = (g.v_obs[i_star]**2 - float(vbar2[i_star])) / denom_i
-                y_lo  = y_med - (2*g.v_obs[i_star]*sig_i)/denom_i
-                y_hi  = y_med + (2*g.v_obs[i_star]*sig_i)/denom_i
-        else:  # obs-debias
-            sig2_meas = float(g.v_err[i_star]**2)
-            y_med = ((g.v_obs[i_star]**2 - sig2_meas) - float(vbar2[i_star])) / denom_i
+                sig_i = float(np.sqrt(np.clip(np.diag(C_full)[i_near], 1e-30, np.inf)))
+                v0 = float(np.interp(r_star, r, g.v_obs))
+                y_med = (v0**2 - float(vbar2[i_near])) / denom_i
+                y_lo  = y_med - (2*v0*sig_i)/denom_i
+                y_hi  = y_med + (2*v0*sig_i)/denom_i
+        else:
+            sig2_meas = float(g.v_err[i_near]**2)
+            v0 = float(np.interp(r_star, r, g.v_obs))
+            y_med = ((v0**2 - sig2_meas) - float(vbar2[i_near])) / denom_i
             try:
                 C_meas = np.diag(np.asarray(g.v_err, float)**2)
                 Vs = rng.multivariate_normal(mean=g.v_obs, cov=C_meas, size=nsamp)
-                v2 = Vs[:, i_star]**2
-                y_s = ((v2 - sig2_meas) - float(vbar2[i_star])) / denom_i
+                v_star = np.interp(r_star, r, Vs)
+                y_s = ((v_star**2 - sig2_meas) - float(vbar2[i_near])) / denom_i
                 y_lo  = float(np.nanpercentile(y_s, 16))
                 y_hi  = float(np.nanpercentile(y_s, 84))
             except np.linalg.LinAlgError:
                 sig_i = float(np.sqrt(max(sig2_meas, 1e-30)))
-                base  = max(g.v_obs[i_star]**2 - sig2_meas, 0.0)**0.5
+                base  = max(v0**2 - sig2_meas, 0.0)**0.5
                 y_lo  = y_med - (2*base*sig_i)/denom_i
                 y_hi  = y_med + (2*base*sig_i)/denom_i
 
-        rows.append(dict(galaxy=name,
-                         r_star_kpc=r_star,
-                         z_star=z_star,
-                         y_star=y_med/eps_den,
-                         y_p16=(y_lo/eps_den if np.isfinite(y_lo) else np.nan),
-                         y_p84=(y_hi/eps_den if np.isfinite(y_hi) else np.nan)))
+        rows.append(dict(
+            galaxy=name,
+            r_star_kpc=r_star,
+            z_star=z_star,
+            y_star=y_med/eps_den,
+            y_p16=(y_lo/eps_den if np.isfinite(y_lo) else np.nan),
+            y_p84=(y_hi/eps_den if np.isfinite(y_hi) else np.nan)
+        ))
 
     out_df = pd.DataFrame(rows)
     out_csv = res/f"{out_prefix}_per_galaxy.csv"
     out_df.to_csv(out_csv, index=False)
 
-    # 散點與理論曲線
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots(figsize=(5.2,4.0), dpi=150)
     if len(out_df)>0:
         ax.scatter(out_df["z_star"], out_df["y_star"], s=20, alpha=0.8, label="galaxies")
-    if (model=="ptq-screen") and (q_med is not None):
+    if (model=="ptq-screen") and (summ.get("q_median", None) is not None):
         S = float(eps_fit/eps_den) if np.isfinite(eps_fit) else np.nan
         if np.isfinite(S):
             zmin = max(1e-3, float(np.nanquantile(out_df["z_star"], 0.01))) if len(out_df)>0 else 1e-3
             zmax = float(np.nanquantile(out_df["z_star"], 0.99)) if len(out_df)>0 else 10.0
             zgrid = np.linspace(zmin, zmax, 400)
-            ax.plot(zgrid, S*_f_q(zgrid, float(q_med)), linestyle="--", linewidth=1.3,
-                    label=rf"zero-param $S f_q(z)$ (q={float(q_med):.2f})")
+            ax.plot(zgrid, S*_f_q(zgrid, float(summ["q_median"])), linestyle="--", linewidth=1.3,
+                    label=rf"zero-param $S f_q(z)$ (q={float(summ['q_median']):.2f})")
     ax.set_xlabel(r"$z_\ast=g_N(r_\ast)/a_0$")
     ylab_den = r"\varepsilon_{\rm cos}" if eps_norm=="cos" else r"\varepsilon_{\rm fit}"
     ax.set_ylabel(rf"$\varepsilon_{{\rm eff}}(r_\ast)/{ylab_den}$")
@@ -1258,6 +1300,7 @@ def z_per_galaxy(results_dir: str,
     out = dict(N=int(len(out_df)), eps_norm=eps_norm, eps_den=float(eps_den),
                epsilon_fit=float(eps_fit), H0_si=float(H0_si), a0_SI=float(a0_SI),
                frac_vmax=float(frac_vmax), y_source=y_source, rstar_from=rstar_from,
+               interpolate_rstar=bool(interpolate_rstar),
                csv=str(out_csv), png=str(out_png))
     with open(res/f"{out_prefix}_summary.json","w") as f:
         json.dump(out, f, indent=2)

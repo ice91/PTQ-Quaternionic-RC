@@ -8,6 +8,7 @@ from .preprocess import build_tidy_csv
 from .fit_global import run as run_fit
 from . import experiments as EXP
 
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="ptquat", description="PT-Quaternionic SPARC workflow")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -115,8 +116,8 @@ def main(argv=None):
     group.add_argument("--epsilon-cos", type=float, default=None)
     group.add_argument("--omega-lambda", type=float, default=None)
 
-    # kappa-gal（G.2）
-    kgal = sx.add_parser("kappa-gal", help="Per-galaxy kappa check (x=h/r*, y=eps_eff/eps_den)")
+    # kappa-gal
+    kgal = sx.add_parser("kappa-gal", help="Per-galaxy kappa check")
     kgal.add_argument("--results", required=True)
     kgal.add_argument("--data", default="dataset/sparc_tidy.csv")
     kgal.add_argument("--eta", type=float, default=0.15)
@@ -124,35 +125,33 @@ def main(argv=None):
     kgal.add_argument("--nsamp", type=int, default=300)
     kgal.add_argument("--prefix", default="kappa_gal")
     kgal.add_argument("--y-source", choices=["model","obs","obs-debias"], default="model")
-    kgal.add_argument("--eps-norm", choices=["fit","cos"], default="cos")  # 改預設
+    kgal.add_argument("--eps-norm", choices=["fit","cos"], default="fit")
     kgal.add_argument("--rstar-from", choices=["model","obs"], default="model")
-    # 新增：厚度來源與回歸
-    kgal.add_argument("--h-mode", choices=["obs","const","bytype"], default="const")
-    kgal.add_argument("--zeta-const", type=float, default=0.12)
-    kgal.add_argument("--zeta-disk", type=float, default=0.10)
-    kgal.add_argument("--zeta-early", type=float, default=0.20)
-    kgal.add_argument("--regression", choices=["deming","ols"], default="deming")
+    # NEW: regression + lambda + r* interpolation
+    kgal.add_argument("--regression", choices=["ols","deming"], default="deming")
+    kgal.add_argument("--deming-lambda", type=float, default=1.0)
+    kgal.add_argument("--no-interp-rstar", action="store_false", dest="interp_rstar",
+                      help="Disable linear interpolation for r* (default: enabled)")
+    kgal.set_defaults(interp_rstar=True)
     grp_k = kgal.add_mutually_exclusive_group(required=False)
     grp_k.add_argument("--epsilon-cos", type=float, default=None)
     grp_k.add_argument("--omega-lambda", type=float, default=None)
 
-    # kappa-prof（G.3）
-    kpro = sx.add_parser("kappa-prof", help="Radius-resolved stacked kappa profile (outer disk, eps_norm=cos)")
+    # kappa-prof
+    kpro = sx.add_parser("kappa-prof", help="Radius-resolved stacked kappa profile")
     kpro.add_argument("--results", required=True)
     kpro.add_argument("--data", default="dataset/sparc_tidy.csv")
     kpro.add_argument("--eta", type=float, default=0.15)
     kpro.add_argument("--nbins", type=int, default=24)
     kpro.add_argument("--min-per-bin", type=int, default=20)
     kpro.add_argument("--x-kind", choices=["r_over_Rd","r_kpc"], default="r_over_Rd")
-    kpro.add_argument("--eps-norm", choices=["fit","cos"], default="cos")  # 改預設
+    kpro.add_argument("--eps-norm", choices=["fit","cos"], default="fit")
     kpro.add_argument("--prefix", default="kappa_profile")
-    kpro.add_argument("--x-range", type=float, nargs=2, metavar=("XMIN","XMAX"), default=(2.0, 5.0),
-                      help="outer-disk mask range when x-kind=r_over_Rd")
     grp_k2 = kpro.add_mutually_exclusive_group(required=False)
     grp_k2.add_argument("--epsilon-cos", type=float, default=None)
     grp_k2.add_argument("--omega-lambda", type=float, default=None)
 
-    # kappa-fit / bootstrap
+    # kappa-fit
     kfit = sx.add_parser("kappa-fit", help="Fit y=A/x+B from kappa_profile outputs")
     kfit.add_argument("--results", required=True)
     kfit.add_argument("--prefix", default="kappa_profile")
@@ -164,7 +163,7 @@ def main(argv=None):
     kfit.add_argument("--min-per-bin", type=int, default=20)
     kfit.add_argument("--seed", type=int, default=1234)
 
-    # z-profile
+    # zprof
     zp = sx.add_parser("zprof", help="Radius-resolved zero-parameter collapse in z=g_N/a0")
     zp.add_argument("--results", required=True)
     zp.add_argument("--data", default="dataset/sparc_tidy.csv")
@@ -172,14 +171,14 @@ def main(argv=None):
     zp.add_argument("--min-per-bin", type=int, default=20)
     zp.add_argument("--eps-norm", choices=["fit","cos"], default="cos")
     zp.add_argument("--prefix", default="z_profile")
-    zp.add_argument("--z-qlo", type=float, default=0.01, help="lower quantile clip for z")
-    zp.add_argument("--z-qhi", type=float, default=0.99, help="upper quantile clip for z")
-    zp.add_argument("--no-theory", action="store_true", help="do not draw zero-parameter theory even if ptq-screen")
+    zp.add_argument("--z-qlo", type=float, default=0.01)
+    zp.add_argument("--z-qhi", type=float, default=0.99)
+    zp.add_argument("--no-theory", action="store_true")
     grp_z1 = zp.add_mutually_exclusive_group(required=False)
     grp_z1.add_argument("--epsilon-cos", type=float, default=None)
     grp_z1.add_argument("--omega-lambda", type=float, default=None)
 
-    # z-gal
+    # zgal
     zg = sx.add_parser("zgal", help="Per-galaxy single-point at r*: z=g_N/a0 vs y=eps_eff/eps_den")
     zg.add_argument("--results", required=True)
     zg.add_argument("--data", default="dataset/sparc_tidy.csv")
@@ -189,6 +188,9 @@ def main(argv=None):
     zg.add_argument("--eps-norm", choices=["fit","cos"], default="cos")
     zg.add_argument("--nsamp", type=int, default=300)
     zg.add_argument("--prefix", default="z_gal")
+    zg.add_argument("--no-interp-rstar", action="store_false", dest="interp_rstar",
+                    help="Disable linear interpolation for r* (default: enabled)")
+    zg.set_defaults(interp_rstar=True)
     grp_z2 = zg.add_mutually_exclusive_group(required=False)
     grp_z2.add_argument("--epsilon-cos", type=float, default=None)
     grp_z2.add_argument("--omega-lambda", type=float, default=None)
@@ -280,11 +282,10 @@ def main(argv=None):
                 epsilon_cos=args.epsilon_cos, omega_lambda=args.omega_lambda,
                 y_source=args.y_source, eps_norm=args.eps_norm,
                 rstar_from=args.rstar_from,
-                h_mode=args.h_mode, zeta_const=args.zeta_const,
-                zeta_disk=args.zeta_disk, zeta_early=args.zeta_early,
-                regression=args.regression,
+                regression=args.regression, deming_lambda=args.deming_lambda,
+                interpolate_rstar=args.interp_rstar,
                 out_prefix=args.prefix
-            )
+            );
             print(json.dumps(out, indent=2))
 
         elif args.exp_cmd == "kappa-prof":
@@ -292,8 +293,7 @@ def main(argv=None):
                 results_dir=args.results, data_path=args.data,
                 eta=args.eta, epsilon_cos=args.epsilon_cos, omega_lambda=args.omega_lambda,
                 nbins=args.nbins, min_per_bin=args.min_per_bin,
-                x_kind=args.x_kind, eps_norm=args.eps_norm, out_prefix=args.prefix,
-                x_range=tuple(args.x_range)
+                x_kind=args.x_kind, eps_norm=args.eps_norm, out_prefix=args.prefix
             )
             print(f"Saved: {png}")
 
@@ -331,6 +331,7 @@ def main(argv=None):
                 frac_vmax=args.frac_vmax, y_source=args.y_source,
                 rstar_from=args.rstar_from, eps_norm=args.eps_norm,
                 epsilon_cos=args.epsilon_cos, omega_lambda=args.omega_lambda,
-                nsamp=args.nsamp, out_prefix=args.prefix
+                nsamp=args.nsamp, interpolate_rstar=args.interp_rstar,
+                out_prefix=args.prefix
             )
             print(json.dumps(out, indent=2))
