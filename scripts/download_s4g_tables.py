@@ -19,7 +19,7 @@ MIRRORS = [
     "vizier.cds.unistra.fr",    # France (CDS)
 ]
 
-def fetch_one_catalog(catid: str, outdir: Path, timeout_sec: int = 120, retries: int = 3) -> int:
+def fetch_one_catalog(catid: str, outdir: Path, timeout_sec: int = 240, retries: int = 3) -> int:
     Vizier.ROW_LIMIT = -1
     Vizier.columns   = ["**"]
     saved = 0
