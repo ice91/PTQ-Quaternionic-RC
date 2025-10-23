@@ -25,6 +25,19 @@ def main(argv=None):
     p1.add_argument("--reldmax", type=float, default=0.2)
     p1.add_argument("--qual-max", type=int, default=2)
 
+    # geometry 工具
+    g = sub.add_parser("geom", help="Geometry catalog utilities (h-catalog)")
+    gsub = g.add_subparsers(dest="geom_cmd", required=True)
+
+    g_ing = gsub.add_parser("ingest", help="Assemble h-catalog from one or more source CSVs")
+    g_ing.add_argument("--sparc", default="dataset/sparc_tidy.csv")
+    g_ing.add_argument("--sources", nargs="+", default=None,
+                       help="CSV files or directories; if omitted, use dataset/geometry/sources/*.csv")
+    g_ing.add_argument("--out", default="dataset/geometry/h_catalog.csv")
+    g_ing.add_argument("--prefer-thin", action="store_true")
+    g_ing.add_argument("--default-rel-err", type=float, default=0.25)
+
+
     # fit
     p2 = sub.add_parser("fit", help="Global fits (PTQ / PTQ-ν / PTQ-screen / Baryon / MOND / NFW-1p) with HDF5 backend")
     p2.add_argument("--data", default="dataset/sparc_tidy.csv")
@@ -335,3 +348,27 @@ def main(argv=None):
                 out_prefix=args.prefix
             )
             print(json.dumps(out, indent=2))
+        elif args.cmd == "geom":
+            if args.geom_cmd == "ingest":
+                from .geometry import assemble_h_catalog
+                sources = []
+                if args.sources:
+                    from pathlib import Path
+                    for s in args.sources:
+                        p = Path(s)
+                        if p.is_dir():
+                            sources.extend([str(q) for q in p.glob("*.csv")])
+                        elif p.suffix.lower() == ".csv":
+                            sources.append(str(p))
+                else:
+                    from pathlib import Path
+                    d = Path("dataset/geometry/sources")
+                    if d.exists():
+                        sources = [str(p) for p in d.glob("*.csv")]
+                if not sources:
+                    raise SystemExit("No source CSVs. Use --sources or put CSVs under dataset/geometry/sources/")
+                df = assemble_h_catalog(args.sparc, sources, out_csv=args.out,
+                                        prefer_thin=args.prefer_thin, default_rel_err=args.default_rel_err)
+                print(df.head().to_string(index=False))
+                print(f"Saved: {args.out}")
+
