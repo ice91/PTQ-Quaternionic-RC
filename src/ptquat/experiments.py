@@ -428,6 +428,30 @@ def _rstar_linear_interp(r: np.ndarray, v: np.ndarray, frac_vmax: float) -> floa
     w = (fV - v0) / (v1 - v0)
     return float(r0 + w * (r1 - r0))
 
+def _interp_rows_at_scalar(xp: np.ndarray, fp2d: np.ndarray, x0: float) -> np.ndarray:
+    """
+    對 2D 陣列的每一列，在同一個 x0 做線性內插。
+    xp: (n,) 單調遞增
+    fp2d: (nsamp, n)
+    回傳: (nsamp,)
+    """
+    xp = np.asarray(xp, float)
+    F  = np.asarray(fp2d, float)
+    assert xp.ndim == 1 and F.ndim == 2 and F.shape[1] == xp.size, "shape mismatch for interpolation"
+
+    n = xp.size
+    # 找到右側索引 i，使得 xp[i-1] <= x0 <= xp[i]
+    i = int(np.searchsorted(xp, float(x0)))
+    if i <= 0:
+        return F[:, 0].copy()
+    if i >= n:
+        return F[:, -1].copy()
+
+    xL, xR = xp[i-1], xp[i]
+    w = (float(x0) - xL) / (xR - xL) if xR != xL else 0.0
+    return (1.0 - w) * F[:, i-1] + w * F[:, i]
+
+
 def _deming_fit(x: np.ndarray, y: np.ndarray, lam: float = 1.0) -> Tuple[float,float]:
     """
     Deming regression (measurement error in both variables), returns (slope, intercept).
@@ -529,7 +553,8 @@ def kappa_per_galaxy(results_dir: str,
                                       g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med)
             try:
                 Vs = rng.multivariate_normal(mean=v_obs, cov=C_full, size=nsamp)
-                v_star = np.interp(r_star, r, Vs)  # 對每條樣本曲線在 r* 內插
+                v_star = _interp_rows_at_scalar(r, Vs, r_star)
+                #v_star = np.interp(r_star, r, Vs)  # 對每條樣本曲線在 r* 內插
                 eps_samp = (v_star**2 - vbar2_i) / denom
                 eps_eff_med = float(np.percentile(eps_samp, 50))
                 eps_lo      = float(np.percentile(eps_samp, 16))
@@ -548,7 +573,8 @@ def kappa_per_galaxy(results_dir: str,
             try:
                 C_meas_diag = np.diag(np.asarray(g.v_err, float)**2)
                 Vs = rng.multivariate_normal(mean=v_obs, cov=C_meas_diag, size=nsamp)
-                v_star = np.interp(r_star, r, Vs)
+                #v_star = np.interp(r_star, r, Vs)
+                v_star = _interp_rows_at_scalar(r, Vs, r_star)
                 eps_samp = ((v_star**2 - sig_i2_meas) - vbar2_i) / denom
                 eps_lo      = float(np.percentile(eps_samp, 16))
                 eps_hi      = float(np.percentile(eps_samp, 84))
@@ -1237,7 +1263,8 @@ def z_per_galaxy(results_dir: str,
                                       g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med)
             try:
                 Vs = rng.multivariate_normal(mean=g.v_obs, cov=C_full, size=nsamp)
-                v_star = np.interp(r_star, r, Vs)
+                #v_star = np.interp(r_star, r, Vs)
+                v_star = _interp_rows_at_scalar(r, Vs, r_star)
                 y_s = (v_star**2 - float(vbar2[i_near])) / denom_i
                 y_med = float(np.nanpercentile(y_s, 50))
                 y_lo  = float(np.nanpercentile(y_s, 16))
@@ -1255,7 +1282,8 @@ def z_per_galaxy(results_dir: str,
             try:
                 C_meas = np.diag(np.asarray(g.v_err, float)**2)
                 Vs = rng.multivariate_normal(mean=g.v_obs, cov=C_meas, size=nsamp)
-                v_star = np.interp(r_star, r, Vs)
+                #v_star = np.interp(r_star, r, Vs)
+                v_star = _interp_rows_at_scalar(r, Vs, r_star)
                 y_s = ((v_star**2 - sig2_meas) - float(vbar2[i_near])) / denom_i
                 y_lo  = float(np.nanpercentile(y_s, 16))
                 y_hi  = float(np.nanpercentile(y_s, 84))
