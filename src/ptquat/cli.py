@@ -24,8 +24,6 @@ def main(argv=None):
     p1.add_argument("--i-min", type=float, default=30.0)
     p1.add_argument("--reldmax", type=float, default=0.2)
     p1.add_argument("--qual-max", type=int, default=2)
-    p1.add_argument("--h-catalog", type=str, default=None, help="(optional) geometry catalog CSV with h_kpc to merge into tidy")
-
 
     # geometry 工具
     g = sub.add_parser("geom", help="Geometry catalog utilities (h-catalog)")
@@ -222,12 +220,6 @@ def main(argv=None):
         t2 = raw / "vizier_table2.csv"
         out = build_tidy_csv(t1, t2, args.out, i_min_deg=args.i_min, relD_max=args.reldmax, qual_max=args.qual_max)
         print(f"Tidy CSV saved to {out}")
-                # optional merge h
-        if args.h_catalog:
-            from .preprocess import merge_h_into_tidy
-            out_h = merge_h_into_tidy(out, args.h_catalog, tidy_csv_out=out)
-            print(f"Merged h_catalog into tidy: {out_h}")
-
 
     elif args.cmd == "fit":
         run_fit([
@@ -356,27 +348,3 @@ def main(argv=None):
                 out_prefix=args.prefix
             )
             print(json.dumps(out, indent=2))
-        elif args.cmd == "geom":
-            if args.geom_cmd == "ingest":
-                from .geometry import assemble_h_catalog
-                sources = []
-                if args.sources:
-                    from pathlib import Path
-                    for s in args.sources:
-                        p = Path(s)
-                        if p.is_dir():
-                            sources.extend([str(q) for q in p.glob("*.csv")])
-                        elif p.suffix.lower() == ".csv":
-                            sources.append(str(p))
-                else:
-                    from pathlib import Path
-                    d = Path("dataset/geometry/sources")
-                    if d.exists():
-                        sources = [str(p) for p in d.glob("*.csv")]
-                if not sources:
-                    raise SystemExit("No source CSVs. Use --sources or put CSVs under dataset/geometry/sources/")
-                df = assemble_h_catalog(args.sparc, sources, out_csv=args.out,
-                                        prefer_thin=args.prefer_thin, default_rel_err=args.default_rel_err)
-                print(df.head().to_string(index=False))
-                print(f"Saved: {args.out}")
-

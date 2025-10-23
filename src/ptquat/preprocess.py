@@ -27,11 +27,6 @@ _MAP1 = {
     "Qual": "Qual",
 }
 
-_MAP1.update({
-    "RAJ2000": "RA_deg",
-    "DEJ2000": "DEC_deg",
-})
-
 
 _DEFAULT_REL_D_BY_FLAG = {1: 0.20, 2: 0.10}
 _DEFAULT_I_ERR_DEG = 3.0
