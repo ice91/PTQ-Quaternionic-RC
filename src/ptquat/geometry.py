@@ -123,7 +123,12 @@ def _fetch_catalog_tables(
     out: Dict[str, pd.DataFrame] = {}
     for mirror in mirrors:
         conf.server = mirror
-        conf.timeout = float(timeout_sec)
+        conf.timeout = int(round(timeout_sec))  # 必須是 int
+        if conf.timeout <= 0:
+            conf.timeout = 60
+        # 建議順手加上，確保抓「全部欄位」且不限制筆數
+        Vizier.ROW_LIMIT = -1
+        Vizier.columns = ["**"]
         ok = False
         last_err = None
         for _ in range(max(1, int(retries))):
