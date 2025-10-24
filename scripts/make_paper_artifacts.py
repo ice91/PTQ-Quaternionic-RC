@@ -5,15 +5,16 @@ make_paper_artifacts.py
 
 • 相容兩種 CLI 介面：
   (A) 舊：--results-dir RESULTS_DIR --data DATA [--figdir FIGDIR]
-  (B) 新（你的測試）：--data DATA --out OUT --figdir FIGDIR --models baryon ptq-screen [--fast] [--skip-fetch]
+  (B) 新（單元測試用）：--data DATA --out OUT --figdir FIGDIR --models baryon ptq-screen [--fast] [--skip-fetch]
 
 • 功能（為測試需求做最小、穩健實作）：
   1) 決定 results_dir 與 out_dir
-  2) 找到目標模型結果資料夾（<model>_gauss）
+  2) 解析目標模型（<model>_gauss）
+     - 若提供 --models，直接信任該清單（不先檢查來源目錄是否存在）
+     - 若未提供，才自動掃描 results_dir/*_gauss
   3) 將各模型的 global_summary.yaml 複製到 out_dir/<model>_gauss/；
-     若來源不存在，則建立一個至少含 AIC_full 與 BIC_full 欄位的最小 YAML
-  4) 產生 out_dir/ejpc_model_compare.csv，至少含 'model' 欄位；
-     若能讀到 YAML，則附帶 AIC_full/BIC_full
+     若來源不存在，則建立含 AIC_full 與 BIC_full 的最小 YAML
+  4) 產生 out_dir/ejpc_model_compare.csv，至少含 'model' 欄位；若能讀到 YAML，則附帶 AIC_full/BIC_full
   5) 若提供 --figdir，複製 plateau*.png 與 kappa_*.png 圖檔到該處
 """
 
@@ -25,6 +26,7 @@ import shutil
 import sys
 import yaml
 import csv
+
 
 # ----------------------------
 # Utilities
@@ -74,18 +76,16 @@ def _detect_out_dir(args, results_dir: Path) -> Path:
 def _find_model_dirs(results_dir: Path, models: list[str] | None) -> list[tuple[str, Path]]:
     """
     回傳 [(model_name, path_to_model_dir)], 其中 model_name 如 'baryon', 'ptq-screen'。
-    對應的資料夾預設為 '<model>_gauss'。
-    若 models 為 None，則自動偵測 results_dir 底下所有 *_gauss 目錄並取其 prefix 作為 model_name。
+    對應的資料夾為 '<model>_gauss'。
+    規則：
+      - 若 models 不為 None：直接信任使用者指定，不先檢查資料夾是否存在。
+      - 若 models 為 None：自動掃描 results_dir 下所有 *_gauss 目錄。
     """
     pairs: list[tuple[str, Path]] = []
     if models:
-        # 只用指定清單
         for m in models:
-            p = results_dir / f"{m}_gauss"
-            if p.is_dir():
-                pairs.append((m, p))
+            pairs.append((m, results_dir / f"{m}_gauss"))
     else:
-        # 自動掃描 *_gauss
         for sub in results_dir.glob("*_gauss"):
             if sub.is_dir():
                 name = sub.name[:-6]  # 移除 '_gauss'
@@ -93,13 +93,13 @@ def _find_model_dirs(results_dir: Path, models: list[str] | None) -> list[tuple[
     return pairs
 
 def _gather_figures_into(figdir: Path, model_dirs: list[tuple[str, Path]]) -> None:
-    """把 plateau*.png 與 kappa_*.png 複製到 figdir。"""
+    """把 plateau*.png 與 kappa_*.png 從各模型目錄複製到 figdir（若不存在則略過）。"""
     _ensure_dir(figdir)
     patterns = ["plateau*.png", "kappa_*.png"]
     for model_name, mdir in model_dirs:
         for pat in patterns:
+            # 若 mdir 不存在，rglob 僅不產出結果；不會拋錯
             for src in mdir.rglob(pat):
-                # 直接用原始檔名；若撞名則後者覆蓋（測試只要「有檔案」）
                 dst = figdir / src.name
                 try:
                     shutil.copy2(src, dst)
@@ -110,7 +110,6 @@ def _gather_figures_into(figdir: Path, model_dirs: list[tuple[str, Path]]) -> No
 def _emit_compare_csv(rows: list[dict], out_csv: Path) -> None:
     """寫出 ejpc_model_compare.csv；至少包含 'model' 欄位，若有則加上 AIC_full/BIC_full。"""
     _ensure_dir(out_csv.parent)
-    # 彙整所有欄位（避免有的行沒有 YAML）
     fieldnames = ["model"]
     for extra in ("AIC_full", "BIC_full"):
         if any(extra in r for r in rows):
@@ -121,6 +120,7 @@ def _emit_compare_csv(rows: list[dict], out_csv: Path) -> None:
         w.writeheader()
         for r in rows:
             w.writerow({k: r.get(k, "") for k in fieldnames})
+
 
 # ----------------------------
 # Main
@@ -138,7 +138,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--results-dir", help="Root dir containing model subdirs (e.g., baryon_gauss, ptq-screen_gauss).")
     ap.add_argument("--figdir", help="If set, copy plateau*.png and kappa_*.png here.")
 
-    # 新介面（相容你的測試）
+    # 新介面（相容你的單元測試）
     ap.add_argument("--out", help="Directory to write EJPC run artifacts (ejpc_model_compare.csv, summaries, ...).")
     ap.add_argument("--models", nargs="+", help="Models to include (e.g., baryon ptq-screen).")
     ap.add_argument("--fast", action="store_true", help="(compat) Fast mode; no-op here.")
@@ -157,9 +157,10 @@ def main(argv: list[str] | None = None) -> int:
 
     # 找模型資料夾
     model_pairs = _find_model_dirs(results_dir, args.models)
-    if not model_pairs:
+
+    # 僅在「未指定 --models」且「自動掃描也沒找到」時，才輸出空 compare 並結束
+    if not model_pairs and not args.models:
         print(f"[make_paper_artifacts] No model result directories found under: {results_dir}", file=sys.stderr)
-        # 仍然建立 out_dir 與空 compare 檔，讓流程不中斷
         _ensure_dir(out_dir)
         _emit_compare_csv([], out_dir / "ejpc_model_compare.csv")
         return 0
