@@ -7,7 +7,6 @@ from typing import Optional, Tuple
 import pandas as pd
 
 # arcsec -> kpc 的常數（每 1 arcsec 在 1 Mpc 的 kpc）
-# K = (pi / 180 / 3600) * 1000
 K = math.pi / 648000.0 * 1000.0  # 0.00484813681109536 kpc / (arcsec·Mpc)
 
 
@@ -110,6 +109,9 @@ def merge_sparc_with_h(
 ) -> Tuple[int, int, int]:
     """
     合併 SPARC 與 h 表；回傳：(配對成功列數, 總列數, 未配對 galaxy 數)
+    另外在輸出中加掛 galaxy-level 欄位：
+      D_Mpc_gal (median by gkey)
+      L36_tot_gal / L36_bulge_gal / L36_disk_gal / M_HI_gal
     """
     h = pd.read_csv(h_csv, encoding="utf-8")
     if "Galaxy" not in h.columns:
@@ -142,6 +144,25 @@ def merge_sparc_with_h(
         on="gkey",
         how="left",
     )
+
+    # ------- 加掛 galaxy-level 欄位 -------
+    g = (
+        sp.groupby("gkey", as_index=False)
+          .agg(
+              D_Mpc_gal=("D_Mpc", "median"),
+              L36_disk_first=("L36_disk", lambda s: s.dropna().iloc[0] if s.notna().any() else float("nan")),
+              L36_tot_gal=("L36_tot", "max"),
+              L36_bulge_gal=("L36_bulge", "max"),
+              M_HI_gal=("M_HI", "max"),
+          )
+    )
+    g["L36_bulge_gal"] = g["L36_bulge_gal"].fillna(0.0)
+    g["L36_disk_gal"] = g["L36_disk_first"].fillna(g["L36_tot_gal"] - g["L36_bulge_gal"])
+    g = g.drop(columns=["L36_disk_first"])
+
+    m = m.merge(g, on="gkey", how="left")
+    # ------------------------------------
+
     matched = int(m["h_kpc"].notna().sum())
     total = len(m)
 
