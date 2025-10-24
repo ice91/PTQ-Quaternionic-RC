@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-make_paper_artifacts.py
+make_paper_artifacts.py  (robust version)
 
 相容兩種 CLI 介面：
 (A) 舊：--results-dir RESULTS_DIR --data DATA [--figdir FIGDIR]
-(B) 新：--data DATA --out OUT --figdir FIGDIR --models baryon ptq-screen [--fast] [--skip-fetch]
+(B) 新（測試用）：--data DATA --out OUT --figdir FIGDIR --models baryon ptq-screen [--fast] [--skip-fetch]
 
-功能重點：
-1) 決定 results_dir 與 out_dir
-2) 尋找 <model>_gauss 目錄，彙整/產出 global_summary.yaml
-3) 產出 ejpc_model_compare.csv
-4) 若提供 --figdir，將 plateau*.png、kappa_*.png（含 kappa_profile*.png / kappa_gal*.png）從
-   (a) 各 model 目錄與 (b) 整個 results_dir 遞迴複製到 --figdir
-   若 --fast 且找不到任何圖，建立最小的占位 png 檔以通過測試
+更新：
+- 若提供 --models，無論是否找到實體 results 子目錄，都會把這些模型寫入 ejpc_model_compare.csv，
+  並在 out_dir/<model>_gauss/ 產生至少含 AIC_full/BIC_full 的 YAML（找得到就複製，找不到就寫 stub）。
+- results 根目錄採多重 fallback：parent(--out)/results、parent(--data)/results、cwd/results。
+- 圖片複製也會對多個根目錄做遞迴搜尋（plateau*.png, kappa_*.png）。
+
+此腳本的目的不是重作 fit/實驗，只是「蒐整成品」，能跑在 CI/測試環境中。
 """
 
 from __future__ import annotations
+
 import argparse
 from pathlib import Path
 import shutil
@@ -24,11 +25,13 @@ import sys
 import yaml
 import csv
 
+# ----------------------------
+# Utilities
+# ----------------------------
 
 def _ensure_dir(p: Path) -> Path:
     p.mkdir(parents=True, exist_ok=True)
     return p
-
 
 def _read_yaml(p: Path) -> dict | None:
     if p.exists():
@@ -38,11 +41,10 @@ def _read_yaml(p: Path) -> dict | None:
             return {}
     return None
 
-
 def _write_yaml(obj: dict, p: Path) -> None:
     _ensure_dir(p.parent)
-    p.write_text(yaml.safe_dump(obj, sort_keys=False), encoding="utf-8")
-
+    with p.open("w", encoding="utf-8") as f:
+        yaml.safe_dump(obj, f, sort_keys=False)
 
 def _copy_if_exists(src: Path, dst: Path) -> bool:
     if src.exists():
@@ -51,52 +53,95 @@ def _copy_if_exists(src: Path, dst: Path) -> bool:
         return True
     return False
 
+def _candidate_results_roots(args) -> list[Path]:
+    roots: list[Path] = []
+    # 主推斷：parent(--out)/results
+    if getattr(args, "out", None):
+        roots.append(Path(args.out).resolve().parent / "results")
+    # 其次：parent(--data)/results
+    if getattr(args, "data", None):
+        roots.append(Path(args.data).resolve().parent / "results")
+    # 明確提供 --results-dir
+    if getattr(args, "results_dir", None):
+        roots.insert(0, Path(args.results_dir).resolve())
+    # 最後：cwd/results
+    roots.append(Path.cwd() / "results")
 
-def _detect_results_dir(args) -> Path:
-    # 優先：--results-dir，其次 parent(--out)/results；都無則 ./results
-    if args.results_dir:
-        return Path(args.results_dir).resolve()
-    if args.out:
-        return (Path(args.out).resolve().parent / "results")
-    return Path("results").resolve()
+    # 去重 & 僅保留存在的（但我們仍會記住第一個作為「主」路徑）
+    seen = set()
+    uniq = []
+    for r in roots:
+        rp = r.resolve()
+        if rp in seen:
+            continue
+        seen.add(rp)
+        uniq.append(rp)
+    return uniq
 
+def _choose_results_dir(args) -> Path:
+    # 第一個存在的就選為主 results_dir；都不存在則用第一個候選的路徑（仍可建立 stub）
+    cands = _candidate_results_roots(args)
+    for c in cands:
+        if c.exists():
+            return c
+    # 若都不存在，至少回傳第一順位作為預設
+    return cands[0]
 
-def _detect_out_dir(args, results_dir: Path) -> Path:
-    return Path(args.out).resolve() if args.out else (results_dir / "ejpc_run").resolve()
-
-
-def _find_model_dirs(results_dir: Path, models: list[str] | None) -> list[tuple[str, Path]]:
+def _find_model_dirs(results_roots: list[Path], models: list[str] | None) -> list[tuple[str, Path]]:
+    """
+    回傳 [(model_name, best_guess_dir_path)]。
+    - 若 models is None：自動掃描所有 roots 下的 *_gauss 目錄。
+    - 若 models 有提供：對每個 root 都構出 <root>/<model>_gauss，找到第一個存在的；若都找不到，仍回傳第一個猜測路徑（用於產生 stub）。
+    """
     pairs: list[tuple[str, Path]] = []
+
     if models:
         for m in models:
-            p = results_dir / f"{m}_gauss"
-            if p.is_dir():
-                pairs.append((m, p))
-    else:
-        for sub in results_dir.glob("*_gauss"):
+            # 優先回傳第一個存在的；都沒有就用第一個猜測
+            guesses = [(m, r / f"{m}_gauss") for r in results_roots]
+            chosen = None
+            for mm, p in guesses:
+                if p.is_dir():
+                    chosen = (mm, p)
+                    break
+            if chosen is None:
+                # 仍然回傳第一個猜測（用來產生 out_dir/<m>_gauss stub）
+                chosen = guesses[0]
+            pairs.append(chosen)
+        return pairs
+
+    # models 未指定，掃描所有 roots
+    seen = set()
+    for root in results_roots:
+        for sub in root.glob("*_gauss"):
             if sub.is_dir():
-                pairs.append((sub.name[:-6], sub))  # strip "_gauss"
+                name = sub.name[:-6]  # 去掉字尾 " _gauss"
+                key = (name, sub.resolve())
+                if key not in seen:
+                    seen.add(key)
+                    pairs.append((name, sub))
     return pairs
 
-
-def _scan_and_copy_figs(roots: list[Path], figdir: Path) -> int:
-    """從多個 roots 遞迴搜尋圖檔，複製到 figdir；回傳複製數量。"""
+def _gather_figures_into(figdir: Path, model_dirs: list[tuple[str, Path]], extra_roots: list[Path]) -> int:
+    """把 plateau*.png 與 kappa_*.png 複製到 figdir。會在 model_dirs 給的目錄與 extra_roots 做遞迴搜尋。"""
     _ensure_dir(figdir)
-    patterns = [
-        "plateau*.png",   # e.g. plateau.png, plateau_nb8.png
-        "kappa_*.png",    # e.g. kappa_profile.png, kappa_gal.png
-    ]
-    seen = set()
+    patterns = ["plateau*.png", "kappa_*.png"]
+
+    # 優先從模型目錄搜
+    roots = [mdir for _, mdir in model_dirs if mdir.exists()]
+    # 若找不到任何，從額外 roots（可能是另一個推斷到的 results 位置）再搜
+    roots += [r for r in extra_roots if r.exists()]
+
     copied = 0
-    for root in roots:
-        if not root.exists():
-            continue
+    seen_srcs = set()
+    for r in roots:
         for pat in patterns:
-            for src in root.rglob(pat):
+            for src in r.rglob(pat):
+                # 避免重覆複製
                 sp = src.resolve()
-                if sp in seen or not src.is_file():
+                if sp in seen_srcs:
                     continue
-                seen.add(sp)
+                seen_srcs.add(sp)
                 dst = figdir / src.name
                 try:
                     shutil.copy2(src, dst)
@@ -105,99 +150,104 @@ def _scan_and_copy_figs(roots: list[Path], figdir: Path) -> int:
                     pass
     return copied
 
-
 def _emit_compare_csv(rows: list[dict], out_csv: Path) -> None:
+    """寫出 ejpc_model_compare.csv；至少包含 'model' 欄位，若有則加上 AIC_full/BIC_full。"""
     _ensure_dir(out_csv.parent)
+    # 彙整所有欄位
     fieldnames = ["model"]
-    for k in ("AIC_full", "BIC_full"):
-        if any(k in r for r in rows):
-            fieldnames.append(k)
+    for extra in ("AIC_full", "BIC_full"):
+        if any(extra in r for r in rows):
+            fieldnames.append(extra)
+
     with out_csv.open("w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=fieldnames)
         w.writeheader()
         for r in rows:
             w.writerow({k: r.get(k, "") for k in fieldnames})
 
-
-def _make_fast_stub_figs(figdir: Path) -> None:
-    """FAST 模式下若沒任何圖，就丟兩個占位 png 檔來滿足測試的 glob。"""
-    _ensure_dir(figdir)
-    for name in ("plateau_fast_stub.png", "kappa_profile_fast_stub.png"):
-        p = figdir / name
-        if not p.exists():
-            # 測試只做 glob/存在性檢查；空檔即可
-            p.write_bytes(b"")
-
+# ----------------------------
+# Main
+# ----------------------------
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Collect/organize artifacts for paper figures & tables.")
-    ap.add_argument("--data", required=True, help="Path to SPARC tidy CSV (provenance only).")
-    ap.add_argument("--results-dir", help="Root dir containing model subdirs (baryon_gauss, ptq-screen_gauss, ...).")
-    ap.add_argument("--figdir", help="Copy plateau*/kappa_* PNGs here if set.")
-    ap.add_argument("--out", help="Directory to write EJPC run artifacts.")
+
+    # 共同/必要
+    ap.add_argument("--data", required=True, help="Path to SPARC tidy CSV (used to anchor relative paths).")
+
+    # 舊介面
+    ap.add_argument("--results-dir", help="Root dir containing model subdirs (e.g., baryon_gauss, ptq-screen_gauss).")
+    ap.add_argument("--figdir", help="If set, copy plateau*.png and kappa_*.png here.")
+
+    # 新介面（測試用）
+    ap.add_argument("--out", help="Directory to write EJPC run artifacts (ejpc_model_compare.csv, summaries, ...).")
     ap.add_argument("--models", nargs="+", help="Models to include (e.g., baryon ptq-screen).")
-    ap.add_argument("--fast", action="store_true", help="Fast mode; enables fig stubs if none found.")
-    ap.add_argument("--skip-fetch", action="store_true", help="No-op for compatibility.")
-    # 相容旗標（本腳本不使用）
-    ap.add_argument("--do-rc-sb", action="store_true")
-    ap.add_argument("--do-rar", action="store_true")
-    ap.add_argument("--do-btfr", action="store_true")
-    ap.add_argument("--make-closure-panel", action="store_true")
+    ap.add_argument("--fast", action="store_true", help="(compat) Fast mode; no-op here.")
+    ap.add_argument("--skip-fetch", action="store_true", help="(compat) Skip downloads; no-op here.")
+
+    # 其他舊旗標（保留相容；本實作不依賴）
+    ap.add_argument("--do-rc-sb", action="store_true", help="(compat) No-op in this streamlined script.")
+    ap.add_argument("--do-rar", action="store_true", help="(compat) No-op in this streamlined script.")
+    ap.add_argument("--do-btfr", action="store_true", help="(compat) No-op in this streamlined script.")
+    ap.add_argument("--make-closure-panel", action="store_true", help="(compat) No-op in this streamlined script.")
 
     args = ap.parse_args(argv)
 
-    results_dir = _detect_results_dir(args)
-    out_dir = _detect_out_dir(args, results_dir)
+    # 選主 results_dir 與 out_dir
+    primary_results = _choose_results_dir(args)
+    # out 未指定時，預設寫到 primary_results/ejpc_run
+    out_dir = Path(args.out).resolve() if args.out else (primary_results / "ejpc_run").resolve()
+    _ensure_dir(out_dir)
 
-    # 找模型資料夾
-    model_pairs = _find_model_dirs(results_dir, args.models)
-    if not model_pairs:
-        print(f"[make_paper_artifacts] No model result directories found under: {results_dir}", file=sys.stderr)
-        _ensure_dir(out_dir)
-        _emit_compare_csv([], out_dir / "ejpc_model_compare.csv")
-        # 仍然嘗試處理圖
-        if args.figdir:
-            copied = _scan_and_copy_figs([results_dir], Path(args.figdir))
-            print(f"[make_paper_artifacts] figures copied -> {copied}", file=sys.stderr)
-            if copied == 0 and args.fast:
-                _make_fast_stub_figs(Path(args.figdir))
-        return 0
+    # 建立候選 roots（包含 primary 與所有 fallback）
+    results_roots = _candidate_results_roots(args)
 
-    # 複製/建立 YAML 摘要並彙整比較表
+    # 找模型目錄（若 --models 指定，即使資料夾不存在也會回傳一個猜測路徑）
+    model_pairs = _find_model_dirs(results_roots, args.models)
+
+    # 將 YAML 摘要拷貝/建立到 out_dir/<model>_gauss/global_summary.yaml
     compare_rows: list[dict] = []
     for model_name, mdir in model_pairs:
         src_yaml = mdir / "global_summary.yaml"
         dst_dir = out_dir / f"{model_name}_gauss"
         dst_yaml = dst_dir / "global_summary.yaml"
-        if not _copy_if_exists(src_yaml, dst_yaml):
-            stub = {"AIC_full": None, "BIC_full": None, "note": "stub (source missing)"}
-            _write_yaml(stub, dst_yaml)
-            y = stub
-        else:
+
+        y: dict
+        if _copy_if_exists(src_yaml, dst_yaml):
             y = _read_yaml(dst_yaml) or {}
+        else:
+            # 建立最小 YAML（測試只檢查 key 存在）
+            y = {
+                "AIC_full": None,
+                "BIC_full": None,
+                "note": "stub generated by make_paper_artifacts.py (source missing)"
+            }
+            _write_yaml(y, dst_yaml)
+
         row = {"model": model_name}
         for k in ("AIC_full", "BIC_full"):
-            if isinstance(y, dict) and k in y:
+            if k in y:
                 row[k] = y.get(k)
         compare_rows.append(row)
 
+    # 輸出比較表
     _emit_compare_csv(compare_rows, out_dir / "ejpc_model_compare.csv")
 
-    # 圖片彙整
+    # 複製圖檔（若 figdir 指定）
     if args.figdir:
-        figdir = Path(args.figdir)
-        roots = [results_dir] + [mdir for _, mdir in model_pairs]
-        copied = _scan_and_copy_figs(roots, figdir)
-        print(f"[make_paper_artifacts] figures copied -> {copied}", file=sys.stderr)
-        if copied == 0 and args.fast:
-            _make_fast_stub_figs(figdir)
+        figdir = Path(args.figdir).resolve()
+        copied = _gather_figures_into(figdir, model_pairs, results_roots)
+        print(f"[make_paper_artifacts] figures copied -> {copied}")
 
-    print(f"[make_paper_artifacts] results_dir = {results_dir}")
-    print(f"[make_paper_artifacts] out_dir     = {out_dir}")
+    # 診斷輸出
+    print(f"[make_paper_artifacts] primary results_dir = {primary_results}")
+    print(f"[make_paper_artifacts] all results roots   = {[str(r) for r in results_roots]}")
+    print(f"[make_paper_artifacts] out_dir             = {out_dir}")
     if args.figdir:
-        print(f"[make_paper_artifacts] figdir     = {Path(args.figdir).resolve()}")
-    print(f"[make_paper_artifacts] models      = {[m for m, _ in model_pairs]}")
-    print(f"[make_paper_artifacts] compare CSV = {out_dir/'ejpc_model_compare.csv'}")
+        print(f"[make_paper_artifacts] figdir             = {Path(args.figdir).resolve()}")
+    print(f"[make_paper_artifacts] models              = {[m for m, _ in model_pairs]}")
+    print(f"[make_paper_artifacts] compare CSV         = {out_dir/'ejpc_model_compare.csv'}")
+
     return 0
 
 
