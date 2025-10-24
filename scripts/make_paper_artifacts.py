@@ -15,7 +15,7 @@ make_paper_artifacts.py
   3) 將各模型的 global_summary.yaml 複製到 out_dir/<model>_gauss/；
      若來源不存在，則建立含 AIC_full 與 BIC_full 的最小 YAML
   4) 產生 out_dir/ejpc_model_compare.csv，至少含 'model' 欄位；若能讀到 YAML，則附帶 AIC_full/BIC_full
-  5) 若提供 --figdir，複製 plateau*.png 與 kappa_*.png 圖檔到該處
+  5) 若提供 --figdir，**放寬**從 model 子目錄與 results 根目錄蒐集 plateau/kappa 的圖檔（支援多種檔名樣式）到該處
 """
 
 from __future__ import annotations
@@ -92,20 +92,40 @@ def _find_model_dirs(results_dir: Path, models: list[str] | None) -> list[tuple[
                 pairs.append((name, sub))
     return pairs
 
-def _gather_figures_into(figdir: Path, model_dirs: list[tuple[str, Path]]) -> None:
-    """把 plateau*.png 與 kappa_*.png 從各模型目錄複製到 figdir（若不存在則略過）。"""
+def _gather_figures_into(figdir: Path, model_dirs: list[tuple[str, Path]], results_dir: Path) -> None:
+    """
+    把 plateau/kappa 相關 PNG 從「各模型目錄」與「results 根目錄」複製到 figdir。
+    放寬檔名樣式以涵蓋不同前綴/連字號：
+      - plateau*.png
+      - kappa_*.png
+      - kappa-*.png
+      - kappa*.png  （最後這個是保險網）
+    """
     _ensure_dir(figdir)
-    patterns = ["plateau*.png", "kappa_*.png"]
-    for model_name, mdir in model_dirs:
+
+    patterns = ["plateau*.png", "kappa_*.png", "kappa-*.png", "kappa*.png"]
+
+    # 搜尋基底：所有模型目錄 + results 根目錄（備援）
+    search_bases = [mdir for _, mdir in model_dirs]
+    if results_dir not in search_bases:
+        search_bases.append(results_dir)
+
+    n_copied = 0
+    for base in search_bases:
+        if not base.exists():
+            continue
         for pat in patterns:
-            # 若 mdir 不存在，rglob 僅不產出結果；不會拋錯
-            for src in mdir.rglob(pat):
+            # rglob 若無結果不會噴錯
+            for src in base.rglob(pat):
                 dst = figdir / src.name
                 try:
                     shutil.copy2(src, dst)
+                    n_copied += 1
                 except Exception:
-                    # 圖檔出錯就略過，不影響主流程
+                    # 某些檔案/權限問題就略過
                     pass
+
+    print(f"[make_paper_artifacts] figures copied -> {n_copied}", file=sys.stderr)
 
 def _emit_compare_csv(rows: list[dict], out_csv: Path) -> None:
     """寫出 ejpc_model_compare.csv；至少包含 'model' 欄位，若有則加上 AIC_full/BIC_full。"""
@@ -195,9 +215,9 @@ def main(argv: list[str] | None = None) -> int:
     # 輸出比較表
     _emit_compare_csv(compare_rows, out_dir / "ejpc_model_compare.csv")
 
-    # 複製圖檔（若 figdir 指定）
+    # 複製圖檔（若 figdir 指定；同時搜尋 models 目錄與 results 根目錄）
     if args.figdir:
-        _gather_figures_into(Path(args.figdir), model_pairs)
+        _gather_figures_into(Path(args.figdir), model_pairs, results_dir)
 
     print(f"[make_paper_artifacts] results_dir = {results_dir}")
     print(f"[make_paper_artifacts] out_dir     = {out_dir}")
