@@ -91,35 +91,53 @@ def cmd_build_h(args: argparse.Namespace) -> None:
     out = Path(args.out)
     outliers = Path(args.outliers) if args.outliers else None
 
-    # read TSV (Vizier export) with commented header lines
+    # 讀 TSV；檔內有單位行/分隔線/可能截斷行，先讀進來再清
     df = pd.read_csv(src, sep=r"\s+", comment="#", engine="python")
-    # Ensure required columns exist
+
+    # 必要欄
     for col in ["Galaxy", "Dist", "hz", "e_hz1", "e_hz2"]:
         if col not in df.columns:
             raise RuntimeError(f"Missing column '{col}' in {src}")
 
-    # rename and compute geometry
-    df = df.rename(columns={"Dist": "D_Mpc_h", "hz": "h_arcsec", "e_hz1": "hz_e_hi_arcsec", "e_hz2": "hz_e_lo_arcsec"})
-    # Note: e_hz2 在原表用負號表「向下偏差」，我們在數值上取絕對值紀錄。
+    # 統一欄名
+    df = df.rename(columns={
+        "Dist": "D_Mpc_h",
+        "hz": "h_arcsec",
+        "e_hz1": "hz_e_hi_arcsec",
+        "e_hz2": "hz_e_lo_arcsec"
+    })
+
+    # 先把四欄都轉成數值（非數字→NaN），再處理正負號
+    for c in ["D_Mpc_h", "h_arcsec", "hz_e_hi_arcsec", "hz_e_lo_arcsec"]:
+        df[c] = pd.to_numeric(df[c], errors="coerce")
+
+    # e_hz2 在原表是向下偏差（多為負），我們記錄其「幅度」
     df["hz_e_lo_arcsec"] = df["hz_e_lo_arcsec"].abs()
 
-    # linear scale per arcsec at distance D (kpc per arcsec) ~ D_kpc * arcs2rad
+    # 濾掉關鍵欄位為 NaN 的雜訊/截斷列
+    before = len(df)
+    df = df[np.isfinite(df["D_Mpc_h"]) & np.isfinite(df["h_arcsec"])]
+    dropped = before - len(df)
+    if dropped > 0:
+        print(f"Filtered non-numeric/invalid rows from TSV: dropped {dropped}")
+
+    # 幾何量換算
+    ARCS2RAD = 1.0 / 206265.0
     D_kpc = df["D_Mpc_h"] * 1e3
     kpc_per_arcsec = D_kpc * ARCS2RAD
     df["h_kpc"] = df["h_arcsec"] * kpc_per_arcsec
     df["h_kpc_err_hi"] = df["hz_e_hi_arcsec"] * kpc_per_arcsec
     df["h_kpc_err_lo"] = df["hz_e_lo_arcsec"] * kpc_per_arcsec
 
-    # canonical key
+    # key
     df["galaxy_h"] = df["Galaxy"].astype(str)
     df["gkey"] = df["galaxy_h"].map(_canon_name)
 
-    # outliers
-    with pd.option_context("mode.use_inf_as_na", True):
-        mask, reasons = _mark_outliers(df)
+    # outlier 標記（不再使用已棄用的 use_inf_as_na）
+    _, reasons = _mark_outliers(df)
     df["h_outlier_reason"] = reasons
 
-    # Save main catalog (keep useful columns)
+    # 輸出
     keep = [
         "gkey", "galaxy_h", "D_Mpc_h",
         "h_arcsec", "hz_e_hi_arcsec", "hz_e_lo_arcsec",
@@ -127,14 +145,15 @@ def cmd_build_h(args: argparse.Namespace) -> None:
         "h_outlier_reason",
     ]
     df_out = df[keep].copy()
+    out.parent.mkdir(parents=True, exist_ok=True)
     df_out.to_csv(out, index=False)
     print(f"Saved -> {out} (rows={len(df_out)})")
 
-    # Save outliers file if requested
     if outliers is not None:
         df_ol = df_out[df_out["h_outlier_reason"] != ""].copy()
         df_ol.to_csv(outliers, index=False)
         print(f"Outliers -> {outliers} (rows={len(df_ol)})")
+
 
 
 # ---------------------------
