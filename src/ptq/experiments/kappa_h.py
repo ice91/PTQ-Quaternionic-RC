@@ -1,18 +1,52 @@
 # -*- coding: utf-8 -*-
 """
 ptq.experiments.kappa_h
------------------------
+=======================
 
-回歸實驗：以 (log10 h) 對 (log10 κ, log10 Σ_tot) 做線性回歸，並提供：
-- κ-only / Σ-only / κ+Σ 的 WLS/OLS 估計、R^2、AICc、ΔAICc
-- LOO（逐一留一交叉驗證）與 bootstrap 參數區間
-- 「距離不變」檢驗（DIST-INV）：log(h/D) 對 log(κD), log Σ 的回歸
-- 可選擇忽略 h 的 outliers 與自訂排除清單
-- 輸出 CSV／PNG 圖／JSON 報告（報告欄位對應 summarize_kappa_sigma_reports.py）
+目的
+----
+以星系盤厚度尺度 h 與 κ（環振頻率）/ Σ_tot（總質量表面密度）的關係做線性回歸分析，
+輸出 κ-only、Σ-only、κ+Σ 的 OLS/WLS 結果、交叉驗證（LOO）、bootstrap 區間、
+以及距離不變（DIST-INV）檢驗。程式同時支援在「輸入 CSV 缺少 kappa 欄位」時，
+直接由旋轉曲線 (r_kpc, v_obs_kms) 計算 κ(R)。
 
-注意：
-- 本程式假設輸入 merged CSV 內已有欄位：kappa、h_kpc。
-- Σ_tot 若不存在，會嘗試由 *星＋氣體* 表面密度欄位推算（見 _build_sigma_tot）。
+κ(R) 定義
+---------
+    κ(R) = sqrt(2) * V(R)/R * sqrt(1 + d ln V / d ln R)
+
+這裡以「局部對數空間線性回歸」估計 d ln V / d ln R（可調視窗），
+對不等距半徑也可靠；如提供速度誤差 v_err_kms，會做加權回歸。
+
+假設與單位
+----------
+- 半徑 r_kpc：kpc
+- 速度 v 以 km/s，κ 輸出單位 km s^-1 kpc^-1（與 r,v 單位相容）。
+- 若指定 --deproject-velocity，則以 v_obs_kms / sin(i_deg) 作為圓周速度；
+  命令列保護避免 i_deg 接近 0 時的數值不穩定（可調門檻）。
+- Σ_tot 若不存在，會嘗試由星/氣體面密度欄位組合（見 _build_sigma_tot）。
+
+輸入欄位（至少其一）
+--------------------
+必需：h_kpc（由前處理 merge 後加入）
+必要其一：
+  1) kappa（若已預先計算）
+  2) r_kpc + v_obs_kms（本程式將自動計算 kappa）
+
+可選：
+  - v_err_kms：推斜率時的加權（建議）
+  - i_deg（配合 --deproject-velocity）
+  - Sigma_tot 或相關星/氣體面密度欄位（若無則自動嘗試組合）
+
+相依套件
+--------
+numpy, pandas, statsmodels, scipy（僅用到 scipy.stats）
+
+作者註
+------
+- 邊界處理：為避免 sqrt 負值，會將 d ln V / d ln R 下限截在 -0.99。
+- 回歸：WLS 權重來自 h 的不確定度（若存在）；kappa 的誤差不導入權重，
+  以免耦合導致偏置（這亦常見於盤厚度的對數回歸處理）。
+- 本檔完整自足，不需改動你的 s4g_h_pipeline 或 merge 流程。
 """
 
 from __future__ import annotations
@@ -33,15 +67,14 @@ TINY = 1e-12
 
 
 # ---------------------------
-# 小工具
+# 名稱與篩選工具
 # ---------------------------
 def _canon_name(s: str) -> str:
     if pd.isna(s):
         return ""
     s = str(s).upper().strip()
-    for ch in [" ", "-", "_", "/"]:
+    for ch in [" ", "-", "_", "/", "."]:
         s = s.replace(ch, "")
-    # 常見前綴已都是字母，不額外處理
     return s
 
 
@@ -52,6 +85,9 @@ def _finite_mask(*arrs) -> np.ndarray:
     return m
 
 
+# ---------------------------
+# 回歸輔助
+# ---------------------------
 def _ols_wls(X: np.ndarray, y: np.ndarray, w: np.ndarray | None):
     X = sm.add_constant(X, has_constant="add")
     if w is None:
@@ -102,51 +138,48 @@ def _bootstrap_coeffs(
     return med, lo, hi
 
 
+# ---------------------------
+# Σ_tot 建構（若缺）
+# ---------------------------
 def _build_sigma_tot(df: pd.DataFrame, ml36: float | None, rgas_mult: float | None, gas_helium: float | None) -> pd.Series:
     """
-    嘗試建構 Σ_tot（質量表面密度，單位假設相容），優先順序：
-    1) 若已有 'Sigma_tot' 欄，直接使用。
-    2) 若有星與氣體：Sigma_star, Sigma_gas -> Sigma_star + Sigma_gas
-    3) 若有 3.6um 星面密度：Sigma_star_36 -> 乘上 ml36（預設使用者提供）
-    4) 氣體可套用 rgas_mult 與 helium 係數（若提供）。
-    找欄位時同時嘗試大小寫變種。
+    嘗試建構 Σ_tot（質量表面密度；單位由資料自行維持一致性），優先順序：
+      1) 直接使用 'Sigma_tot'
+      2) Sigma_star + Sigma_gas
+      3) Sigma_star_36 * ml36 （若僅有 3.6um 星光面密度）
+      4) 氣體允許以 HI/H2 組合，並套用 rgas_mult / gas_helium（若提供）
     """
     # 直接存在
     for name in ["Sigma_tot", "sigma_tot", "SIGMA_TOT"]:
         if name in df.columns:
             return df[name].astype(float)
 
-    # 蒐集候選欄位
     def pick(*cands) -> pd.Series | None:
         for c in cands:
             if c in df.columns:
                 return df[c].astype(float)
         return None
 
-    s_star = pick("Sigma_star", "sigma_star", "SIGMA_STAR", "Sigma_*,star", "SigmaStar", "st_sigma")
+    s_star = pick("Sigma_star", "sigma_star", "SIGMA_STAR", "SigmaStar", "st_sigma")
     s_star36 = pick("Sigma_star_36", "sigma_star_36", "Sigma36", "ml36_sigma")
-    s_gas = pick("Sigma_gas", "sigma_gas", "SIGMA_GAS", "Sigma_HI+H2", "SigmaGas", "gas_sigma")
+    s_gas = pick("Sigma_gas", "sigma_gas", "SIGMA_GAS", "SigmaGas", "gas_sigma")
     s_hi = pick("Sigma_HI", "sigma_HI")
     s_h2 = pick("Sigma_H2", "sigma_H2")
 
-    # 若只有 star_36，需 ml36 轉質量面密度
     if s_star is None and s_star36 is not None and ml36 is not None:
         s_star = s_star36 * float(ml36)
 
-    # 若沒有總氣體，嘗試 HI/H2 合成
     if s_gas is None and (s_hi is not None or s_h2 is not None):
         s_hi = s_hi if s_hi is not None else pd.Series(0.0, index=df.index)
         s_h2 = s_h2 if s_h2 is not None else pd.Series(0.0, index=df.index)
         s_gas = s_hi + s_h2
 
-    # 氣體 multiplicative 調整
     if s_gas is not None:
         if rgas_mult is not None:
             s_gas = s_gas * float(rgas_mult)
         if gas_helium is not None:
             s_gas = s_gas * float(gas_helium)
 
-    # 組合
     if s_star is not None and s_gas is not None:
         return s_star + s_gas
     if s_star is not None:
@@ -154,10 +187,195 @@ def _build_sigma_tot(df: pd.DataFrame, ml36: float | None, rgas_mult: float | No
     if s_gas is not None:
         return s_gas
 
-    # 無法建構，回傳 NaN series
     return pd.Series(np.nan, index=df.index, dtype=float)
 
 
+# ---------------------------
+# κ 計算：局部線性回歸估斜率
+# ---------------------------
+def _safe_sin_deg(deg: np.ndarray, min_deg: float = 5.0) -> np.ndarray:
+    """避免 i→0 的發散問題；角度缺值或過小時以 min_deg 代替。"""
+    x = np.asarray(deg, dtype=float)
+    x = np.where(np.isfinite(x), x, min_deg)
+    x = np.clip(x, min_deg, 89.9)
+    return np.sin(np.deg2rad(x))
+
+
+def _local_log_slope(lnR: np.ndarray, lnV: np.ndarray, w: np.ndarray | None, half_window: int, min_points: int) -> np.ndarray:
+    """
+    在 lnR 軸上（不等距）做局部線性回歸，估各點的 d ln V / d ln R。
+    - half_window：左右各取多少點（總視窗約 2*half_window+1）
+    - min_points：回歸至少需要的點數
+    權重 w 指的是對 lnV 的權重（建議 w=1/sigma_lnV^2）；若為 None 則 OLS。
+    """
+    n = len(lnR)
+    slope = np.full(n, np.nan, dtype=float)
+
+    for j in range(n):
+        i0 = max(0, j - half_window)
+        i1 = min(n, j + half_window + 1)
+        x = lnR[i0:i1]
+        y = lnV[i0:i1]
+        if len(x) < min_points:
+            continue
+
+        # 權重
+        if w is not None:
+            ww = w[i0:i1].copy()
+            ww = np.where(np.isfinite(ww) & (ww > 0), ww, np.nan)
+            good = np.isfinite(x) & np.isfinite(y) & np.isfinite(ww)
+        else:
+            good = np.isfinite(x) & np.isfinite(y)
+
+        if good.sum() < min_points:
+            continue
+
+        xg, yg = x[good], y[good]
+        if w is not None:
+            wg = ww[good]
+            # 加權最小平方法：解 (X' W X) beta = X' W y
+            X = np.column_stack([np.ones_like(xg), xg])
+            W = np.diag(wg)
+        else:
+            X = np.column_stack([np.ones_like(xg), xg])
+            W = None
+
+        try:
+            if W is None:
+                beta, *_ = np.linalg.lstsq(X, yg, rcond=None)
+            else:
+                XtW = X.T @ W
+                beta = np.linalg.solve(XtW @ X, XtW @ yg)
+            slope[j] = float(beta[1])
+        except np.linalg.LinAlgError:
+            continue
+
+    # 對無法估計的點，退而用數值梯度補
+    bad = ~np.isfinite(slope)
+    if bad.any():
+        grad = np.gradient(lnV, lnR, edge_order=1)
+        slope[bad] = grad[bad]
+
+    # 物理下限：避免 1 + slope < 0
+    slope = np.maximum(slope, -0.99)
+    return slope
+
+
+def _compute_kappa_for_group(
+    r_kpc: np.ndarray,
+    v_kms: np.ndarray,
+    v_err: np.ndarray | None,
+    i_deg: np.ndarray | None,
+    deproject: bool,
+    half_window: int,
+    min_points: int,
+    min_incl_deg: float,
+) -> np.ndarray:
+    """對單一星系（已依半徑排序）計算 κ(R)。回傳與輸入同長度的陣列，缺值以 NaN 表示。"""
+    r = np.asarray(r_kpc, dtype=float)
+    v = np.asarray(v_kms, dtype=float)
+
+    m = np.isfinite(r) & np.isfinite(v) & (r > 0) & (v > 0)
+    if m.sum() < min_points:
+        return np.full_like(r, np.nan, dtype=float)
+
+    r = r[m]
+    v = v[m]
+
+    # 反投影（可選）
+    if deproject:
+        if i_deg is None:
+            raise RuntimeError("要求 --deproject-velocity 但缺少 i_deg 欄位。")
+        sini = _safe_sin_deg(np.asarray(i_deg, dtype=float)[m], min_deg=min_incl_deg)
+        v = v / np.maximum(sini, 1e-3)
+
+    # 權重：若有 v_err，則 sigma_lnV ≈ v_err / v，w = 1/sigma_lnV^2
+    w = None
+    if v_err is not None:
+        verr = np.asarray(v_err, dtype=float)[m]
+        sigma_lnV = np.where(np.isfinite(verr) & (verr > 0), verr / v, np.nan)
+        w = 1.0 / np.square(sigma_lnV)
+        w[~np.isfinite(w)] = np.nan
+
+    lnR = np.log(np.maximum(r, TINY))
+    lnV = np.log(np.maximum(v, TINY))
+
+    slope = _local_log_slope(lnR, lnV, w, half_window=half_window, min_points=min_points)
+    kappa = np.sqrt(2.0) * (v / r) * np.sqrt(np.maximum(1.0 + slope, 1e-6))
+
+    # 回填到原索引長度
+    out = np.full(r_kpc.shape, np.nan, dtype=float)
+    out[np.where(m)[0]] = kappa
+    return out
+
+
+def _ensure_kappa(df: pd.DataFrame, args: argparse.Namespace) -> pd.DataFrame:
+    """
+    若 'kappa' 欄位不存在或全為 NaN，則根據 r_kpc 與 v_obs_kms 自動計算 κ。
+    可選參數：
+      --velocity-column：優先使用的速度欄（預設自動，先找 v_circ_kms 再 v_obs_kms）
+      --deproject-velocity：以 i_deg 反投影
+      --deriv-window：局部回歸視窗大小（總點數約 2*half+1）
+      --deriv-minpoints：每次回歸的最少點數
+      --min-inclination-deg：i 的最小值保護
+    """
+    need = ("kappa" not in df.columns) or (~np.isfinite(df["kappa"]).any())
+    if not need:
+        return df
+
+    # 決定速度欄
+    vcol = args.velocity_column
+    if vcol is None or vcol.lower() == "auto":
+        if "v_circ_kms" in df.columns:
+            vcol = "v_circ_kms"
+        elif "v_obs_kms" in df.columns:
+            vcol = "v_obs_kms"
+        else:
+            raise RuntimeError("找不到速度欄位（v_circ_kms 或 v_obs_kms）。")
+    if vcol not in df.columns:
+        raise RuntimeError(f"指定的速度欄位不存在：{vcol}")
+
+    verr_col = "v_err_kms" if "v_err_kms" in df.columns else None
+    ideg_col = "i_deg" if "i_deg" in df.columns else None
+
+    kappas = []
+    groups = df.groupby("galaxy", sort=False, dropna=False)
+    for g, gdf in groups:
+        # 依半徑排序計算；保留原索引順序以回填
+        order = np.argsort(gdf["r_kpc"].to_numpy())
+        idx_sorted = gdf.index.to_numpy()[order]
+
+        r = gdf.loc[idx_sorted, "r_kpc"].to_numpy()
+        v = gdf.loc[idx_sorted, vcol].to_numpy()
+        ve = gdf.loc[idx_sorted, verr_col].to_numpy() if verr_col else None
+        idg = gdf.loc[idx_sorted, ideg_col].to_numpy() if ideg_col else None
+
+        k = _compute_kappa_for_group(
+            r_kpc=r,
+            v_kms=v,
+            v_err=ve,
+            i_deg=idg,
+            deproject=args.deproject_velocity,
+            half_window=max(1, args.deriv_window // 2),
+            min_points=max(3, args.deriv_minpoints),
+            min_incl_deg=float(args.min_inclination_deg),
+        )
+
+        # 回填到原順序
+        k_back = np.full_like(gdf["r_kpc"].to_numpy(), np.nan, dtype=float)
+        k_back[order] = k
+        kappas.append(pd.Series(k_back, index=gdf.index))
+
+    df = df.copy()
+    df["kappa"] = pd.concat(kappas).sort_index()
+    n_valid = int(np.isfinite(df["kappa"]).sum())
+    print(f"[kappa] computed from rotation curves: valid points = {n_valid}")
+    return df
+
+
+# ---------------------------
+# 排除/異常 樣本清單
+# ---------------------------
 def _load_exclude_keys(path: str | None) -> set[str]:
     if not path:
         return set()
@@ -166,11 +384,9 @@ def _load_exclude_keys(path: str | None) -> set[str]:
         return set()
     df = pd.read_csv(p)
     cols = list(df.columns)
-    # 嘗試找 gkey/galaxy
     for cand in ["gkey", "galaxy", "Galaxy", "name", cols[0]]:
         if cand in df.columns:
             return set(_canon_name(x) for x in df[cand].astype(str))
-    # fallback: 所有第一欄
     return set(_canon_name(x) for x in df[cols[0]].astype(str))
 
 
@@ -181,24 +397,20 @@ def _load_h_outlier_keys(path: str | None) -> set[str]:
     if not p.exists():
         return set()
     df = pd.read_csv(p)
-    # 允許 gkey 或 galaxy_h 皆可
     for cand in ["gkey", "galaxy_h"]:
         if cand in df.columns:
             return set(_canon_name(x) for x in df[cand].astype(str))
-    # fallback: 第一欄
     return set(_canon_name(x) for x in df[df.columns[0]].astype(str))
 
 
 def _ensure_gkey(df: pd.DataFrame) -> pd.DataFrame:
     if "gkey" in df.columns:
         return df
-    # 嘗試以常見名稱欄位建立
     for cand in ["galaxy", "Galaxy", "name", "Name", "galaxy_s"]:
         if cand in df.columns:
             df = df.copy()
             df["gkey"] = df[cand].astype(str).map(_canon_name)
             return df
-    # 若找不到，使用第一欄
     df = df.copy()
     df["gkey"] = df[df.columns[0]].astype(str).map(_canon_name)
     return df
@@ -210,6 +422,11 @@ def _ensure_gkey(df: pd.DataFrame) -> pd.DataFrame:
 def run(args: argparse.Namespace) -> Dict:
     df = pd.read_csv(args.sparc_with_h)
     df = _ensure_gkey(df)
+
+    # 需要的核心欄位檢查
+    for c in ["r_kpc", "galaxy"]:
+        if c not in df.columns:
+            raise RuntimeError(f"輸入缺少必要欄位：{c}")
 
     # 排除清單
     ex_keys = _load_exclude_keys(args.exclude_csv)
@@ -227,11 +444,14 @@ def run(args: argparse.Namespace) -> Dict:
     if "Sigma_tot" not in df.columns:
         df["Sigma_tot"] = sigma_tot
 
-    # 必要欄位
+    # 若缺少 kappa，就計算
+    df = _ensure_kappa(df, args)
+
+    # 必要欄位：kappa 與 h_kpc
     if "kappa" not in df.columns or "h_kpc" not in df.columns:
         raise RuntimeError("輸入檔缺少必要欄位（kappa / h_kpc）。請先完成特徵計算與合併。")
 
-    # log 變數
+    # 組回歸資料
     logk = np.log10(np.maximum(df["kappa"].astype(float).to_numpy(), TINY))
     logs = np.log10(np.maximum(df["Sigma_tot"].astype(float).to_numpy(), TINY))
     logh = np.log10(np.maximum(df["h_kpc"].astype(float).to_numpy(), TINY))
@@ -253,7 +473,7 @@ def run(args: argparse.Namespace) -> Dict:
         w = 1.0 / np.square(sig_log)
         w[~np.isfinite(w)] = np.nan
 
-    # 過濾缺值
+    # 過濾缺值/無效權重
     m = _finite_mask(logk, logs, logh)
     if w is not None:
         m &= np.isfinite(w)
@@ -265,11 +485,10 @@ def run(args: argparse.Namespace) -> Dict:
     if n_used == 0:
         raise RuntimeError("沒有可用樣本（kappa / Sigma_tot / h_kpc 有缺或權重無效）。")
 
-    # 統計
+    # 統計量
     r, _ = pearsonr(logk, logh)
     rho, _ = spearmanr(logk, logh)
 
-    print(f"Saved -> {args.out_csv} (rows={n_used})") if args.out_csv else None
     print(f"Sample size (used in fit): {n_used}")
     print(f"Pearson r (log–log): {r:.3f}")
     print(f"Spearman ρ (log–log): {rho:.3f}")
@@ -294,7 +513,7 @@ def run(args: argparse.Namespace) -> Dict:
     aicc_s = _aicc(n_used, k=2, rss=_rss(ms))
     aicc_ks = _aicc(n_used, k=3, rss=_rss(m2))  # const+2
 
-    print(f"[log h ~ log κ + log Sigma_tot] N={n_used}, p=3")
+    print(f"[log h ~ log κ + log Σ_tot] N={n_used}, p=3")
     print(
         f"  beta: {m2.params[0]:.3f}±{m2.bse[0]:.3f}, "
         f"{m2.params[1]:.3f}±{m2.bse[1]:.3f}, "
@@ -318,9 +537,7 @@ def run(args: argparse.Namespace) -> Dict:
         print(f"  Bootstrap medians: {list(med)}")
         print(f"  16–84 percentiles: low={list(lo)}  high={list(hi)}")
 
-    # --------------------------------
     # 輸出 CSV（用到的樣本與 log 值）
-    # --------------------------------
     if args.out_csv:
         df_used = pd.DataFrame(
             {
@@ -333,15 +550,12 @@ def run(args: argparse.Namespace) -> Dict:
         df_used.to_csv(args.out_csv, index=False)
         print(f"Saved -> {args.out_csv} (rows={len(df_used)})")
 
-    # ---------------
     # 畫圖（可選）
-    # ---------------
     if args.out_plot:
         Path(args.out_plot).parent.mkdir(parents=True, exist_ok=True)
         # 圖1：log κ vs log h（含 κ-only 擬合線）
         plt.figure(figsize=(5, 4))
         plt.scatter(logk, logh, s=28, alpha=0.85)
-        # 擬合線
         xgrid = np.linspace(logk.min() - 0.1, logk.max() + 0.1, 200)
         ygrid = mk.params[0] + mk.params[1] * xgrid
         plt.plot(xgrid, ygrid, linewidth=2)
@@ -351,9 +565,13 @@ def run(args: argparse.Namespace) -> Dict:
         plt.savefig(args.out_plot, dpi=180)
         print(f"Saved plot -> {args.out_plot}")
 
-        # 圖2：同一張散點，但用 log Σ 顏色呈現（對應 _sigma）
+        # 圖2：同一張散點，但用 log Σ 顏色呈現
         root = Path(args.out_plot)
-        out_sigma = root.with_name(root.stem.replace(".png", "") + "_sigma.png") if root.suffix == "" else root.with_name(root.stem + "_sigma" + root.suffix)
+        out_sigma = (
+            root.with_name(root.stem + "_sigma" + root.suffix)
+            if root.suffix
+            else root.with_name(root.stem.replace(".png", "") + "_sigma.png")
+        )
         plt.figure(figsize=(5, 4))
         sc = plt.scatter(logk, logh, s=28, c=logs, alpha=0.9)
         plt.xlabel(r"$\log_{10}\,\kappa$")
@@ -364,9 +582,7 @@ def run(args: argparse.Namespace) -> Dict:
         plt.savefig(out_sigma, dpi=180)
         print(f"Saved plot -> {out_sigma}")
 
-    # -----------------------
     # 距離不變（DIST-INV）
-    # -----------------------
     dist_col = args.dist_col or "D_Mpc_h"
     use_dist = dist_col if dist_col in df.columns else ("D_Mpc_gal" if "D_Mpc_gal" in df.columns else None)
     if use_dist is None:
@@ -375,10 +591,11 @@ def run(args: argparse.Namespace) -> Dict:
         dist_n = 0
         md = None
     else:
+        # 注意：需與前述遮罩一致（m）
         D = np.maximum(df[use_dist].astype(float).to_numpy(), TINY)[m]
         y_d = np.log10(np.maximum(df["h_kpc"].astype(float).to_numpy()[m] / D, TINY))  # log(h/D)
         x1_d = np.log10(np.maximum(df["kappa"].astype(float).to_numpy()[m] * D, TINY))  # log(κD)
-        x2_d = logs  # log Σ_tot（與前一致）
+        x2_d = logs  # log Σ_tot
         Xd = np.stack([x1_d, x2_d], axis=1)
         md = _ols_wls(Xd, y_d, w)
         dist_n = len(y_d)
@@ -392,9 +609,7 @@ def run(args: argparse.Namespace) -> Dict:
             "R2": float(md.rsquared),
         }
 
-    # -----------------------
-    # JSON 報告（與 summarize 腳本相容）
-    # -----------------------
+    # JSON 報告
     report = {
         # 主要（κ+Σ）
         "a": float(m2.params[0]),
@@ -413,7 +628,7 @@ def run(args: argparse.Namespace) -> Dict:
         "dist_b_kappa": float(md.params[1]) if md is not None else np.nan,
         "dist_c_sigma": float(md.params[2]) if md is not None else np.nan,
         "dist_R2": float(md.rsquared) if md is not None else np.nan,
-        # 附帶原始區塊（保留向下相容）
+        # 附帶原始區塊（向下相容）
         "aicc": {"kappa_only": float(aicc_k), "sigma_only": float(aicc_s), "kappa_sigma": float(aicc_ks)},
         "params": {
             "kappa_only": {"beta": mk.params.tolist(), "bse": mk.bse.tolist(), "R2": float(mk.rsquared)},
@@ -439,22 +654,29 @@ def main():
     ap = argparse.ArgumentParser(prog="ptq.experiments.kappa_h")
 
     # I/O
-    ap.add_argument("--sparc-with-h", type=str, required=True, help="merged CSV（含 kappa / h_kpc；若可，最好含 Sigma_tot 與 D_Mpc_h）")
-    ap.add_argument("--out-csv", type=str, default=None, help="輸出用樣本（log 值）")
-    ap.add_argument("--out-plot", type=str, default=None, help="散點圖輸出檔（會再產生 _sigma 版）")
-    ap.add_argument("--report-json", type=str, default=None, help="回歸摘要報告 JSON")
+    ap.add_argument("--sparc-with-h", type=str, required=True, help="merged CSV（含 h_kpc；若無 kappa 則由本程式計算）")
+    ap.add_argument("--out-csv", type=str, default=None, help="輸出：回歸使用的對數樣本")
+    ap.add_argument("--out-plot", type=str, default=None, help="輸出：散點圖（另附 _sigma 版本）")
+    ap.add_argument("--report-json", type=str, default=None, help="輸出：回歸摘要 JSON")
 
     # 權重與健壯度分析
-    ap.add_argument("--wls", action="store_true", help="使用 WLS（以 h 的誤差推估 log-space 權重）")
-    ap.add_argument("--loo", action="store_true", help="進行留一交叉驗證（係數平均／標準差）")
+    ap.add_argument("--wls", action="store_true", help="使用 WLS（以 h 的線性不確定度推估 log-space 權重）")
+    ap.add_argument("--loo", action="store_true", help="逐一留一交叉驗證（係數平均／標準差）")
     ap.add_argument("--bootstrap", type=int, default=0, help="bootstrap 次數（0 表示不執行）")
 
     # Σ_tot 組合（若輸入檔沒有 Sigma_tot 時才會用到這些）
-    ap.add_argument("--use-total-sigma", action="store_true", help="保留原旗標供腳本相容（實際上自動偵測/建構 Sigma_tot）")
-    ap.add_argument("--use-exp", action="store_true", help="相容旗標（不影響此檔計算）")
-    ap.add_argument("--ml36", type=float, default=None, help="M/L (3.6μm) 乘數（若僅提供星光面密度 Sigma_star_36）")
+    ap.add_argument("--use-total-sigma", action="store_true", help="相容旗標（實際自動偵測/建構 Sigma_tot）")
+    ap.add_argument("--use-exp", action="store_true", help="相容旗標（不影響計算）")
+    ap.add_argument("--ml36", type=float, default=None, help="M/L[3.6μm] 乘數（若僅提供星光面密度 Sigma_star_36）")
     ap.add_argument("--rgas-mult", type=float, default=None, help="氣體倍率（如需修正）")
     ap.add_argument("--gas-helium", type=float, default=None, help="氦修正倍率（如 1.33）")
+
+    # κ 計算選項（當缺少 kappa 欄位時生效）
+    ap.add_argument("--velocity-column", type=str, default="auto", help="用於 κ 計算的速度欄位（auto|v_obs_kms|v_circ_kms）")
+    ap.add_argument("--deproject-velocity", action="store_true", help="以 i_deg 反投影速度（v/sin i）")
+    ap.add_argument("--deriv-window", type=int, default=5, help="局部回歸視窗大小（總點數約 2*half+1；建議奇數≥5）")
+    ap.add_argument("--deriv-minpoints", type=int, default=3, help="每次回歸最少點數（≥3）")
+    ap.add_argument("--min-inclination-deg", type=float, default=5.0, help="i 的最小度數保護（避免 sin(i) 太小）")
 
     # 資料過濾
     ap.add_argument("--drop-h-outliers", action="store_true", help="移除 h 的 outliers（需要 --h-outliers-csv）")
@@ -462,7 +684,7 @@ def main():
     ap.add_argument("--exclude-csv", type=str, default=None, help="自訂排除清單（含 gkey 或 galaxy 欄位）")
 
     # DIST-INV 距離欄位
-    ap.add_argument("--dist-col", type=str, default="D_Mpc_h", help="距離欄位（預設使用 S4G 的 D_Mpc_h；若無則回退 D_Mpc_gal）")
+    ap.add_argument("--dist-col", type=str, default="D_Mpc_h", help="距離欄位（預設用 S4G 的 D_Mpc_h；若無則回退 D_Mpc_gal）")
 
     args = ap.parse_args()
     run(args)
