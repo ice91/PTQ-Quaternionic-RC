@@ -1,3 +1,6 @@
+給你「正統修法」後可直接覆蓋的完整檔案（已加入：① 沒有 Σ 就自動退化成 κ-only；② WLS 權重無效則自動退回 OLS；③ DIST-INV 與輸出/繪圖/JSON 都能在無 Σ 時正常運作；④ 避免 `nanmean` 警告）：
+
+```python
 # -*- coding: utf-8 -*-
 """
 ptq.experiments.kappa_h
@@ -46,7 +49,7 @@ numpy, pandas, statsmodels, scipy（僅用到 scipy.stats）
 - 邊界處理：為避免 sqrt 負值，會將 d ln V / d ln R 下限截在 -0.99。
 - 回歸：WLS 權重來自 h 的不確定度（若存在）；kappa 的誤差不導入權重，
   以免耦合導致偏置（這亦常見於盤厚度的對數回歸處理）。
-- 本檔完整自足，不需改動你的 s4g_h_pipeline 或 merge 流程。
+- 加回「沒有 Σ 就退化成 κ-only」與「WLS 權重無效即退回 OLS」兩層保險。
 """
 
 from __future__ import annotations
@@ -451,101 +454,135 @@ def run(args: argparse.Namespace) -> Dict:
     if "kappa" not in df.columns or "h_kpc" not in df.columns:
         raise RuntimeError("輸入檔缺少必要欄位（kappa / h_kpc）。請先完成特徵計算與合併。")
 
-    # 組回歸資料
-    logk = np.log10(np.maximum(df["kappa"].astype(float).to_numpy(), TINY))
-    logs = np.log10(np.maximum(df["Sigma_tot"].astype(float).to_numpy(), TINY))
-    logh = np.log10(np.maximum(df["h_kpc"].astype(float).to_numpy(), TINY))
+    # 是否有可用的 Σ 剖面？
+    has_sigma = np.isfinite(df["Sigma_tot"].astype(float)).any()
 
-    # 權重（WLS）
+    # 組回歸資料（log 空間）
+    logk = np.log10(np.maximum(df["kappa"].astype(float).to_numpy(), TINY))
+    logh = np.log10(np.maximum(df["h_kpc"].astype(float).to_numpy(), TINY))
+    logs = None
+    if has_sigma:
+        logs = np.log10(np.maximum(df["Sigma_tot"].astype(float).to_numpy(), TINY))
+    else:
+        print("[Σ] not found or entirely NaN; falling back to κ-only model.")
+
+    # 權重（WLS）；若權重不可用則退回 OLS
     w = None
+    used_wls = False
     if args.wls:
-        # 優先使用 sigma_h；否則以 h_kpc_err_hi/lo 的平均
+        # 優先使用 sigma_h；否則以 h_kpc_err_hi/lo 的「逐列」平均（兩者其一存在就用其值，兩者皆 NaN 才 NaN）
         if "sigma_h" in df.columns and np.isfinite(df["sigma_h"]).any():
             sig_lin = df["sigma_h"].astype(float).to_numpy()
         else:
             lo = df.get("h_kpc_err_lo", pd.Series(np.nan, index=df.index)).astype(float).to_numpy()
             hi = df.get("h_kpc_err_hi", pd.Series(np.nan, index=df.index)).astype(float).to_numpy()
-            sig_lin = np.nanmean(np.vstack([lo, hi]), axis=0)
-        # 轉為 log 空間近似誤差
+            sig_lin = np.where(
+                np.isfinite(lo) & np.isfinite(hi), 0.5 * (lo + hi),
+                np.where(np.isfinite(lo), lo, np.where(np.isfinite(hi), hi, np.nan))
+            )
+
         h_lin = np.maximum(df["h_kpc"].astype(float).to_numpy(), TINY)
         rel = np.where(np.isfinite(sig_lin) & (sig_lin > 0), sig_lin / h_lin, np.nan)
         sig_log = rel / np.log(10.0)
         w = 1.0 / np.square(sig_log)
         w[~np.isfinite(w)] = np.nan
 
+        if np.isfinite(w).any():
+            used_wls = True
+        else:
+            print("[WLS] no usable h uncertainties; falling back to OLS.")
+            w = None
+
     # 過濾缺值/無效權重
-    m = _finite_mask(logk, logs, logh)
+    if has_sigma:
+        m = _finite_mask(logk, logs, logh)
+    else:
+        m = _finite_mask(logk, logh)
     if w is not None:
         m &= np.isfinite(w)
-    logk, logs, logh = logk[m], logs[m], logh[m]
+
+    logk = logk[m]
+    logh = logh[m]
+    if has_sigma:
+        logs = logs[m]
     if w is not None:
         w = w[m]
 
     n_used = len(logh)
     if n_used == 0:
-        raise RuntimeError("沒有可用樣本（kappa / Sigma_tot / h_kpc 有缺或權重無效）。")
+        need = "kappa / h_kpc" + (" / Sigma_tot" if has_sigma else "")
+        raise RuntimeError(f"沒有可用樣本（{need} 有缺或權重無效）。")
 
-    # 統計量
+    # 統計量（κ vs h）
     r, _ = pearsonr(logk, logh)
     rho, _ = spearmanr(logk, logh)
-
     print(f"Sample size (used in fit): {n_used}")
     print(f"Pearson r (log–log): {r:.3f}")
     print(f"Spearman ρ (log–log): {rho:.3f}")
 
-    # κ-only
+    # --- κ-only ---
     Xk = logk.reshape(-1, 1)
     mk = _ols_wls(Xk, logh, w)
-    print("Weighted OLS (log10 h = a + b log10 κ):")
+    print(("Weighted " if used_wls else "") + "OLS (log10 h = a + b log10 κ):")
     print(f"  a = {mk.params[0]:.3f} ± {mk.bse[0]:.3f}")
     print(f"  b = {mk.params[1]:.3f} ± {mk.bse[1]:.3f}")
     print(f"  R^2 = {mk.rsquared:.3f}")
 
-    # Σ-only
-    Xs = logs.reshape(-1, 1)
-    ms = _ols_wls(Xs, logh, w)
-
-    # κ + Σ
-    X2 = np.stack([logk, logs], axis=1)
-    m2 = _ols_wls(X2, logh, w)
-
+    # --- Σ-only / κ+Σ（若有 Σ）---
+    ms = None
+    m2 = None
     aicc_k = _aicc(n_used, k=2, rss=_rss(mk))  # const+1
-    aicc_s = _aicc(n_used, k=2, rss=_rss(ms))
-    aicc_ks = _aicc(n_used, k=3, rss=_rss(m2))  # const+2
+    aicc_s = np.nan
+    aicc_ks = np.nan
 
-    print(f"[log h ~ log κ + log Σ_tot] N={n_used}, p=3")
-    print(
-        f"  beta: {m2.params[0]:.3f}±{m2.bse[0]:.3f}, "
-        f"{m2.params[1]:.3f}±{m2.bse[1]:.3f}, "
-        f"{m2.params[2]:.3f}±{m2.bse[2]:.3f}"
-    )
-    print(f"  R^2 = {m2.rsquared:.3f}, AICc = {aicc_ks:.2f}")
-    print(f"  AICc (κ-only/Σ-only/κ+Σ) = {aicc_k:.2f} / {aicc_s:.2f} / {aicc_ks:.2f}")
-    print(
-        f"  ΔAICc = {{'kappa_only': {aicc_k - aicc_ks}, 'sigma_only': {aicc_s - aicc_ks}, 'kappa_sigma': 0.0}}"
-    )
+    if has_sigma:
+        Xs = logs.reshape(-1, 1)
+        ms = _ols_wls(Xs, logh, w)
+        X2 = np.stack([logk, logs], axis=1)
+        m2 = _ols_wls(X2, logh, w)
+
+        aicc_s = _aicc(n_used, k=2, rss=_rss(ms))
+        aicc_ks = _aicc(n_used, k=3, rss=_rss(m2))  # const+2
+
+        print(f"[log h ~ log κ + log Σ_tot] N={n_used}, p=3")
+        print(
+            f"  beta: {m2.params[0]:.3f}±{m2.bse[0]:.3f}, "
+            f"{m2.params[1]:.3f}±{m2.bse[1]:.3f}, "
+            f"{m2.params[2]:.3f}±{m2.bse[2]:.3f}"
+        )
+        print(f"  R^2 = {m2.rsquared:.3f}, AICc = {aicc_ks:.2f}")
+        print(f"  AICc (κ-only/Σ-only/κ+Σ) = {aicc_k:.2f} / {aicc_s:.2f} / {aicc_ks:.2f}")
+        print(
+            f"  ΔAICc = {{'kappa_only': {aicc_k - aicc_ks}, 'sigma_only': {aicc_s - aicc_ks}, 'kappa_sigma': 0.0}}"
+        )
+    else:
+        print(f"[log h ~ log κ] N={n_used}, p=2")
+        print(f"  AICc (κ-only) = {aicc_k:.2f}")
 
     # LOO
     if args.loo:
-        mu, sd = _loo_coeffs(X2, logh, w)
+        if has_sigma:
+            mu, sd = _loo_coeffs(np.stack([logk, logs], axis=1), logh, w)
+        else:
+            mu, sd = _loo_coeffs(logk.reshape(-1, 1), logh, w)
         print(f"  LOO mean: {list(mu)}")
         print(f"  LOO std : {list(sd)}")
 
     # Bootstrap
     if args.bootstrap and args.bootstrap > 0:
-        med, lo, hi = _bootstrap_coeffs(X2, logh, w, nboot=args.bootstrap, seed=42)
+        if has_sigma:
+            med, lo, hi = _bootstrap_coeffs(np.stack([logk, logs], axis=1), logh, w, nboot=args.bootstrap, seed=42)
+        else:
+            med, lo, hi = _bootstrap_coeffs(logk.reshape(-1, 1), logh, w, nboot=args.bootstrap, seed=42)
         print(f"  Bootstrap medians: {list(med)}")
         print(f"  16–84 percentiles: low={list(lo)}  high={list(hi)}")
 
     # 輸出 CSV（用到的樣本與 log 值）
     if args.out_csv:
-        df_used = pd.DataFrame(
-            {
-                "log10_h": logh,
-                "log10_kappa": logk,
-                "log10_Sigma_tot": logs,
-            }
-        )
+        if has_sigma:
+            df_used = pd.DataFrame({"log10_h": logh, "log10_kappa": logk, "log10_Sigma_tot": logs})
+        else:
+            df_used = pd.DataFrame({"log10_h": logh, "log10_kappa": logk})
         Path(args.out_csv).parent.mkdir(parents=True, exist_ok=True)
         df_used.to_csv(args.out_csv, index=False)
         print(f"Saved -> {args.out_csv} (rows={len(df_used)})")
@@ -565,22 +602,25 @@ def run(args: argparse.Namespace) -> Dict:
         plt.savefig(args.out_plot, dpi=180)
         print(f"Saved plot -> {args.out_plot}")
 
-        # 圖2：同一張散點，但用 log Σ 顏色呈現
-        root = Path(args.out_plot)
-        out_sigma = (
-            root.with_name(root.stem + "_sigma" + root.suffix)
-            if root.suffix
-            else root.with_name(root.stem.replace(".png", "") + "_sigma.png")
-        )
-        plt.figure(figsize=(5, 4))
-        sc = plt.scatter(logk, logh, s=28, c=logs, alpha=0.9)
-        plt.xlabel(r"$\log_{10}\,\kappa$")
-        plt.ylabel(r"$\log_{10}\,h\ \mathrm{(kpc)}$")
-        cb = plt.colorbar(sc)
-        cb.set_label(r"$\log_{10}\,\Sigma_{\rm tot}$")
-        plt.tight_layout()
-        plt.savefig(out_sigma, dpi=180)
-        print(f"Saved plot -> {out_sigma}")
+        # 圖2：用 log Σ 著色（只有在有 Σ 時才畫）
+        if has_sigma:
+            root = Path(args.out_plot)
+            out_sigma = (
+                root.with_name(root.stem + "_sigma" + root.suffix)
+                if root.suffix
+                else root.with_name(root.stem.replace(".png", "") + "_sigma.png")
+            )
+            plt.figure(figsize=(5, 4))
+            sc = plt.scatter(logk, logh, s=28, c=logs, alpha=0.9)
+            plt.xlabel(r"$\log_{10}\,\kappa$")
+            plt.ylabel(r"$\log_{10}\,h\ \mathrm{(kpc)}$")
+            cb = plt.colorbar(sc)
+            cb.set_label(r"$\log_{10}\,\Sigma_{\rm tot}$")
+            plt.tight_layout()
+            plt.savefig(out_sigma, dpi=180)
+            print(f"Saved plot -> {out_sigma}")
+        else:
+            print("[plot] skipped colored-by-Σ panel because Σ is unavailable.")
 
     # 距離不變（DIST-INV）
     dist_col = args.dist_col or "D_Mpc_h"
@@ -591,51 +631,73 @@ def run(args: argparse.Namespace) -> Dict:
         dist_n = 0
         md = None
     else:
-        # 注意：需與前述遮罩一致（m）
-        D = np.maximum(df[use_dist].astype(float).to_numpy(), TINY)[m]
+        D_all = np.maximum(df[use_dist].astype(float).to_numpy(), TINY)
+        D = D_all[m]
         y_d = np.log10(np.maximum(df["h_kpc"].astype(float).to_numpy()[m] / D, TINY))  # log(h/D)
         x1_d = np.log10(np.maximum(df["kappa"].astype(float).to_numpy()[m] * D, TINY))  # log(κD)
-        x2_d = logs  # log Σ_tot
-        Xd = np.stack([x1_d, x2_d], axis=1)
-        md = _ols_wls(Xd, y_d, w)
+
+        if has_sigma:
+            x2_d = logs  # 已經 masked 過
+            Xd = np.stack([x1_d, x2_d], axis=1)
+            md = _ols_wls(Xd, y_d, w)
+            beta = md.params.tolist()
+            bse = md.bse.tolist()
+            # pad to length 3: [const, b_kappa, c_sigma]
+            if len(beta) == 2:
+                beta = [beta[0], beta[1], np.nan]
+                bse = [bse[0], bse[1], np.nan]
+        else:
+            Xd = x1_d.reshape(-1, 1)
+            md = _ols_wls(Xd, y_d, w)
+            # pad to 3 (const, b_kappa, c_sigma=nan)
+            beta = md.params.tolist() + [np.nan] if len(md.params) == 2 else [np.nan, np.nan, np.nan]
+            bse = md.bse.tolist() + [np.nan] if len(md.bse) == 2 else [np.nan, np.nan, np.nan]
+
         dist_n = len(y_d)
-        print(
-            f"[DIST-INV] log(h/D) = {md.params[0]:.3f} + {md.params[1]:.3f} log(κD) + {md.params[2]:.3f} log Σ ; R^2={md.rsquared:.3f}"
-        )
+        if has_sigma:
+            print(f"[DIST-INV] log(h/D) = {md.params[0]:.3f} + {md.params[1]:.3f} log(κD) + {md.params[2]:.3f} log Σ ; R^2={md.rsquared:.3f}")
+        else:
+            print(f"[DIST-INV] log(h/D) = {md.params[0]:.3f} + {md.params[1]:.3f} log(κD) ; R^2={md.rsquared:.3f}")
         dist_report = {
             "dist_col_used": use_dist,
-            "beta": md.params.tolist(),
-            "bse": md.bse.tolist(),
+            "beta": beta,
+            "bse": bse,
             "R2": float(md.rsquared),
         }
 
-    # JSON 報告
+    # JSON 報告（在沒有 Σ 時，相關欄位以 NaN/None 補齊）
     report = {
-        # 主要（κ+Σ）
-        "a": float(m2.params[0]),
-        "a_se": float(m2.bse[0]),
-        "b_kappa": float(m2.params[1]),
-        "b_se": float(m2.bse[1]),
-        "c_sigma": float(m2.params[2]),
-        "c_se": float(m2.bse[2]),
-        "R2": float(m2.rsquared),
-        "AICc": float(aicc_ks),
-        "dAIC_kappa_only": float(aicc_k - aicc_ks),
-        "dAIC_sigma_only": float(aicc_s - aicc_ks),
-        "dAIC_kappa_sigma": 0.0,
+        # 主要迴歸（若有 Σ 則是 κ+Σ，否則是 κ-only）
+        "a": float(m2.params[0]) if has_sigma else float(mk.params[0]),
+        "a_se": float(m2.bse[0]) if has_sigma else float(mk.bse[0]),
+        "b_kappa": float(m2.params[1]) if has_sigma else float(mk.params[1]),
+        "b_se": float(m2.bse[1]) if has_sigma else float(mk.bse[1]),
+        "c_sigma": float(m2.params[2]) if has_sigma else np.nan,
+        "c_se": float(m2.bse[2]) if has_sigma else np.nan,
+        "R2": float(m2.rsquared) if has_sigma else float(mk.rsquared),
+        "AICc": float(aicc_ks) if has_sigma else float(aicc_k),
+        "dAIC_kappa_only": float(aicc_k - aicc_ks) if has_sigma else 0.0,
+        "dAIC_sigma_only": float(aicc_s - aicc_ks) if has_sigma else np.nan,
+        "dAIC_kappa_sigma": 0.0 if has_sigma else np.nan,
         # 距離不變
         "dist_n": int(dist_n),
-        "dist_b_kappa": float(md.params[1]) if md is not None else np.nan,
-        "dist_c_sigma": float(md.params[2]) if md is not None else np.nan,
+        "dist_b_kappa": float(md.params[1]) if md is not None and len(md.params) >= 2 else np.nan,
+        "dist_c_sigma": float(md.params[2]) if md is not None and len(md.params) >= 3 else np.nan,
         "dist_R2": float(md.rsquared) if md is not None else np.nan,
         # 附帶原始區塊（向下相容）
-        "aicc": {"kappa_only": float(aicc_k), "sigma_only": float(aicc_s), "kappa_sigma": float(aicc_ks)},
+        "aicc": {
+            "kappa_only": float(aicc_k),
+            "sigma_only": float(aicc_s) if has_sigma else np.nan,
+            "kappa_sigma": float(aicc_ks) if has_sigma else np.nan,
+        },
         "params": {
             "kappa_only": {"beta": mk.params.tolist(), "bse": mk.bse.tolist(), "R2": float(mk.rsquared)},
-            "kappa_sigma": {"beta": m2.params.tolist(), "bse": m2.bse.tolist(), "R2": float(m2.rsquared)},
+            "kappa_sigma": ({"beta": m2.params.tolist(), "bse": m2.bse.tolist(), "R2": float(m2.rsquared)} if has_sigma else None),
             "dist_inv": dist_report,
         },
         "n_used": int(n_used),
+        "used_wls": bool(used_wls),
+        "has_sigma": bool(has_sigma),
     }
 
     if args.report_json:
@@ -656,11 +718,11 @@ def main():
     # I/O
     ap.add_argument("--sparc-with-h", type=str, required=True, help="merged CSV（含 h_kpc；若無 kappa 則由本程式計算）")
     ap.add_argument("--out-csv", type=str, default=None, help="輸出：回歸使用的對數樣本")
-    ap.add_argument("--out-plot", type=str, default=None, help="輸出：散點圖（另附 _sigma 版本）")
+    ap.add_argument("--out-plot", type=str, default=None, help="輸出：散點圖（另附 _sigma 版本；無 Σ 則略過）")
     ap.add_argument("--report-json", type=str, default=None, help="輸出：回歸摘要 JSON")
 
     # 權重與健壯度分析
-    ap.add_argument("--wls", action="store_true", help="使用 WLS（以 h 的線性不確定度推估 log-space 權重）")
+    ap.add_argument("--wls", action="store_true", help="使用 WLS（以 h 的線性不確定度推估 log-space 權重；若無效則退回 OLS）")
     ap.add_argument("--loo", action="store_true", help="逐一留一交叉驗證（係數平均／標準差）")
     ap.add_argument("--bootstrap", type=int, default=0, help="bootstrap 次數（0 表示不執行）")
 
@@ -692,3 +754,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+```
