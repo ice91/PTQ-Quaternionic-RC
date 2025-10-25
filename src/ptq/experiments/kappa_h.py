@@ -1,6 +1,3 @@
-給你「正統修法」後可直接覆蓋的完整檔案（已加入：① 沒有 Σ 就自動退化成 κ-only；② WLS 權重無效則自動退回 OLS；③ DIST-INV 與輸出/繪圖/JSON 都能在無 Σ 時正常運作；④ 避免 `nanmean` 警告）：
-
-```python
 # -*- coding: utf-8 -*-
 """
 ptq.experiments.kappa_h
@@ -754,4 +751,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-```
+
