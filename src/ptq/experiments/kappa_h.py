@@ -10,9 +10,12 @@ ptq.experiments.kappa_h
 以及距離不變（DIST-INV）檢驗。程式同時支援在「輸入 CSV 缺少 kappa 欄位」時，
 直接由旋轉曲線 (r_kpc, v_obs_kms) 計算 κ(R)。
 
-若輸入中 **沒有每半徑的 Σ 欄位**，本版會自動以 galaxy-level 方式在代表半徑 r★
-（v_disk 最大；若無則 v_obs 最大）合成 Σ_*（以及可選擇 Σ_gas、Σ_tot），
-回復舊版工作流程的 κ+Σ 模型（參數：--use-total-sigma/--use-exp/--ml36/--rgas-mult/--gas-helium）。
+本版重點（論文等級）：
+- 提供 **--per-galaxy** 模式：每星系只取一筆代表點（R★），避免同一星系多半徑重複樣本。
+- **代表半徑 R★** 可選：2.2Rd / v_disk 峰值 / 平坦段 / 中位數半徑。
+- 交叉驗證與 bootstrap 提供 **by-galaxy** 版本，避免群聚偏誤。
+- **galaxy-equalization 權重**（per-radius 模式時可開啟），避免半徑點數多的星系主導擬合。
+- 若每半徑 Σ(R) 缺失，僅在 R★ 以 L36/M_HI 做 **galaxy-level fallback**（不再把同一 Σ 灌到所有半徑）。
 
 κ(R) 定義
 ---------
@@ -27,8 +30,8 @@ ptq.experiments.kappa_h
 - 速度 v 以 km/s，κ 輸出單位 km s^-1 kpc^-1（與 r,v 單位相容）。
 - 若指定 --deproject-velocity，則以 v_obs_kms / sin(i_deg) 作為圓周速度；
   命令列保護避免 i_deg 接近 0 時的數值不穩定（可調門檻）。
-- Σ_tot 若不存在，先嘗試由每半徑星/氣體面密度欄位組合；若仍無，啟用 fallback：
-  以 L36_disk、M_HI 等**星系整體量**在 r★ 合成 Σ。
+- Σ_tot 若不存在，先嘗試由每半徑星/氣體面密度欄位組合；若仍無，僅在代表半徑 R★ 啟用 fallback：
+  用 L36/M_HI 估計圓內平均面密度（不需 Rd；透明標註）。
 
 相依套件
 --------
@@ -96,12 +99,27 @@ def _aicc(n: int, k: int, rss: float) -> float:
 
 
 def _loo_coeffs(X: np.ndarray, y: np.ndarray, w: np.ndarray | None) -> Tuple[np.ndarray, np.ndarray]:
+    """point-wise LOO（僅作為備用；主推 by-galaxy 版本）"""
     n = len(y)
     ps: List[np.ndarray] = []
     for i in range(n):
         mask = np.ones(n, dtype=bool)
         mask[i] = False
         m = _ols_wls(X[mask], y[mask], None if w is None else w[mask])
+        ps.append(m.params)
+    P = np.stack(ps, axis=0)
+    return P.mean(axis=0), P.std(axis=0)
+
+
+def _loo_groups(X: np.ndarray, y: np.ndarray, w: np.ndarray | None, groups: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """by-galaxy LOO：每次拿掉整個星系"""
+    uniq = np.unique(groups.astype(str))
+    ps: List[np.ndarray] = []
+    for g in uniq:
+        keep = groups.astype(str) != g
+        if keep.sum() < X.shape[1] + 1:
+            continue
+        m = _ols_wls(X[keep], y[keep], None if w is None else w[keep])
         ps.append(m.params)
     P = np.stack(ps, axis=0)
     return P.mean(axis=0), P.std(axis=0)
@@ -124,18 +142,34 @@ def _bootstrap_coeffs(
     return med, lo, hi
 
 
+def _bootstrap_groups(
+    X: np.ndarray, y: np.ndarray, w: np.ndarray | None, groups: np.ndarray, nboot: int = 2000, seed: int = 42
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """by-galaxy bootstrap：重抽星系集合"""
+    rng = np.random.default_rng(seed)
+    g = groups.astype(str)
+    uniq = np.unique(g)
+    B: List[np.ndarray] = []
+    for _ in range(nboot):
+        # 以星系為單位重抽
+        pick = rng.integers(0, len(uniq), size=len(uniq))
+        sel = np.concatenate([np.where(g == uniq[i])[0] for i in pick])
+        m = _ols_wls(X[sel], y[sel], None if w is None else w[sel])
+        B.append(m.params)
+    B = np.stack(B, axis=0)
+    med = np.median(B, axis=0)
+    lo = np.percentile(B, 16, axis=0)
+    hi = np.percentile(B, 84, axis=0)
+    return med, lo, hi
+
+
 # ---------------------------
-# Σ_tot 建構（若缺）— 每半徑優先
+# Σ_tot 建構（若缺）
 # ---------------------------
 def _build_sigma_tot(df: pd.DataFrame, ml36: float | None, rgas_mult: float | None, gas_helium: float | None) -> pd.Series:
     """
-    嘗試建構 Σ_tot（質量表面密度；單位由資料自行維持一致性），優先順序：
-      1) 直接使用 'Sigma_tot'
-      2) Sigma_star + Sigma_gas
-      3) Sigma_star_36 * ml36 （若僅有 3.6um 星光面密度）
-      4) 氣體允許以 HI/H2 組合，並套用 rgas_mult / gas_helium（若提供）
+    優先使用每半徑 Σ 欄位（若存在），否則回傳 NaN（讓上層啟用 galaxy-level fallback）。
     """
-    # 直接存在
     for name in ["Sigma_tot", "sigma_tot", "SIGMA_TOT"]:
         if name in df.columns:
             return df[name].astype(float)
@@ -177,97 +211,6 @@ def _build_sigma_tot(df: pd.DataFrame, ml36: float | None, rgas_mult: float | No
 
 
 # ---------------------------
-# Σ_tot galaxy-level fallback（路Ａ）
-# ---------------------------
-def _build_sigma_fallback(
-    df: pd.DataFrame,
-    ml36: float | None,
-    rgas_mult: float | None,
-    gas_helium: float | None,
-) -> pd.Series:
-    """
-    當每半徑 Σ 欄位全缺時，改用 galaxy-level 整體量在代表半徑 r★ 合成 Σ_tot。
-    - r★：優先選 v_disk_kms 的最大值所在半徑；否則用 v_obs_kms 的最大值所在半徑。
-    - A = π r★^2
-    - Σ_star ≈ ml36 * (L36_disk 或 L36_tot) / A
-    - Σ_gas  ≈ (rgas_mult * gas_helium) * M_HI / A
-    - Σ_tot = Σ_star + Σ_gas
-    備註：同一星系內各半徑的 Σ 都設為相同常數（回復舊版流程）。
-    """
-    # 需要的欄位名稱集合（存在其一即可）
-    has_l36_disk = "L36_disk" in df.columns
-    has_l36_tot = "L36_tot" in df.columns
-    has_mhi = "M_HI" in df.columns
-
-    if not (has_l36_disk or has_l36_tot or has_mhi):
-        return pd.Series(np.nan, index=df.index, dtype=float)
-
-    # 乘數預設：若提供就用；否則星/氣體分量各自當 1.0
-    ml36_val = float(ml36) if ml36 is not None else 1.0
-    gas_mult = 1.0
-    if rgas_mult is not None:
-        gas_mult *= float(rgas_mult)
-    if gas_helium is not None:
-        gas_mult *= float(gas_helium)
-
-    out = pd.Series(np.nan, index=df.index, dtype=float)
-
-    # 必備分群鍵
-    gcol = "galaxy" if "galaxy" in df.columns else df.columns[0]
-    for g, gdf in df.groupby(gcol, sort=False, dropna=False):
-        idx = gdf.index
-
-        # 代表半徑 r★
-        r = gdf["r_kpc"].to_numpy(dtype=float) if "r_kpc" in gdf.columns else None
-        if r is None:
-            continue
-        vdisk = gdf["v_disk_kms"].to_numpy(dtype=float) if "v_disk_kms" in gdf.columns else None
-        vobs = gdf["v_obs_kms"].to_numpy(dtype=float) if "v_obs_kms" in gdf.columns else None
-
-        if vdisk is not None and np.isfinite(vdisk).any():
-            j = int(np.nanargmax(vdisk))
-        elif vobs is not None and np.isfinite(vobs).any():
-            j = int(np.nanargmax(vobs))
-        else:
-            # 沒有速度欄位無法決定 r★
-            continue
-
-        r_star = float(r[j]) if np.isfinite(r[j]) and r[j] > 0 else np.nan
-        if not np.isfinite(r_star) or r_star <= 0:
-            continue
-
-        A = np.pi * (r_star ** 2)
-
-        # 星光質量項
-        L_disk = float(gdf["L36_disk"].iloc[0]) if has_l36_disk else np.nan
-        L_tot = float(gdf["L36_tot"].iloc[0]) if has_l36_tot else np.nan
-        M_star = np.nan
-        if np.isfinite(L_disk):
-            M_star = ml36_val * L_disk
-        elif np.isfinite(L_tot):
-            M_star = ml36_val * L_tot
-
-        # 氣體質量項
-        M_HI = float(gdf["M_HI"].iloc[0]) if has_mhi else np.nan
-        M_gas = gas_mult * M_HI if np.isfinite(M_HI) else np.nan
-
-        # 合成 Σ
-        sig = 0.0
-        have_any = False
-        if np.isfinite(M_star):
-            sig += M_star / A
-            have_any = True
-        if np.isfinite(M_gas):
-            sig += M_gas / A
-            have_any = True
-
-        if have_any and np.isfinite(sig) and sig > 0:
-            out.loc[idx] = sig
-
-    return out
-
-
-# ---------------------------
 # κ 計算：局部線性回歸估斜率
 # ---------------------------
 def _safe_sin_deg(deg: np.ndarray, min_deg: float = 5.0) -> np.ndarray:
@@ -296,7 +239,6 @@ def _local_log_slope(lnR: np.ndarray, lnV: np.ndarray, w: np.ndarray | None, hal
         if len(x) < min_points:
             continue
 
-        # 權重
         if w is not None:
             ww = w[i0:i1].copy()
             ww = np.where(np.isfinite(ww) & (ww > 0), ww, np.nan)
@@ -308,19 +250,14 @@ def _local_log_slope(lnR: np.ndarray, lnV: np.ndarray, w: np.ndarray | None, hal
             continue
 
         xg, yg = x[good], y[good]
-        if w is not None:
-            wg = ww[good]
-            X = np.column_stack([np.ones_like(xg), xg])
-            W = np.diag(wg)
-        else:
-            X = np.column_stack([np.ones_like(xg), xg])
-            W = None
+        X = np.column_stack([np.ones_like(xg), xg])
 
         try:
-            if W is None:
+            if w is None:
                 beta, *_ = np.linalg.lstsq(X, yg, rcond=None)
             else:
-                XtW = X.T @ W
+                wg = ww[good]
+                XtW = X.T * wg
                 beta = np.linalg.solve(XtW @ X, XtW @ yg)
             slope[j] = float(beta[1])
         except np.linalg.LinAlgError:
@@ -388,12 +325,6 @@ def _compute_kappa_for_group(
 def _ensure_kappa(df: pd.DataFrame, args: argparse.Namespace) -> pd.DataFrame:
     """
     若 'kappa' 欄位不存在或全為 NaN，則根據 r_kpc 與 v_obs_kms 自動計算 κ。
-    可選參數：
-      --velocity-column：優先使用的速度欄（預設自動，先找 v_circ_kms 再 v_obs_kms）
-      --deproject-velocity：以 i_deg 反投影
-      --deriv-window：局部回歸視窗大小（總點數約 2*half+1）
-      --deriv-minpoints：每次回歸的最少點數
-      --min-inclination-deg：i 的最小值保護
     """
     need = ("kappa" not in df.columns) or (~np.isfinite(df["kappa"]).any())
     if not need:
@@ -401,7 +332,7 @@ def _ensure_kappa(df: pd.DataFrame, args: argparse.Namespace) -> pd.DataFrame:
 
     # 決定速度欄
     vcol = args.velocity_column
-    if vcol is None or str(vcol).lower() == "auto":
+    if vcol is None or vcol.lower() == "auto":
         if "v_circ_kms" in df.columns:
             vcol = "v_circ_kms"
         elif "v_obs_kms" in df.columns:
@@ -416,7 +347,7 @@ def _ensure_kappa(df: pd.DataFrame, args: argparse.Namespace) -> pd.DataFrame:
 
     kappas = []
     groups = df.groupby("galaxy", sort=False, dropna=False)
-    for g, gdf in groups:
+    for _, gdf in groups:
         # 依半徑排序計算；保留原索引順序以回填
         order = np.argsort(gdf["r_kpc"].to_numpy())
         idx_sorted = gdf.index.to_numpy()[order]
@@ -447,6 +378,149 @@ def _ensure_kappa(df: pd.DataFrame, args: argparse.Namespace) -> pd.DataFrame:
     n_valid = int(np.isfinite(df["kappa"]).sum())
     print(f"[kappa] computed from rotation curves: valid points = {n_valid}")
     return df
+
+
+# ---------------------------
+# 代表半徑 R★ 選擇與 per-galaxy 摘要
+# ---------------------------
+def _choose_rstar_index(gdf: pd.DataFrame, mode: str = "vdisk-peak", rd_col_candidates: List[str] | None = None) -> int:
+    """回傳 gdf 內代表半徑索引（整數 index label）"""
+    if rd_col_candidates is None:
+        rd_col_candidates = ["Rd_kpc", "R_d_kpc", "r_d_kpc", "Rd", "R_d"]
+
+    if mode.lower() == "2.2rd":
+        rd = None
+        for c in rd_col_candidates:
+            if c in gdf.columns and np.isfinite(gdf[c]).any():
+                rd = float(gdf[c].dropna().iloc[0])
+                break
+        if rd and rd > 0:
+            Rstar = 2.2 * rd
+            j = int((gdf["r_kpc"] - Rstar).abs().idxmin())
+            return j
+
+    if mode.lower() == "flat-rc":
+        r = np.maximum(gdf["r_kpc"].to_numpy(), TINY)
+        v = np.maximum(gdf["v_obs_kms"].to_numpy(), TINY)
+        sl = np.abs(np.gradient(np.log(v), np.log(r)))
+        ok = sl < 0.2
+        if ok.any():
+            jj = np.where(ok)[0]
+            return int(gdf.index.to_numpy()[jj[len(jj)//2]])
+
+    if mode.lower() == "median":
+        order = np.argsort(gdf["r_kpc"].to_numpy())
+        return int(gdf.index.to_numpy()[order[len(order)//2]])
+
+    # default: vdisk-peak（若無 v_disk_kms 則改用 v_obs_kms）
+    if "v_disk_kms" in gdf.columns and np.isfinite(gdf["v_disk_kms"]).any():
+        return int(gdf["v_disk_kms"].astype(float).idxmax())
+    return int(gdf["v_obs_kms"].astype(float).idxmax())
+
+
+def _sigma_fallback_at_R(L36_disk: float | None, L36_tot: float | None, L36_bulge: float | None,
+                         M_HI: float | None, R_kpc: float | None,
+                         ml36: float | None, rgas_mult: float | None, gas_helium: float | None) -> float:
+    """
+    在半徑 R 上以 galaxy-level 量估計圓內平均 Σ（不需要 Rd）：
+        Σ_* ≈ (ml36 * L36_disk)/ (2π R^2) ；若無 L36_disk 則用 L36_tot - L36_bulge（或 L36_tot）
+        Σ_gas ≈ (M_HI * rgas_mult * gas_helium) / (2π R^2)
+    以上僅作 fallback；若資料不足則回傳 NaN。
+    """
+    if R_kpc is None or not np.isfinite(R_kpc) or R_kpc <= 0:
+        return np.nan
+
+    area = 2.0 * np.pi * (float(R_kpc) ** 2)
+    star_mass = np.nan
+    gas_mass = np.nan
+
+    if ml36 is not None:
+        if L36_disk is not None and np.isfinite(L36_disk):
+            star_mass = float(ml36) * float(L36_disk)
+        elif L36_tot is not None and np.isfinite(L36_tot):
+            bul = float(L36_bulge) if (L36_bulge is not None and np.isfinite(L36_bulge)) else 0.0
+            star_mass = float(ml36) * (float(L36_tot) - bul)
+
+    if M_HI is not None and np.isfinite(M_HI):
+        gas_mass = float(M_HI)
+        if rgas_mult is not None:
+            gas_mass *= float(rgas_mult)
+        if gas_helium is not None:
+            gas_mass *= float(gas_helium)
+
+    sig = 0.0
+    ok = False
+    if np.isfinite(star_mass):
+        sig += star_mass / area
+        ok = True
+    if np.isfinite(gas_mass):
+        sig += gas_mass / area
+        ok = True
+    return float(sig) if ok else np.nan
+
+
+def _collapse_per_galaxy(
+    df: pd.DataFrame,
+    rstar_mode: str = "vdisk-peak",
+    ml36: float | None = None,
+    rgas_mult: float | None = None,
+    gas_helium: float | None = None,
+) -> pd.DataFrame:
+    """
+    針對每個星系挑代表半徑 R★，輸出一筆：
+        log10_h, log10_kappa, log10_Sigma_tot(可空), w（來自 h 的不確定度）
+    Σ 的來源優先序：每半徑 Σ -> 在 R★ 取值；否則 galaxy-level fallback 在 R★ 計算一次。
+    """
+    rows = []
+    for g, gdf in df.groupby("gkey"):
+        j = _choose_rstar_index(gdf, mode=rstar_mode)
+        s = gdf.loc[j]
+        logh = np.log10(max(float(s["h_kpc"]), TINY))
+        logk = np.log10(max(float(s["kappa"]), TINY))
+
+        # Σ at R★
+        if "Sigma_tot" in gdf.columns and np.isfinite(gdf.loc[j, "Sigma_tot"]):
+            logs = np.log10(max(float(gdf.loc[j, "Sigma_tot"]), TINY))
+        else:
+            logs_val = _sigma_fallback_at_R(
+                L36_disk=float(s["L36_disk"]) if "L36_disk" in s.index and np.isfinite(s["L36_disk"]) else None,
+                L36_tot=float(s["L36_tot"]) if "L36_tot" in s.index and np.isfinite(s["L36_tot"]) else None,
+                L36_bulge=float(s["L36_bulge"]) if "L36_bulge" in s.index and np.isfinite(s["L36_bulge"]) else None,
+                M_HI=float(s["M_HI"]) if "M_HI" in s.index and np.isfinite(s["M_HI"]) else None,
+                R_kpc=float(s["r_kpc"]),
+                ml36=ml36, rgas_mult=rgas_mult, gas_helium=gas_helium,
+            )
+            logs = np.log10(max(logs_val, TINY)) if np.isfinite(logs_val) else np.nan
+
+        # 以 h 的線性不確定度換算 log 權重；若無則 NaN（回退 OLS）
+        lo = s.get("h_kpc_err_lo", np.nan)
+        hi = s.get("h_kpc_err_hi", np.nan)
+        if np.isfinite(lo) and lo > 0 and np.isfinite(hi) and hi > 0:
+            sig_lin = 0.5 * (float(lo) + float(hi))
+        elif np.isfinite(lo) and lo > 0:
+            sig_lin = float(lo)
+        elif np.isfinite(hi) and hi > 0:
+            sig_lin = float(hi)
+        else:
+            sig_lin = np.nan
+        if np.isfinite(sig_lin):
+            rel = sig_lin / max(float(s["h_kpc"]), TINY)
+            sig_log = rel / np.log(10.0)
+            w = 1.0 / (sig_log ** 2) if np.isfinite(sig_log) and sig_log > 0 else np.nan
+        else:
+            w = np.nan
+
+        rows.append({
+            "gkey": g,
+            "galaxy": s["galaxy"],
+            "log10_h": logh,
+            "log10_kappa": logk,
+            "log10_Sigma_tot": logs,
+            "w": w,
+        })
+
+    out = pd.DataFrame(rows)
+    return out
 
 
 # ---------------------------
@@ -517,20 +591,7 @@ def run(args: argparse.Namespace) -> Dict:
 
     # 建 Σ_tot（若缺）
     sigma_tot = _build_sigma_tot(df, args.ml36, args.rgas_mult, args.gas_helium)
-    have_sigma = np.isfinite(sigma_tot).any()
-
-    if not have_sigma:
-        print("[Σ] per-radius columns missing; building galaxy-level Σ fallback from L36/M_HI...")
-        sigma_fb = _build_sigma_fallback(df, args.ml36, args.rgas_mult, args.gas_helium)
-        if np.isfinite(sigma_fb).any():
-            df["Sigma_tot"] = sigma_fb
-            have_sigma = True
-            ngal = df.groupby("galaxy").apply(lambda g: np.isfinite(sigma_fb.loc[g.index]).any()).sum()
-            print(f"[Σ-fallback] success: galaxies with usable Σ = {int(ngal)}")
-        else:
-            print("[Σ-fallback] failed (no usable Σ). Falling back to κ-only model.")
-
-    else:
+    if "Sigma_tot" not in df.columns:
         df["Sigma_tot"] = sigma_tot
 
     # 若缺少 kappa，就計算
@@ -540,43 +601,54 @@ def run(args: argparse.Namespace) -> Dict:
     if "kappa" not in df.columns or "h_kpc" not in df.columns:
         raise RuntimeError("輸入檔缺少必要欄位（kappa / h_kpc）。請先完成特徵計算與合併。")
 
-    # 是否有可用的 Σ 剖面（或 fallback）？
-    has_sigma = have_sigma and np.isfinite(df["Sigma_tot"].astype(float)).any()
-    if not has_sigma:
-        print("[Σ] not found or entirely NaN; falling back to κ-only model.")
+    # ======== per-galaxy（推薦主文）或 per-radius ========
+    if args.per_galaxy:
+        # 訊息：若每半徑 Σ 缺，將在 R★ 啟動 fallback（僅一次）
+        if not np.isfinite(df["Sigma_tot"]).any():
+            print("[Σ] per-radius columns missing; using galaxy-level Σ fallback at R★ (single-point per galaxy).")
+        used = _collapse_per_galaxy(
+            df, rstar_mode=args.rstar, ml36=args.ml36, rgas_mult=args.rgas_mult, gas_helium=args.gas_helium
+        )
+        logh = used["log10_h"].to_numpy()
+        logk = used["log10_kappa"].to_numpy()
+        logs = used["log10_Sigma_tot"].to_numpy()
+        w = used["w"].to_numpy() if args.wls else None
+        groups = used["gkey"].to_numpy()
+    else:
+        # per-radius 模式：只在「真的有 per-radius Σ」時使用 Σ
+        has_sigma_per_radius = np.isfinite(df["Sigma_tot"].astype(float)).any()
+        if not has_sigma_per_radius:
+            print("[Σ] per-radius columns missing; κ-only for per-radius mode (to avoid replicating galaxy-level Σ across radii).")
+        logk = np.log10(np.maximum(df["kappa"].astype(float).to_numpy(), TINY))
+        logh = np.log10(np.maximum(df["h_kpc"].astype(float).to_numpy(), TINY))
+        logs = np.log10(np.maximum(df["Sigma_tot"].astype(float).to_numpy(), TINY)) if has_sigma_per_radius else None
 
-    # 組回歸資料（log 空間）
-    logk = np.log10(np.maximum(df["kappa"].astype(float).to_numpy(), TINY))
-    logh = np.log10(np.maximum(df["h_kpc"].astype(float).to_numpy(), TINY))
-    logs = None
-    if has_sigma:
-        logs = np.log10(np.maximum(df["Sigma_tot"].astype(float).to_numpy(), TINY))
-
-    # 權重（WLS）；若權重不可用則退回 OLS
-    w = None
-    used_wls = False
-    if args.wls:
-        if "sigma_h" in df.columns and np.isfinite(df["sigma_h"]).any():
-            sig_lin = df["sigma_h"].astype(float).to_numpy()
-        else:
+        # 權重（WLS）；若權重不可用則退回 OLS
+        w = None
+        if args.wls:
             lo = df.get("h_kpc_err_lo", pd.Series(np.nan, index=df.index)).astype(float).to_numpy()
             hi = df.get("h_kpc_err_hi", pd.Series(np.nan, index=df.index)).astype(float).to_numpy()
             sig_lin = np.where(
                 np.isfinite(lo) & np.isfinite(hi), 0.5 * (lo + hi),
                 np.where(np.isfinite(lo), lo, np.where(np.isfinite(hi), hi, np.nan))
             )
-        h_lin = np.maximum(df["h_kpc"].astype(float).to_numpy(), TINY)
-        rel = np.where(np.isfinite(sig_lin) & (sig_lin > 0), sig_lin / h_lin, np.nan)
-        sig_log = rel / np.log(10.0)
-        w = 1.0 / np.square(sig_log)
-        w[~np.isfinite(w)] = np.nan
-        if np.isfinite(w).any():
-            used_wls = True
-        else:
-            print("[WLS] no usable h uncertainties; falling back to OLS.")
-            w = None
+            h_lin = np.maximum(df["h_kpc"].astype(float).to_numpy(), TINY)
+            rel = np.where(np.isfinite(sig_lin) & (sig_lin > 0), sig_lin / h_lin, np.nan)
+            sig_log = rel / np.log(10.0)
+            w = 1.0 / np.square(sig_log)
+            w[~np.isfinite(w)] = np.nan
 
-    # 過濾缺值/無效權重
+        groups = df["gkey"].to_numpy()
+
+        # galaxy-equalization（避免多半徑星系主導）
+        if args.equalize_galaxy_weights and (w is not None):
+            # 僅對可用樣本計數（先不過濾，等下 m 時再第二次 equalize）
+            pass  # 實際 equalize 會在濾掉缺值後進行
+
+    # 是否有可用的 Σ？
+    has_sigma = (logs is not None) and np.isfinite(logs).any()
+
+    # ---- 過濾缺值/無效權重 ----
     if has_sigma:
         m = _finite_mask(logk, logs, logh)
     else:
@@ -590,6 +662,13 @@ def run(args: argparse.Namespace) -> Dict:
         logs = logs[m]
     if w is not None:
         w = w[m]
+    groups = np.asarray(groups)[m]
+
+    # per-radius + equalize：在「濾後集合」上做 equalization
+    if (not args.per_galaxy) and args.equalize_galaxy_weights and (w is not None):
+        counts = pd.Series(1, index=np.arange(len(groups))).groupby(groups).transform("count").to_numpy()
+        counts = np.maximum(counts, 1)
+        w = w / counts
 
     n_used = len(logh)
     if n_used == 0:
@@ -606,7 +685,7 @@ def run(args: argparse.Namespace) -> Dict:
     # --- κ-only ---
     Xk = logk.reshape(-1, 1)
     mk = _ols_wls(Xk, logh, w)
-    print(("Weighted " if used_wls else "") + "OLS (log10 h = a + b log10 κ):")
+    print(("Weighted " if w is not None else "") + "OLS (log10 h = a + b log10 κ):")
     print(f"  a = {mk.params[0]:.3f} ± {mk.bse[0]:.3f}")
     print(f"  b = {mk.params[1]:.3f} ± {mk.bse[1]:.3f}")
     print(f"  R^2 = {mk.rsquared:.3f}")
@@ -642,42 +721,50 @@ def run(args: argparse.Namespace) -> Dict:
         print(f"[log h ~ log κ] N={n_used}, p=2")
         print(f"  AICc (κ-only) = {aicc_k:.2f}")
 
-    # LOO
+    # ---- LOO / Bootstrap ----
+    do_group_cv = args.cv_by_galaxy or args.per_galaxy
     if args.loo:
         if has_sigma:
-            mu, sd = _loo_coeffs(np.stack([logk, logs], axis=1), logh, w)
+            X_for_cv = np.stack([logk, logs], axis=1)
         else:
-            mu, sd = _loo_coeffs(logk.reshape(-1, 1), logh, w)
+            X_for_cv = logk.reshape(-1, 1)
+        if do_group_cv:
+            mu, sd = _loo_groups(X_for_cv, logh, w, groups)
+        else:
+            mu, sd = _loo_coeffs(X_for_cv, logh, w)
         print(f"  LOO mean: {list(mu)}")
         print(f"  LOO std : {list(sd)}")
 
-    # Bootstrap
     if args.bootstrap and args.bootstrap > 0:
         if has_sigma:
-            med, lo, hi = _bootstrap_coeffs(np.stack([logk, logs], axis=1), logh, w, nboot=args.bootstrap, seed=42)
+            X_for_bs = np.stack([logk, logs], axis=1)
         else:
-            med, lo, hi = _bootstrap_coeffs(logk.reshape(-1, 1), logh, w, nboot=args.bootstrap, seed=42)
+            X_for_bs = logk.reshape(-1, 1)
+        if do_group_cv:
+            med, lo, hi = _bootstrap_groups(X_for_bs, logh, w, groups, nboot=args.bootstrap, seed=42)
+        else:
+            med, lo, hi = _bootstrap_coeffs(X_for_bs, logh, w, nboot=args.bootstrap, seed=42)
         print(f"  Bootstrap medians: {list(med)}")
         print(f"  16–84 percentiles: low={list(lo)}  high={list(hi)}")
 
-    # 輸出 CSV（用到的樣本與 log 值）
+    # ---- 輸出 CSV（用到的樣本與 log 值）----
     if args.out_csv:
         if has_sigma:
-            df_used = pd.DataFrame({"log10_h": logh, "log10_kappa": logk, "log10_Sigma_tot": logs})
+            df_used = pd.DataFrame({"log10_h": logh, "log10_kappa": logk, "log10_Sigma_tot": logs, "gkey": groups})
         else:
-            df_used = pd.DataFrame({"log10_h": logh, "log10_kappa": logk})
+            df_used = pd.DataFrame({"log10_h": logh, "log10_kappa": logk, "gkey": groups})
         Path(args.out_csv).parent.mkdir(parents=True, exist_ok=True)
         df_used.to_csv(args.out_csv, index=False)
         print(f"Saved -> {args.out_csv} (rows={len(df_used)})")
 
-    # 畫圖（可選）
+    # ---- 畫圖（可選）----
     if args.out_plot:
         Path(args.out_plot).parent.mkdir(parents=True, exist_ok=True)
         # 圖1：log κ vs log h（含 κ-only 擬合線）
         plt.figure(figsize=(5, 4))
         plt.scatter(logk, logh, s=28, alpha=0.85)
         xgrid = np.linspace(logk.min() - 0.1, logk.max() + 0.1, 200)
-        ygrid = mk.params[0] + mk.params[1] * xgrid
+        ygrid = (mk.params[0] + mk.params[1] * xgrid)
         plt.plot(xgrid, ygrid, linewidth=2)
         plt.xlabel(r"$\log_{10}\,\kappa$")
         plt.ylabel(r"$\log_{10}\,h\ \mathrm{(kpc)}$")
@@ -705,7 +792,7 @@ def run(args: argparse.Namespace) -> Dict:
         else:
             print("[plot] skipped colored-by-Σ panel because Σ is unavailable.")
 
-    # 距離不變（DIST-INV）
+    # ---- 距離不變（DIST-INV）----
     dist_col = args.dist_col or "D_Mpc_h"
     use_dist = dist_col if dist_col in df.columns else ("D_Mpc_gal" if "D_Mpc_gal" in df.columns else None)
     if use_dist is None:
@@ -714,10 +801,19 @@ def run(args: argparse.Namespace) -> Dict:
         dist_n = 0
         md = None
     else:
+        # 取與主擬合相同的樣本（同一遮罩 m）
         D_all = np.maximum(df[use_dist].astype(float).to_numpy(), TINY)
-        # 套同一個 mask m
-        y_d = np.log10(np.maximum(df["h_kpc"].astype(float).to_numpy()[m] / D_all[m], TINY))  # log(h/D)
-        x1_d = np.log10(np.maximum(df["kappa"].astype(float).to_numpy()[m] * D_all[m], TINY))  # log(κD)
+        D = D_all[m] if len(D_all) == len(m) or (not args.per_galaxy) else None
+
+        if args.per_galaxy:
+            # per-galaxy：以代表半徑所在列的距離（其實星系距離相同），從 groups 取對應星系
+            # 這裡直接取該星系第一筆距離；D 不影響 log(h/D) 相對比較（距離常數）
+            # 仍保留寫法完整性。
+            g_to_D = df.groupby("gkey")[use_dist].first().to_dict()
+            D = np.asarray([max(float(g_to_D.get(g, np.nan)), TINY) for g in groups])
+
+        y_d = np.log10(np.maximum((10 ** logh) / D, TINY))  # log(h/D)
+        x1_d = np.log10(np.maximum((10 ** logk) * D, TINY))  # log(κD)
 
         if has_sigma:
             x2_d = logs  # 已經 masked 過
@@ -746,7 +842,7 @@ def run(args: argparse.Namespace) -> Dict:
             "R2": float(md.rsquared),
         }
 
-    # JSON 報告
+    # ---- JSON 報告（在沒有 Σ 時，相關欄位以 NaN/None 補齊）----
     report = {
         # 主要迴歸（若有 Σ 則是 κ+Σ，否則是 κ-only）
         "a": float(m2.params[0]) if has_sigma else float(mk.params[0]),
@@ -765,20 +861,14 @@ def run(args: argparse.Namespace) -> Dict:
         "dist_b_kappa": float(md.params[1]) if md is not None and len(md.params) >= 2 else np.nan,
         "dist_c_sigma": float(md.params[2]) if md is not None and len(md.params) >= 3 else np.nan,
         "dist_R2": float(md.rsquared) if md is not None else np.nan,
-        # 附帶原始區塊（向下相容）
-        "aicc": {
-            "kappa_only": float(aicc_k),
-            "sigma_only": float(aicc_s) if has_sigma else np.nan,
-            "kappa_sigma": float(aicc_ks) if has_sigma else np.nan,
-        },
-        "params": {
-            "kappa_only": {"beta": mk.params.tolist(), "bse": mk.bse.tolist(), "R2": float(mk.rsquared)},
-            "kappa_sigma": ({"beta": m2.params.tolist(), "bse": m2.bse.tolist(), "R2": float(m2.rsquared)} if has_sigma else None),
-            "dist_inv": dist_report,
-        },
+        # 其他
         "n_used": int(n_used),
-        "used_wls": bool(used_wls),
+        "used_wls": bool(w is not None),
         "has_sigma": bool(has_sigma),
+        "per_galaxy": bool(args.per_galaxy),
+        "rstar_mode": args.rstar if args.per_galaxy else None,
+        "cv_by_galaxy": bool(do_group_cv),
+        "args": vars(args),
     }
 
     if args.report_json:
@@ -802,22 +892,32 @@ def main():
     ap.add_argument("--out-plot", type=str, default=None, help="輸出：散點圖（另附 _sigma 版本；無 Σ 則略過）")
     ap.add_argument("--report-json", type=str, default=None, help="輸出：回歸摘要 JSON")
 
+    # 模式切換
+    ap.add_argument("--per-galaxy", action="store_true", help="每星系只取代表半徑 R★ 一筆（推薦主文使用）")
+    ap.add_argument("--rstar", type=str, default="vdisk-peak",
+                    choices=["vdisk-peak", "2.2Rd", "flat-rc", "median"],
+                    help="代表半徑 R★ 定義（預設 vdisk 峰值；無 vdisk 用 v_obs 峰值）")
+    ap.add_argument("--equalize-galaxy-weights", action="store_true",
+                    help="per-radius 模式時啟用：每星系總權重約為 1（避免多半徑星系主導）")
+    ap.add_argument("--cv-by-galaxy", action="store_true",
+                    help="LOO/Bootstrap 以星系為單位（per-galaxy 模式自動啟用）")
+
     # 權重與健壯度分析
     ap.add_argument("--wls", action="store_true", help="使用 WLS（以 h 的線性不確定度推估 log-space 權重；若無效則退回 OLS）")
-    ap.add_argument("--loo", action="store_true", help="逐一留一交叉驗證（係數平均／標準差）")
+    ap.add_argument("--loo", action="store_true", help="交叉驗證（預設 by-galaxy，若未指定則 point-wise）")
     ap.add_argument("--bootstrap", type=int, default=0, help="bootstrap 次數（0 表示不執行）")
 
     # Σ_tot 組合（若輸入檔沒有 Sigma_tot 時才會用到這些）
     ap.add_argument("--use-total-sigma", action="store_true", help="相容旗標（實際自動偵測/建構 Sigma_tot）")
     ap.add_argument("--use-exp", action="store_true", help="相容旗標（不影響計算）")
-    ap.add_argument("--ml36", type=float, default=None, help="M/L[3.6μm] 乘數（若僅提供星光面密度 Sigma_star_36 或做 fallback）")
-    ap.add_argument("--rgas-mult", type=float, default=None, help="氣體倍率（若做 fallback 則會用到）")
-    ap.add_argument("--gas-helium", type=float, default=None, help="氦修正倍率（如 1.33；若做 fallback 則會用到）")
+    ap.add_argument("--ml36", type=float, default=None, help="M/L[3.6μm] 乘數（fallback 用於 L36_*）")
+    ap.add_argument("--rgas-mult", type=float, default=None, help="氣體倍率（如需修正 HI->gas）")
+    ap.add_argument("--gas-helium", type=float, default=None, help="氦修正倍率（如 1.33）")
 
     # κ 計算選項（當缺少 kappa 欄位時生效）
     ap.add_argument("--velocity-column", type=str, default="auto", help="用於 κ 計算的速度欄位（auto|v_obs_kms|v_circ_kms）")
     ap.add_argument("--deproject-velocity", action="store_true", help="以 i_deg 反投影速度（v/sin i）")
-    ap.add_argument("--deriv-window", type=int, default=5, help="局部回歸視窗大小（總點數約 2*half+1；建議奇數≥5）")
+    ap.add_argument("--deriv-window", type=int, default=7, help="局部回歸視窗大小（總點數約 2*half+1；建議奇數≥5）")
     ap.add_argument("--deriv-minpoints", type=int, default=3, help="每次回歸最少點數（≥3）")
     ap.add_argument("--min-inclination-deg", type=float, default=5.0, help="i 的最小度數保護（避免 sin(i) 太小）")
 
