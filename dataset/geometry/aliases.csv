@@ -1,4 +1,13 @@
 galaxy,h_galaxy
-# 範例（格式示意；不確定對應就別填）
-# NGC1068,NGC1068
-# ESO444-G084,ESO444-037
+# 說明：左邊是 SPARC 的 galaxy 欄位，右邊是 S4G A1 表上的名稱寫法
+# 規則：ESO 名稱通常把 "-G" 拿掉，數字三位補零（ex: G21 -> 021）
+
+ESO444-G084,ESO444-084
+ESO563-G021,ESO563-021
+M51, NGC5194
+M101, NGC5457
+NGC5195, NGC5195
+
+# 你可以照這個規則繼續擴充：
+# ESOxxx-Gyy  -> ESOxxx-0yy
+# ESOxxx-Gyyy -> ESOxxx-yyy
