@@ -10,6 +10,10 @@ ptq.experiments.kappa_h
 以及距離不變（DIST-INV）檢驗。程式同時支援在「輸入 CSV 缺少 kappa 欄位」時，
 直接由旋轉曲線 (r_kpc, v_obs_kms) 計算 κ(R)。
 
+若輸入中 **沒有每半徑的 Σ 欄位**，本版會自動以 galaxy-level 方式在代表半徑 r★
+（v_disk 最大；若無則 v_obs 最大）合成 Σ_*（以及可選擇 Σ_gas、Σ_tot），
+回復你舊版工作流程的 κ+Σ 模型（參數：--use-total-sigma/--use-exp/--ml36/--rgas-mult/--gas-helium）。
+
 κ(R) 定義
 ---------
     κ(R) = sqrt(2) * V(R)/R * sqrt(1 + d ln V / d ln R)
@@ -23,30 +27,12 @@ ptq.experiments.kappa_h
 - 速度 v 以 km/s，κ 輸出單位 km s^-1 kpc^-1（與 r,v 單位相容）。
 - 若指定 --deproject-velocity，則以 v_obs_kms / sin(i_deg) 作為圓周速度；
   命令列保護避免 i_deg 接近 0 時的數值不穩定（可調門檻）。
-- Σ_tot 若不存在，會嘗試由星/氣體面密度欄位組合（見 _build_sigma_tot）。
-
-輸入欄位（至少其一）
---------------------
-必需：h_kpc（由前處理 merge 後加入）
-必要其一：
-  1) kappa（若已預先計算）
-  2) r_kpc + v_obs_kms（本程式將自動計算 kappa）
-
-可選：
-  - v_err_kms：推斜率時的加權（建議）
-  - i_deg（配合 --deproject-velocity）
-  - Sigma_tot 或相關星/氣體面密度欄位（若無則自動嘗試組合）
+- Σ_tot 若不存在，先嘗試由每半徑星/氣體面密度欄位組合；若仍無，啟用 fallback：
+  以 L36_disk、M_HI 等**星系整體量**在 r★ 合成 Σ。
 
 相依套件
 --------
-numpy, pandas, statsmodels, scipy（僅用到 scipy.stats）
-
-作者註
-------
-- 邊界處理：為避免 sqrt 負值，會將 d ln V / d ln R 下限截在 -0.99。
-- 回歸：WLS 權重來自 h 的不確定度（若存在）；kappa 的誤差不導入權重，
-  以免耦合導致偏置（這亦常見於盤厚度的對數回歸處理）。
-- 加回「沒有 Σ 就退化成 κ-only」與「WLS 權重無效即退回 OLS」兩層保險。
+numpy, pandas, statsmodels, scipy（僅用到 scipy.stats）, matplotlib
 """
 
 from __future__ import annotations
@@ -139,15 +125,15 @@ def _bootstrap_coeffs(
 
 
 # ---------------------------
-# Σ_tot 建構（若缺）
+# Σ_tot 建構（若缺：先試每半徑，再試 galaxy-level fallback）
 # ---------------------------
 def _build_sigma_tot(df: pd.DataFrame, ml36: float | None, rgas_mult: float | None, gas_helium: float | None) -> pd.Series:
     """
-    嘗試建構 Σ_tot（質量表面密度；單位由資料自行維持一致性），優先順序：
+    嘗試建構 **每半徑** Σ_tot（若輸入已有 per-radius 面密度欄位）。
       1) 直接使用 'Sigma_tot'
       2) Sigma_star + Sigma_gas
-      3) Sigma_star_36 * ml36 （若僅有 3.6um 星光面密度）
-      4) 氣體允許以 HI/H2 組合，並套用 rgas_mult / gas_helium（若提供）
+      3) Sigma_star_36 * ml36
+      4) HI/H2 組合後套用 rgas_mult / gas_helium
     """
     # 直接存在
     for name in ["Sigma_tot", "sigma_tot", "SIGMA_TOT"]:
@@ -188,6 +174,120 @@ def _build_sigma_tot(df: pd.DataFrame, ml36: float | None, rgas_mult: float | No
         return s_gas
 
     return pd.Series(np.nan, index=df.index, dtype=float)
+
+
+def _first_valid(x: pd.Series) -> float:
+    s = pd.Series(x)
+    return s.dropna().iloc[0] if s.notna().any() else np.nan
+
+
+def _build_fallback_sigma_samples(df: pd.DataFrame, args: argparse.Namespace) -> pd.DataFrame:
+    """
+    Galaxy-level Σ fallback：
+    - 代表半徑 r★：v_disk_kms 最大；若無此欄或全 NaN，改用 v_obs_kms 最大。
+    - 在 r★ 取 κ★（近鄰非缺值）；用 L36_disk / M_HI 與參數合成 Σ_*、Σ_gas（可選 exp 衰減）。
+    - 回傳每星系一列的樣本表（gkey, galaxy, kappa_char, Sigma_tot_fallback, h_kpc, h_sigma, D_Mpc）。
+    """
+    rows: List[Dict] = []
+    need_ml = args.ml36 is not None  # 沒有 ml36 也可僅用 gas，但一般會用 stellar 為主
+    groups = df.groupby("gkey", sort=False, dropna=False)
+
+    for gkey, sub in groups:
+        if "h_kpc" not in sub.columns or not np.isfinite(sub["h_kpc"]).any():
+            continue
+        sub = sub.sort_values("r_kpc")
+
+        # 代表半徑 r★
+        vdisk_col = "v_disk_kms" if "v_disk_kms" in sub.columns else None
+        vobs_col = "v_obs_kms" if "v_obs_kms" in sub.columns else None
+        if vdisk_col and np.isfinite(sub[vdisk_col]).any():
+            idx = sub[vdisk_col].astype(float).idxmax()
+            how = "R_at_max_vdisk"
+        elif vobs_col and np.isfinite(sub[vobs_col]).any():
+            idx = sub[vobs_col].astype(float).idxmax()
+            how = "R_at_max_vobs"
+        else:
+            continue
+
+        r_star = float(sub.loc[idx, "r_kpc"])
+        if not np.isfinite(r_star) or r_star <= 0:
+            continue
+
+        # κ★：取 r★ 鄰近的非 NaN 值
+        sub2 = sub.copy()
+        sub2["absdr"] = np.abs(sub2["r_kpc"] - r_star)
+        sub2 = sub2.sort_values("absdr")
+        k_ok = sub2["kappa"].astype(float).replace([np.inf, -np.inf], np.nan).dropna()
+        if k_ok.empty:
+            continue
+        kappa_char = float(k_ok.iloc[0])
+
+        # h 與不確定度（取 galaxy-level 第一筆）
+        h = float(_first_valid(sub["h_kpc"]))
+        hi = _first_valid(sub.get("h_kpc_err_hi", pd.Series([np.nan])))
+        lo = _first_valid(sub.get("h_kpc_err_lo", pd.Series([np.nan])))
+        if np.isfinite(hi) and np.isfinite(lo):
+            h_sigma = 0.5 * (hi + lo)
+        elif np.isfinite(hi):
+            h_sigma = hi
+        elif np.isfinite(lo):
+            h_sigma = lo
+        else:
+            h_sigma = np.nan
+
+        # galaxy-level 量：L36_disk, L36_tot, L36_bulge, M_HI, D
+        L_tot = _first_valid(sub.get("L36_tot", pd.Series([np.nan])))
+        L_bulge = _first_valid(sub.get("L36_bulge", pd.Series([np.nan])))
+        L_disk = _first_valid(sub.get("L36_disk", pd.Series([np.nan])))
+        if not np.isfinite(L_disk):
+            if np.isfinite(L_tot) and np.isfinite(L_bulge):
+                L_disk = L_tot - L_bulge
+        M_HI = _first_valid(sub.get("M_HI", pd.Series([np.nan])))
+
+        # Rd, Rgas
+        Rd = r_star / 2.2 if r_star > 0 else np.nan
+        Rgas = (args.rgas_mult * Rd) if (args.rgas_mult is not None and np.isfinite(Rd) and Rd > 0) else np.nan
+
+        # Σ_* (中心) 與 r★ 衰減
+        if need_ml and np.isfinite(L_disk) and np.isfinite(Rd) and Rd > 0:
+            Sigma_star0 = float(args.ml36) * L_disk / (2 * np.pi * Rd**2)
+            Sigma_star = Sigma_star0 * np.exp(-r_star / Rd) if args.use_exp else Sigma_star0
+        else:
+            Sigma_star = np.nan
+
+        # Σ_gas (中心) 與 r★ 衰減（只用 HI 做近似；乘以氦修正；Rgas 由 rgas_mult 決定）
+        if (args.gas_helium is not None) and np.isfinite(M_HI) and np.isfinite(Rgas) and Rgas > 0:
+            Sigma_gas0 = float(args.gas_helium) * M_HI / (2 * np.pi * Rgas**2)
+            Sigma_gas = Sigma_gas0 * np.exp(-r_star / Rgas) if args.use_exp else Sigma_gas0
+        else:
+            Sigma_gas = np.nan
+
+        if args.use_total_sigma and np.isfinite(Sigma_star) and np.isfinite(Sigma_gas):
+            Sigma_tot = Sigma_star + Sigma_gas
+        else:
+            # 預設至少回 Σ_*（與舊版一致）
+            Sigma_tot = Sigma_star
+
+        rows.append(
+            dict(
+                gkey=gkey,
+                galaxy=_first_valid(sub.get("galaxy", pd.Series([gkey]))),
+                kappa_char=kappa_char,
+                r_char=r_star,
+                Sigma_tot=Sigma_tot,
+                Sigma_star=Sigma_star,
+                Sigma_gas=Sigma_gas,
+                h_kpc=h,
+                h_sigma=h_sigma,
+                D_Mpc=_first_valid(sub.get("D_Mpc_h", pd.Series([np.nan]))),
+                choose_rule=how,
+            )
+        )
+
+    out = pd.DataFrame(rows)
+    # 清理：至少要 κ★ 與 h 可用；Σ_tot 若全 NaN 就讓上層判斷失敗
+    out = out[np.isfinite(out["kappa_char"]) & np.isfinite(out["h_kpc"])]
+    return out
 
 
 # ---------------------------
@@ -312,12 +412,6 @@ def _compute_kappa_for_group(
 def _ensure_kappa(df: pd.DataFrame, args: argparse.Namespace) -> pd.DataFrame:
     """
     若 'kappa' 欄位不存在或全為 NaN，則根據 r_kpc 與 v_obs_kms 自動計算 κ。
-    可選參數：
-      --velocity-column：優先使用的速度欄（預設自動，先找 v_circ_kms 再 v_obs_kms）
-      --deproject-velocity：以 i_deg 反投影
-      --deriv-window：局部回歸視窗大小（總點數約 2*half+1）
-      --deriv-minpoints：每次回歸的最少點數
-      --min-inclination-deg：i 的最小值保護
     """
     need = ("kappa" not in df.columns) or (~np.isfinite(df["kappa"]).any())
     if not need:
@@ -340,7 +434,7 @@ def _ensure_kappa(df: pd.DataFrame, args: argparse.Namespace) -> pd.DataFrame:
 
     kappas = []
     groups = df.groupby("galaxy", sort=False, dropna=False)
-    for g, gdf in groups:
+    for _, gdf in groups:
         # 依半徑排序計算；保留原索引順序以回填
         order = np.argsort(gdf["r_kpc"].to_numpy())
         idx_sorted = gdf.index.to_numpy()[order]
@@ -423,7 +517,7 @@ def run(args: argparse.Namespace) -> Dict:
     df = pd.read_csv(args.sparc_with_h)
     df = _ensure_gkey(df)
 
-    # 需要的核心欄位檢查
+    # 必要欄位檢查
     for c in ["r_kpc", "galaxy"]:
         if c not in df.columns:
             raise RuntimeError(f"輸入缺少必要欄位：{c}")
@@ -439,174 +533,115 @@ def run(args: argparse.Namespace) -> Dict:
         if ol_keys:
             df = df[~df["gkey"].isin(ol_keys)]
 
-    # 建 Σ_tot（若缺）
+    # 建 Σ_tot（若有 per-radius 欄位）
     sigma_tot = _build_sigma_tot(df, args.ml36, args.rgas_mult, args.gas_helium)
     if "Sigma_tot" not in df.columns:
         df["Sigma_tot"] = sigma_tot
 
-    # 若缺少 kappa，就計算
+    # 若缺少 κ，就計算
     df = _ensure_kappa(df, args)
 
-    # 必要欄位：kappa 與 h_kpc
+    # 必要：kappa 與 h_kpc
     if "kappa" not in df.columns or "h_kpc" not in df.columns:
         raise RuntimeError("輸入檔缺少必要欄位（kappa / h_kpc）。請先完成特徵計算與合併。")
 
-    # 是否有可用的 Σ 剖面？
-    has_sigma = np.isfinite(df["Sigma_tot"].astype(float)).any()
+    # 是否有 per-radius Σ？
+    per_radius_sigma_ok = np.isfinite(df["Sigma_tot"].astype(float)).any()
 
-    # 組回歸資料（log 空間）
-    logk = np.log10(np.maximum(df["kappa"].astype(float).to_numpy(), TINY))
-    logh = np.log10(np.maximum(df["h_kpc"].astype(float).to_numpy(), TINY))
-    logs = None
-    if has_sigma:
-        logs = np.log10(np.maximum(df["Sigma_tot"].astype(float).to_numpy(), TINY))
-    else:
-        print("[Σ] not found or entirely NaN; falling back to κ-only model.")
-
-    # 權重（WLS）；若權重不可用則退回 OLS
-    w = None
-    used_wls = False
-    if args.wls:
-        # 優先使用 sigma_h；否則以 h_kpc_err_hi/lo 的「逐列」平均（兩者其一存在就用其值，兩者皆 NaN 才 NaN）
-        if "sigma_h" in df.columns and np.isfinite(df["sigma_h"]).any():
-            sig_lin = df["sigma_h"].astype(float).to_numpy()
-        else:
-            lo = df.get("h_kpc_err_lo", pd.Series(np.nan, index=df.index)).astype(float).to_numpy()
-            hi = df.get("h_kpc_err_hi", pd.Series(np.nan, index=df.index)).astype(float).to_numpy()
-            sig_lin = np.where(
-                np.isfinite(lo) & np.isfinite(hi), 0.5 * (lo + hi),
-                np.where(np.isfinite(lo), lo, np.where(np.isfinite(hi), hi, np.nan))
-            )
-
-        h_lin = np.maximum(df["h_kpc"].astype(float).to_numpy(), TINY)
+    # 權重（WLS；若不可用則退回 OLS）
+    def _build_w_from_h(series_h: pd.Series, sig_hi: pd.Series, sig_lo: pd.Series) -> tuple[np.ndarray | None, bool]:
+        h_lin = np.maximum(series_h.astype(float).to_numpy(), TINY)
+        lo = sig_lo.astype(float).to_numpy() if sig_lo is not None else np.full_like(h_lin, np.nan)
+        hi = sig_hi.astype(float).to_numpy() if sig_hi is not None else np.full_like(h_lin, np.nan)
+        sig_lin = np.where(np.isfinite(lo) & np.isfinite(hi), 0.5 * (lo + hi),
+                           np.where(np.isfinite(lo), lo, np.where(np.isfinite(hi), hi, np.nan)))
         rel = np.where(np.isfinite(sig_lin) & (sig_lin > 0), sig_lin / h_lin, np.nan)
         sig_log = rel / np.log(10.0)
         w = 1.0 / np.square(sig_log)
         w[~np.isfinite(w)] = np.nan
+        return (w if np.isfinite(w).any() else None, bool(np.isfinite(w).any()))
 
-        if np.isfinite(w).any():
-            used_wls = True
-        else:
-            print("[WLS] no usable h uncertainties; falling back to OLS.")
-            w = None
+    # ---- 路徑 1：per-radius Σ 存在（維持新版行為） ----
+    if per_radius_sigma_ok:
+        logk = np.log10(np.maximum(df["kappa"].astype(float).to_numpy(), TINY))
+        logh = np.log10(np.maximum(df["h_kpc"].astype(float).to_numpy(), TINY))
+        logs = np.log10(np.maximum(df["Sigma_tot"].astype(float).to_numpy(), TINY))
 
-    # 過濾缺值/無效權重
-    if has_sigma:
+        w = None
+        used_wls = False
+        if args.wls:
+            w, used_wls = _build_w_from_h(df["h_kpc"], df.get("h_kpc_err_hi"), df.get("h_kpc_err_lo"))
+
         m = _finite_mask(logk, logs, logh)
-    else:
-        m = _finite_mask(logk, logh)
-    if w is not None:
-        m &= np.isfinite(w)
+        if w is not None:
+            m &= np.isfinite(w)
+            w = w[m]
+        logk, logs, logh = logk[m], logs[m], logh[m]
 
-    logk = logk[m]
-    logh = logh[m]
-    if has_sigma:
-        logs = logs[m]
-    if w is not None:
-        w = w[m]
+        n_used = len(logh)
+        if n_used == 0:
+            raise RuntimeError("沒有可用樣本（kappa / Sigma_tot / h_kpc 有缺或權重無效）。")
 
-    n_used = len(logh)
-    if n_used == 0:
-        need = "kappa / h_kpc" + (" / Sigma_tot" if has_sigma else "")
-        raise RuntimeError(f"沒有可用樣本（{need} 有缺或權重無效）。")
+        # 統計量（κ vs h）
+        r, _ = pearsonr(logk, logh)
+        rho, _ = spearmanr(logk, logh)
+        print(f"Sample size (used in fit): {n_used}")
+        print(f"Pearson r (log–log): {r:.3f}")
+        print(f"Spearman ρ (log–log): {rho:.3f}")
 
-    # 統計量（κ vs h）
-    r, _ = pearsonr(logk, logh)
-    rho, _ = spearmanr(logk, logh)
-    print(f"Sample size (used in fit): {n_used}")
-    print(f"Pearson r (log–log): {r:.3f}")
-    print(f"Spearman ρ (log–log): {rho:.3f}")
+        # κ-only / Σ-only / κ+Σ
+        mk = _ols_wls(logk.reshape(-1, 1), logh, w)
+        ms = _ols_wls(logs.reshape(-1, 1), logh, w)
+        m2 = _ols_wls(np.stack([logk, logs], axis=1), logh, w)
 
-    # --- κ-only ---
-    Xk = logk.reshape(-1, 1)
-    mk = _ols_wls(Xk, logh, w)
-    print(("Weighted " if used_wls else "") + "OLS (log10 h = a + b log10 κ):")
-    print(f"  a = {mk.params[0]:.3f} ± {mk.bse[0]:.3f}")
-    print(f"  b = {mk.params[1]:.3f} ± {mk.bse[1]:.3f}")
-    print(f"  R^2 = {mk.rsquared:.3f}")
-
-    # --- Σ-only / κ+Σ（若有 Σ）---
-    ms = None
-    m2 = None
-    aicc_k = _aicc(n_used, k=2, rss=_rss(mk))  # const+1
-    aicc_s = np.nan
-    aicc_ks = np.nan
-
-    if has_sigma:
-        Xs = logs.reshape(-1, 1)
-        ms = _ols_wls(Xs, logh, w)
-        X2 = np.stack([logk, logs], axis=1)
-        m2 = _ols_wls(X2, logh, w)
-
+        aicc_k = _aicc(n_used, k=2, rss=_rss(mk))
         aicc_s = _aicc(n_used, k=2, rss=_rss(ms))
-        aicc_ks = _aicc(n_used, k=3, rss=_rss(m2))  # const+2
+        aicc_ks = _aicc(n_used, k=3, rss=_rss(m2))
 
+        print(("Weighted " if used_wls else "") + "OLS (log10 h = a + b log10 κ):")
+        print(f"  a = {mk.params[0]:.3f} ± {mk.bse[0]:.3f}")
+        print(f"  b = {mk.params[1]:.3f} ± {mk.bse[1]:.3f}")
+        print(f"  R^2 = {mk.rsquared:.3f}")
         print(f"[log h ~ log κ + log Σ_tot] N={n_used}, p=3")
-        print(
-            f"  beta: {m2.params[0]:.3f}±{m2.bse[0]:.3f}, "
-            f"{m2.params[1]:.3f}±{m2.bse[1]:.3f}, "
-            f"{m2.params[2]:.3f}±{m2.bse[2]:.3f}"
-        )
+        print(f"  beta: {m2.params[0]:.3f}±{m2.bse[0]:.3f}, {m2.params[1]:.3f}±{m2.bse[1]:.3f}, {m2.params[2]:.3f}±{m2.bse[2]:.3f}")
         print(f"  R^2 = {m2.rsquared:.3f}, AICc = {aicc_ks:.2f}")
         print(f"  AICc (κ-only/Σ-only/κ+Σ) = {aicc_k:.2f} / {aicc_s:.2f} / {aicc_ks:.2f}")
-        print(
-            f"  ΔAICc = {{'kappa_only': {aicc_k - aicc_ks}, 'sigma_only': {aicc_s - aicc_ks}, 'kappa_sigma': 0.0}}"
-        )
-    else:
-        print(f"[log h ~ log κ] N={n_used}, p=2")
-        print(f"  AICc (κ-only) = {aicc_k:.2f}")
+        print(f"  ΔAICc = {{'kappa_only': {aicc_k - aicc_ks}, 'sigma_only': {aicc_s - aicc_ks}, 'kappa_sigma': 0.0}}")
 
-    # LOO
-    if args.loo:
-        if has_sigma:
+        # LOO / Bootstrap
+        if args.loo:
             mu, sd = _loo_coeffs(np.stack([logk, logs], axis=1), logh, w)
-        else:
-            mu, sd = _loo_coeffs(logk.reshape(-1, 1), logh, w)
-        print(f"  LOO mean: {list(mu)}")
-        print(f"  LOO std : {list(sd)}")
-
-    # Bootstrap
-    if args.bootstrap and args.bootstrap > 0:
-        if has_sigma:
+            print(f"  LOO mean: {list(mu)}")
+            print(f"  LOO std : {list(sd)}")
+        if args.bootstrap and args.bootstrap > 0:
             med, lo, hi = _bootstrap_coeffs(np.stack([logk, logs], axis=1), logh, w, nboot=args.bootstrap, seed=42)
-        else:
-            med, lo, hi = _bootstrap_coeffs(logk.reshape(-1, 1), logh, w, nboot=args.bootstrap, seed=42)
-        print(f"  Bootstrap medians: {list(med)}")
-        print(f"  16–84 percentiles: low={list(lo)}  high={list(hi)}")
+            print(f"  Bootstrap medians: {list(med)}")
+            print(f"  16–84 percentiles: low={list(lo)}  high={list(hi)}")
 
-    # 輸出 CSV（用到的樣本與 log 值）
-    if args.out_csv:
-        if has_sigma:
-            df_used = pd.DataFrame({"log10_h": logh, "log10_kappa": logk, "log10_Sigma_tot": logs})
-        else:
-            df_used = pd.DataFrame({"log10_h": logh, "log10_kappa": logk})
-        Path(args.out_csv).parent.mkdir(parents=True, exist_ok=True)
-        df_used.to_csv(args.out_csv, index=False)
-        print(f"Saved -> {args.out_csv} (rows={len(df_used)})")
+        # 輸出 CSV
+        if args.out_csv:
+            Path(args.out_csv).parent.mkdir(parents=True, exist_ok=True)
+            pd.DataFrame({"log10_h": logh, "log10_kappa": logk, "log10_Sigma_tot": logs}).to_csv(args.out_csv, index=False)
+            print(f"Saved -> {args.out_csv} (rows={len(logh)})")
 
-    # 畫圖（可選）
-    if args.out_plot:
-        Path(args.out_plot).parent.mkdir(parents=True, exist_ok=True)
-        # 圖1：log κ vs log h（含 κ-only 擬合線）
-        plt.figure(figsize=(5, 4))
-        plt.scatter(logk, logh, s=28, alpha=0.85)
-        xgrid = np.linspace(logk.min() - 0.1, logk.max() + 0.1, 200)
-        ygrid = mk.params[0] + mk.params[1] * xgrid
-        plt.plot(xgrid, ygrid, linewidth=2)
-        plt.xlabel(r"$\log_{10}\,\kappa$")
-        plt.ylabel(r"$\log_{10}\,h\ \mathrm{(kpc)}$")
-        plt.tight_layout()
-        plt.savefig(args.out_plot, dpi=180)
-        print(f"Saved plot -> {args.out_plot}")
+        # 畫圖
+        if args.out_plot:
+            Path(args.out_plot).parent.mkdir(parents=True, exist_ok=True)
+            # κ–h
+            plt.figure(figsize=(5, 4))
+            plt.scatter(logk, logh, s=28, alpha=0.85)
+            xgrid = np.linspace(logk.min() - 0.1, logk.max() + 0.1, 200)
+            ygrid = mk.params[0] + mk.params[1] * xgrid
+            plt.plot(xgrid, ygrid, linewidth=2)
+            plt.xlabel(r"$\log_{10}\,\kappa$")
+            plt.ylabel(r"$\log_{10}\,h\ \mathrm{(kpc)}$")
+            plt.tight_layout()
+            plt.savefig(args.out_plot, dpi=180)
+            print(f"Saved plot -> {args.out_plot}")
 
-        # 圖2：用 log Σ 著色（只有在有 Σ 時才畫）
-        if has_sigma:
+            # color by Σ
             root = Path(args.out_plot)
-            out_sigma = (
-                root.with_name(root.stem + "_sigma" + root.suffix)
-                if root.suffix
-                else root.with_name(root.stem.replace(".png", "") + "_sigma.png")
-            )
+            out_sigma = root.with_name(root.stem + "_sigma" + root.suffix) if root.suffix else root.with_name(root.stem.replace(".png", "") + "_sigma.png")
             plt.figure(figsize=(5, 4))
             sc = plt.scatter(logk, logh, s=28, c=logs, alpha=0.9)
             plt.xlabel(r"$\log_{10}\,\kappa$")
@@ -616,85 +651,292 @@ def run(args: argparse.Namespace) -> Dict:
             plt.tight_layout()
             plt.savefig(out_sigma, dpi=180)
             print(f"Saved plot -> {out_sigma}")
+
+        # 距離不變（同一遮罩 m）
+        dist_col = args.dist_col or "D_Mpc_h"
+        use_dist = dist_col if dist_col in df.columns else ("D_Mpc_gal" if "D_Mpc_gal" in df.columns else None)
+        if use_dist is None:
+            print("[DIST-INV] skipped: no distance column found")
+            md = None
+            dist_report = {"dist_col_used": None, "beta": [np.nan, np.nan, np.nan], "bse": [np.nan, np.nan, np.nan], "R2": np.nan}
         else:
-            print("[plot] skipped colored-by-Σ panel because Σ is unavailable.")
-
-    # 距離不變（DIST-INV）
-    dist_col = args.dist_col or "D_Mpc_h"
-    use_dist = dist_col if dist_col in df.columns else ("D_Mpc_gal" if "D_Mpc_gal" in df.columns else None)
-    if use_dist is None:
-        print("[DIST-INV] skipped: no distance column found")
-        dist_report = {"dist_col_used": None, "beta": [np.nan, np.nan, np.nan], "bse": [np.nan, np.nan, np.nan], "R2": np.nan}
-        dist_n = 0
-        md = None
-    else:
-        D_all = np.maximum(df[use_dist].astype(float).to_numpy(), TINY)
-        D = D_all[m]
-        y_d = np.log10(np.maximum(df["h_kpc"].astype(float).to_numpy()[m] / D, TINY))  # log(h/D)
-        x1_d = np.log10(np.maximum(df["kappa"].astype(float).to_numpy()[m] * D, TINY))  # log(κD)
-
-        if has_sigma:
-            x2_d = logs  # 已經 masked 過
-            Xd = np.stack([x1_d, x2_d], axis=1)
-            md = _ols_wls(Xd, y_d, w)
-            beta = md.params.tolist()
-            bse = md.bse.tolist()
-            # pad to length 3: [const, b_kappa, c_sigma]
-            if len(beta) == 2:
-                beta = [beta[0], beta[1], np.nan]
-                bse = [bse[0], bse[1], np.nan]
-        else:
-            Xd = x1_d.reshape(-1, 1)
-            md = _ols_wls(Xd, y_d, w)
-            # pad to 3 (const, b_kappa, c_sigma=nan)
-            beta = md.params.tolist() + [np.nan] if len(md.params) == 2 else [np.nan, np.nan, np.nan]
-            bse = md.bse.tolist() + [np.nan] if len(md.bse) == 2 else [np.nan, np.nan, np.nan]
-
-        dist_n = len(y_d)
-        if has_sigma:
+            D = np.maximum(df[use_dist].astype(float).to_numpy(), TINY)[m]
+            y_d = np.log10(np.maximum(df["h_kpc"].astype(float).to_numpy()[m] / D, TINY))
+            x1_d = np.log10(np.maximum(df["kappa"].astype(float).to_numpy()[m] * D, TINY))
+            x2_d = logs
+            md = _ols_wls(np.stack([x1_d, x2_d], axis=1), y_d, w)
             print(f"[DIST-INV] log(h/D) = {md.params[0]:.3f} + {md.params[1]:.3f} log(κD) + {md.params[2]:.3f} log Σ ; R^2={md.rsquared:.3f}")
-        else:
-            print(f"[DIST-INV] log(h/D) = {md.params[0]:.3f} + {md.params[1]:.3f} log(κD) ; R^2={md.rsquared:.3f}")
-        dist_report = {
-            "dist_col_used": use_dist,
-            "beta": beta,
-            "bse": bse,
-            "R2": float(md.rsquared),
+            dist_report = {"dist_col_used": use_dist, "beta": md.params.tolist(), "bse": md.bse.tolist(), "R2": float(md.rsquared)}
+
+        # 報告
+        report = {
+            "a": float(m2.params[0]),
+            "a_se": float(m2.bse[0]),
+            "b_kappa": float(m2.params[1]),
+            "b_se": float(m2.bse[1]),
+            "c_sigma": float(m2.params[2]),
+            "c_se": float(m2.bse[2]),
+            "R2": float(m2.rsquared),
+            "AICc": float(aicc_ks),
+            "dAIC_kappa_only": float(aicc_k - aicc_ks),
+            "dAIC_sigma_only": float(aicc_s - aicc_ks),
+            "dAIC_kappa_sigma": 0.0,
+            "dist_n": int(len(y_d)) if use_dist is not None else 0,
+            "dist_b_kappa": float(md.params[1]) if use_dist is not None else np.nan,
+            "dist_c_sigma": float(md.params[2]) if use_dist is not None else np.nan,
+            "dist_R2": float(md.rsquared) if use_dist is not None else np.nan,
+            "aicc": {"kappa_only": float(aicc_k), "sigma_only": float(aicc_s), "kappa_sigma": float(aicc_ks)},
+            "params": {
+                "kappa_only": {"beta": mk.params.tolist(), "bse": mk.bse.tolist(), "R2": float(mk.rsquared)},
+                "kappa_sigma": {"beta": m2.params.tolist(), "bse": m2.bse.tolist(), "R2": float(m2.rsquared)},
+                "dist_inv": dist_report,
+            },
+            "n_used": int(n_used),
+            "used_wls": bool(used_wls),
+            "has_sigma": True,
+            "used_fallback_sigma": False,
         }
 
-    # JSON 報告（在沒有 Σ 時，相關欄位以 NaN/None 補齊）
+        if args.report_json:
+            Path(args.report_json).parent.mkdir(parents=True, exist_ok=True)
+            with open(args.report_json, "w") as f:
+                json.dump(report, f, indent=2)
+            print(f"Saved report -> {args.report_json}")
+
+        return report
+
+    # ---- 路徑 2：沒有 per-radius Σ -> 啟用 galaxy-level Σ fallback ----
+    print("[Σ] per-radius columns missing; building galaxy-level Σ fallback from L36/M_HI...")
+    jj = _build_fallback_sigma_samples(df, args)
+
+    if jj.empty or not np.isfinite(jj["Sigma_tot"]).any():
+        # fallback 失敗：退回 κ-only（以 galaxy-level 样本跑，避免 per-radius 與 κ+Σ 比樣本不一致）
+        print("[Σ-fallback] failed (no usable Σ). Falling back to κ-only model.")
+        # 至少提供 κ-only 的 galaxy-level 回歸（κ★, h）
+        xk = np.log10(np.maximum(jj["kappa_char"].to_numpy(), TINY)) if not jj.empty else np.array([])
+        y = np.log10(np.maximum(jj["h_kpc"].to_numpy(), TINY)) if not jj.empty else np.array([])
+
+        if len(y) < 3:
+            raise RuntimeError("沒有可用樣本（Σ 缺失且無法合成；κ-only 樣本數不足）。")
+
+        # 權重
+        w, used_wls = (None, False)
+        if args.wls:
+            # galaxy-level 權重
+            h_lin = np.maximum(jj["h_kpc"].to_numpy(), TINY)
+            sig_lin = jj["h_sigma"].to_numpy()
+            rel = np.where(np.isfinite(sig_lin) & (sig_lin > 0), sig_lin / h_lin, np.nan)
+            sig_log = rel / np.log(10.0)
+            w = 1.0 / np.square(sig_log)
+            w[~np.isfinite(w)] = np.nan
+            used_wls = np.isfinite(w).any()
+            if not used_wls:
+                w = None
+
+        m = _finite_mask(xk, y)
+        if w is not None:
+            m &= np.isfinite(w)
+            w = w[m]
+        xk, y = xk[m], y[m]
+
+        mk = _ols_wls(xk.reshape(-1, 1), y, w)
+        aicc_k = _aicc(len(y), k=2, rss=_rss(mk))
+        print(("Weighted " if used_wls else "") + "OLS (log10 h = a + b log10 κ):")
+        print(f"  a = {mk.params[0]:.3f} ± {mk.bse[0]:.3f}")
+        print(f"  b = {mk.params[1]:.3f} ± {mk.bse[1]:.3f}")
+        print(f"  R^2 = {mk.rsquared:.3f}")
+        print(f"[log h ~ log κ] N={len(y)}, p=2")
+        print(f"  AICc (κ-only) = {aicc_k:.2f}")
+
+        # 最小 JSON
+        report = {
+            "a": float(mk.params[0]),
+            "a_se": float(mk.bse[0]),
+            "b_kappa": float(mk.params[1]),
+            "b_se": float(mk.bse[1]),
+            "c_sigma": np.nan,
+            "c_se": np.nan,
+            "R2": float(mk.rsquared),
+            "AICc": float(aicc_k),
+            "dAIC_kappa_only": 0.0,
+            "dAIC_sigma_only": np.nan,
+            "dAIC_kappa_sigma": np.nan,
+            "dist_n": 0,
+            "dist_b_kappa": np.nan,
+            "dist_c_sigma": np.nan,
+            "dist_R2": np.nan,
+            "aicc": {"kappa_only": float(aicc_k), "sigma_only": np.nan, "kappa_sigma": np.nan},
+            "params": {"kappa_only": {"beta": mk.params.tolist(), "bse": mk.bse.tolist(), "R2": float(mk.rsquared)}, "kappa_sigma": None, "dist_inv": {}},
+            "n_used": int(len(y)),
+            "used_wls": bool(used_wls),
+            "has_sigma": False,
+            "used_fallback_sigma": False,
+        }
+        if args.report_json:
+            Path(args.report_json).parent.mkdir(parents=True, exist_ok=True)
+            with open(args.report_json, "w") as f:
+                json.dump(report, f, indent=2)
+            print(f"Saved report -> {args.report_json}")
+        return report
+
+    # --- 用 fallback 樣本做 κ-only / Σ-only / κ+Σ（與舊版一致，每星系一點） ---
+    print(f"[Σ-fallback] built galaxy-level samples: N_galaxies={len(jj)} (valid Σ rows={(np.isfinite(jj['Sigma_tot']).sum())})")
+
+    xk = np.log10(np.maximum(jj["kappa_char"].to_numpy(), TINY))
+    xs = np.log10(np.maximum(jj["Sigma_tot"].to_numpy(), TINY))
+    y = np.log10(np.maximum(jj["h_kpc"].to_numpy(), TINY))
+
+    # 權重（WLS）
+    w = None
+    used_wls = False
+    if args.wls and "h_sigma" in jj.columns:
+        sig_lin = jj["h_sigma"].to_numpy()
+        h_lin = np.maximum(jj["h_kpc"].to_numpy(), TINY)
+        rel = np.where(np.isfinite(sig_lin) & (sig_lin > 0), sig_lin / h_lin, np.nan)
+        sig_log = rel / np.log(10.0)
+        w = 1.0 / np.square(sig_log)
+        w[~np.isfinite(w)] = np.nan
+        used_wls = np.isfinite(w).any()
+        if not used_wls:
+            w = None
+
+    m = _finite_mask(xk, xs, y)
+    if w is not None:
+        m &= np.isfinite(w)
+        w = w[m]
+    xk, xs, y = xk[m], xs[m], y[m]
+
+    n_used = len(y)
+    if n_used < 3:
+        raise RuntimeError("Σ-fallback 樣本不足以做多變量回歸（<3 個星系）。")
+
+    # 統計量（κ vs h）
+    r, _ = pearsonr(xk, y)
+    rho, _ = spearmanr(xk, y)
+    print(f"Sample size (used in fit): {n_used}")
+    print(f"Pearson r (log–log): {r:.3f}")
+    print(f"Spearman ρ (log–log): {rho:.3f}")
+
+    # κ-only / Σ-only / κ+Σ（在 **同一組樣本** 上比較 AICc）
+    mk = _ols_wls(xk.reshape(-1, 1), y, w)
+    ms = _ols_wls(xs.reshape(-1, 1), y, w)
+    m2 = _ols_wls(np.stack([xk, xs], axis=1), y, w)
+
+    aicc_k = _aicc(n_used, k=2, rss=_rss(mk))
+    aicc_s = _aicc(n_used, k=2, rss=_rss(ms))
+    aicc_ks = _aicc(n_used, k=3, rss=_rss(m2))
+
+    print(("Weighted " if used_wls else "") + "OLS (log10 h = a + b log10 κ):")
+    print(f"  a = {mk.params[0]:.3f} ± {mk.bse[0]:.3f}")
+    print(f"  b = {mk.params[1]:.3f} ± {mk.bse[1]:.3f}")
+    print(f"  R^2 = {mk.rsquared:.3f}")
+    print(f"[log h ~ log κ + log Σ_fallback] N={n_used}, p=3")
+    print(f"  beta: {m2.params[0]:.3f}±{m2.bse[0]:.3f}, {m2.params[1]:.3f}±{m2.bse[1]:.3f}, {m2.params[2]:.3f}±{m2.bse[2]:.3f}")
+    print(f"  R^2 = {m2.rsquared:.3f}, AICc = {aicc_ks:.2f}")
+    print(f"  AICc (κ-only/Σ-only/κ+Σ) = {aicc_k:.2f} / {aicc_s:.2f} / {aicc_ks:.2f}")
+    print(f"  ΔAICc = {{'kappa_only': {aicc_k - aicc_ks}, 'sigma_only': {aicc_s - aicc_ks}, 'kappa_sigma': 0.0}}")
+
+    # LOO / Bootstrap（針對 fallback X=[κ★, Σ_fallback]）
+    if args.loo:
+        mu, sd = _loo_coeffs(np.stack([xk, xs], axis=1), y, w)
+        print(f"  LOO mean: {list(mu)}")
+        print(f"  LOO std : {list(sd)}")
+    if args.bootstrap and args.bootstrap > 0:
+        med, lo, hi = _bootstrap_coeffs(np.stack([xk, xs], axis=1), y, w, nboot=args.bootstrap, seed=42)
+        print(f"  Bootstrap medians: {list(med)}")
+        print(f"  16–84 percentiles: low={list(lo)}  high={list(hi)}")
+
+    # 輸出 CSV
+    if args.out_csv:
+        Path(args.out_csv).parent.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(
+            {
+                "log10_h": y,
+                "log10_kappa_char": xk,
+                "log10_Sigma_fallback": xs,
+            }
+        ).to_csv(args.out_csv, index=False)
+        print(f"Saved -> {args.out_csv} (rows={len(y)})")
+
+    # 畫圖（κ–h；以及以 X=Σ/κ^2 著色的第二張）
+    if args.out_plot:
+        Path(args.out_plot).parent.mkdir(parents=True, exist_ok=True)
+        # κ–h
+        plt.figure(figsize=(5, 4))
+        plt.scatter(xk, y, s=28, alpha=0.85)
+        xgrid = np.linspace(xk.min() - 0.1, xk.max() + 0.1, 200)
+        ygrid = mk.params[0] + mk.params[1] * xgrid
+        plt.plot(xgrid, ygrid, linewidth=2)
+        plt.xlabel(r"$\log_{10}\,\kappa_\star$")
+        plt.ylabel(r"$\log_{10}\,h\ \mathrm{(kpc)}$")
+        plt.tight_layout()
+        plt.savefig(args.out_plot, dpi=180)
+        print(f"Saved plot -> {args.out_plot}")
+
+        # 以 Σ_fallback 著色
+        root = Path(args.out_plot)
+        out_sigma = root.with_name(root.stem + "_sigma" + root.suffix) if root.suffix else root.with_name(root.stem.replace(".png", "") + "_sigma.png")
+        plt.figure(figsize=(5, 4))
+        sc = plt.scatter(xk, y, s=28, c=xs, alpha=0.9)
+        plt.xlabel(r"$\log_{10}\,\kappa_\star$")
+        plt.ylabel(r"$\log_{10}\,h\ \mathrm{(kpc)}$")
+        cb = plt.colorbar(sc)
+        cb.set_label(r"$\log_{10}\,\Sigma_{\rm fallback}$")
+        plt.tight_layout()
+        plt.savefig(out_sigma, dpi=180)
+        print(f"Saved plot -> {out_sigma}")
+
+    # 距離不變（用 fallback 樣本）
+    jjD = jj[np.isfinite(jj["D_Mpc"])].copy()
+    if len(jjD) >= 3:
+        yD = np.log10(np.maximum(jjD["h_kpc"].to_numpy() / np.maximum(jjD["D_Mpc"].to_numpy(), TINY), TINY))
+        xkD = np.log10(np.maximum(jjD["kappa_char"].to_numpy() * np.maximum(jjD["D_Mpc"].to_numpy(), TINY), TINY))
+        xsD = np.log10(np.maximum(jjD["Sigma_tot"].to_numpy(), TINY))
+        wD = None
+        if args.wls and "h_sigma" in jjD.columns:
+            sig_lin = jjD["h_sigma"].to_numpy()
+            h_lin = np.maximum(jjD["h_kpc"].to_numpy(), TINY)
+            rel = np.where(np.isfinite(sig_lin) & (sig_lin > 0), sig_lin / h_lin, np.nan)
+            sig_log = rel / np.log(10.0)
+            wD = 1.0 / np.square(sig_log)
+            wD[~np.isfinite(wD)] = np.nan
+            if not np.isfinite(wD).any():
+                wD = None
+        md = _ols_wls(np.stack([xkD, xsD], axis=1), yD, wD)
+        print(f"[DIST-INV] log(h/D) = {md.params[0]:.3f} + {md.params[1]:.3f} log(κD) + {md.params[2]:.3f} log Σ ; R^2={md.rsquared:.3f}")
+        dist_section = {"n": int(len(jjD)), "beta": md.params.tolist(), "bse": md.bse.tolist(), "R2": float(md.rsquared)}
+    else:
+        print("[DIST-INV] skipped: insufficient fallback distance rows")
+        md = None
+        dist_section = {"n": int(len(jjD)), "beta": [np.nan, np.nan, np.nan], "bse": [np.nan, np.nan, np.nan], "R2": np.nan}
+
+    # 報告
     report = {
-        # 主要迴歸（若有 Σ 則是 κ+Σ，否則是 κ-only）
-        "a": float(m2.params[0]) if has_sigma else float(mk.params[0]),
-        "a_se": float(m2.bse[0]) if has_sigma else float(mk.bse[0]),
-        "b_kappa": float(m2.params[1]) if has_sigma else float(mk.params[1]),
-        "b_se": float(m2.bse[1]) if has_sigma else float(mk.bse[1]),
-        "c_sigma": float(m2.params[2]) if has_sigma else np.nan,
-        "c_se": float(m2.bse[2]) if has_sigma else np.nan,
-        "R2": float(m2.rsquared) if has_sigma else float(mk.rsquared),
-        "AICc": float(aicc_ks) if has_sigma else float(aicc_k),
-        "dAIC_kappa_only": float(aicc_k - aicc_ks) if has_sigma else 0.0,
-        "dAIC_sigma_only": float(aicc_s - aicc_ks) if has_sigma else np.nan,
-        "dAIC_kappa_sigma": 0.0 if has_sigma else np.nan,
-        # 距離不變
-        "dist_n": int(dist_n),
-        "dist_b_kappa": float(md.params[1]) if md is not None and len(md.params) >= 2 else np.nan,
-        "dist_c_sigma": float(md.params[2]) if md is not None and len(md.params) >= 3 else np.nan,
-        "dist_R2": float(md.rsquared) if md is not None else np.nan,
-        # 附帶原始區塊（向下相容）
-        "aicc": {
-            "kappa_only": float(aicc_k),
-            "sigma_only": float(aicc_s) if has_sigma else np.nan,
-            "kappa_sigma": float(aicc_ks) if has_sigma else np.nan,
-        },
+        "a": float(m2.params[0]),
+        "a_se": float(m2.bse[0]),
+        "b_kappa": float(m2.params[1]),
+        "b_se": float(m2.bse[1]),
+        "c_sigma": float(m2.params[2]),
+        "c_se": float(m2.bse[2]),
+        "R2": float(m2.rsquared),
+        "AICc": float(aicc_ks),
+        "dAIC_kappa_only": float(aicc_k - aicc_ks),
+        "dAIC_sigma_only": float(aicc_s - aicc_ks),
+        "dAIC_kappa_sigma": 0.0,
+        "dist_n": int(dist_section["n"]),
+        "dist_b_kappa": float(dist_section["beta"][1]) if md is not None else np.nan,
+        "dist_c_sigma": float(dist_section["beta"][2]) if md is not None else np.nan,
+        "dist_R2": float(dist_section["R2"]),
+        "aicc": {"kappa_only": float(aicc_k), "sigma_only": float(aicc_s), "kappa_sigma": float(aicc_ks)},
         "params": {
             "kappa_only": {"beta": mk.params.tolist(), "bse": mk.bse.tolist(), "R2": float(mk.rsquared)},
-            "kappa_sigma": ({"beta": m2.params.tolist(), "bse": m2.bse.tolist(), "R2": float(m2.rsquared)} if has_sigma else None),
-            "dist_inv": dist_report,
+            "kappa_sigma": {"beta": m2.params.tolist(), "bse": m2.bse.tolist(), "R2": float(m2.rsquared)},
+            "dist_inv": dist_section,
         },
         "n_used": int(n_used),
         "used_wls": bool(used_wls),
-        "has_sigma": bool(has_sigma),
+        "has_sigma": False,
+        "used_fallback_sigma": True,
     }
 
     if args.report_json:
@@ -723,12 +965,12 @@ def main():
     ap.add_argument("--loo", action="store_true", help="逐一留一交叉驗證（係數平均／標準差）")
     ap.add_argument("--bootstrap", type=int, default=0, help="bootstrap 次數（0 表示不執行）")
 
-    # Σ_tot 組合（若輸入檔沒有 Sigma_tot 時才會用到這些）
-    ap.add_argument("--use-total-sigma", action="store_true", help="相容旗標（實際自動偵測/建構 Sigma_tot）")
-    ap.add_argument("--use-exp", action="store_true", help="相容旗標（不影響計算）")
-    ap.add_argument("--ml36", type=float, default=None, help="M/L[3.6μm] 乘數（若僅提供星光面密度 Sigma_star_36）")
-    ap.add_argument("--rgas-mult", type=float, default=None, help="氣體倍率（如需修正）")
-    ap.add_argument("--gas-helium", type=float, default=None, help="氦修正倍率（如 1.33）")
+    # Σ_tot 組合（若輸入檔沒有 per-radius Sigma 欄位時，會啟用 galaxy-level fallback）
+    ap.add_argument("--use-total-sigma", action="store_true", help="Σ_tot = Σ_* + Σ_gas（fallback 時生效）")
+    ap.add_argument("--use-exp", action="store_true", help="在 r★ 評估 Σ：乘上 exp(-r★/Rd)（gas 用 Rgas）")
+    ap.add_argument("--ml36", type=float, default=0.5, help="M/L[3.6μm]（fallback 評估 Σ_* 用）")
+    ap.add_argument("--rgas-mult", type=float, default=1.7, help="R_gas = rgas_mult * Rd（fallback 評估 Σ_gas 用）")
+    ap.add_argument("--gas-helium", type=float, default=1.33, help="氦修正（fallback 評估 Σ_gas 用）")
 
     # κ 計算選項（當缺少 kappa 欄位時生效）
     ap.add_argument("--velocity-column", type=str, default="auto", help="用於 κ 計算的速度欄位（auto|v_obs_kms|v_circ_kms）")
@@ -751,4 +993,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
