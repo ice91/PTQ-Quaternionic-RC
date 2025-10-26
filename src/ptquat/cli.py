@@ -166,41 +166,6 @@ def main(argv=None):
     grp_k2.add_argument("--epsilon-cos", type=float, default=None)
     grp_k2.add_argument("--omega-lambda", type=float, default=None)
 
-    # NEW: kappa-geom（幾何 h，單點 r*）
-    kgeom = sx.add_parser("kappa-geom", help="Per-galaxy kappa using geometric disk thickness h")
-    kgeom.add_argument("--results", required=True)
-    kgeom.add_argument("--data", default="dataset/geometry/sparc_with_h.csv")
-    kgeom.add_argument("--eta", type=float, default=0.15)
-    kgeom.add_argument("--frac-vmax", type=float, default=0.9)
-    kgeom.add_argument("--nsamp", type=int, default=300)
-    kgeom.add_argument("--prefix", default="kappa_geom")
-    kgeom.add_argument("--y-source", choices=["model","obs","obs-debias"], default="obs-debias")
-    kgeom.add_argument("--eps-norm", choices=["fit","cos"], default="cos")
-    kgeom.add_argument("--rstar-from", choices=["model","obs"], default="obs")
-    kgeom.add_argument("--regression", choices=["ols","deming"], default="deming")
-    kgeom.add_argument("--deming-lambda", type=float, default=1.0)
-    kgeom.add_argument("--no-interp-rstar", action="store_false", dest="interp_rstar",
-                       help="Disable linear interpolation for r* (default: enabled)")
-    kgeom.set_defaults(interp_rstar=True)
-    grp_kg = kgeom.add_mutually_exclusive_group(required=False)
-    grp_kg.add_argument("--epsilon-cos", type=float, default=None)
-    grp_kg.add_argument("--omega-lambda", type=float, default=None)
-    kgeom.add_argument("--h-col", default="h_kpc", help="Thickness column to use (default: h_kpc)")
-
-    # NEW: kappa-prof-geom（x=r/h 堆疊）
-    kpg = sx.add_parser("kappa-prof-geom", help="Radius-resolved kappa profile using h (x=r/h)")
-    kpg.add_argument("--results", required=True)
-    kpg.add_argument("--data", default="dataset/geometry/sparc_with_h.csv")
-    kpg.add_argument("--eta", type=float, default=0.15)
-    kpg.add_argument("--nbins", type=int, default=24)
-    kpg.add_argument("--min-per-bin", type=int, default=20)
-    kpg.add_argument("--eps-norm", choices=["fit","cos"], default="cos")
-    kpg.add_argument("--prefix", default="kappa_profile_h")
-    grp_kpg = kpg.add_mutually_exclusive_group(required=False)
-    grp_kpg.add_argument("--epsilon-cos", type=float, default=None)
-    grp_kpg.add_argument("--omega-lambda", type=float, default=None)
-    kpg.add_argument("--h-col", default="h_kpc", help="Thickness column to use (default: h_kpc)")
-
     # kappa-fit
     kfit = sx.add_parser("kappa-fit", help="Fit y=A/x+B from kappa_profile outputs")
     kfit.add_argument("--results", required=True)
@@ -212,6 +177,44 @@ def main(argv=None):
     kfit.add_argument("--bootstrap", type=int, default=0, help="N bootstrap draws; 0 to skip")
     kfit.add_argument("--min-per-bin", type=int, default=20)
     kfit.add_argument("--seed", type=int, default=1234)
+
+    # === NEW: geometry-based kappa experiments ===
+    # kappa-geom（每星系、用 h）
+    kgm = sx.add_parser("kappa-geom", help="Per-galaxy kappa check using geometric thickness h")
+    kgm.add_argument("--results", required=True)
+    kgm.add_argument("--data", default="dataset/sparc_tidy.csv", help="Tidy SPARC CSV (RC data)")
+    kgm.add_argument("--geom", default="dataset/geometry/sparc_with_h.csv", help="Geometry CSV with h values")
+    kgm.add_argument("--h-col", default="h_kpc")
+    kgm.add_argument("--eta", type=float, default=0.15)
+    kgm.add_argument("--frac-vmax", type=float, default=0.9)
+    kgm.add_argument("--nsamp", type=int, default=300)
+    kgm.add_argument("--prefix", default="kappa_geom_h")
+    kgm.add_argument("--y-source", choices=["model","obs","obs-debias"], default="obs-debias")
+    kgm.add_argument("--eps-norm", choices=["fit","cos"], default="cos")
+    kgm.add_argument("--rstar-from", choices=["model","obs"], default="obs")
+    kgm.add_argument("--regression", choices=["ols","deming"], default="deming")
+    kgm.add_argument("--deming-lambda", type=float, default=1.0)
+    kgm.add_argument("--no-interp-rstar", action="store_false", dest="interp_rstar",
+                     help="Disable linear interpolation for r* (default: enabled)")
+    kgm.set_defaults(interp_rstar=True)
+    grp_kh = kgm.add_mutually_exclusive_group(required=False)
+    grp_kh.add_argument("--epsilon-cos", type=float, default=None)
+    grp_kh.add_argument("--omega-lambda", type=float, default=None)
+
+    # kappa-prof-geom（半徑堆疊、x=r/h）
+    kpg = sx.add_parser("kappa-prof-geom", help="Radius-resolved kappa profile using x=r/h")
+    kpg.add_argument("--results", required=True)
+    kpg.add_argument("--data", default="dataset/sparc_tidy.csv", help="Tidy SPARC CSV (RC data)")
+    kpg.add_argument("--geom", default="dataset/geometry/sparc_with_h.csv", help="Geometry CSV with h values")
+    kpg.add_argument("--h-col", default="h_kpc")
+    kpg.add_argument("--eta", type=float, default=0.15)
+    kpg.add_argument("--nbins", type=int, default=24)
+    kpg.add_argument("--min-per-bin", type=int, default=20)
+    kpg.add_argument("--eps-norm", choices=["fit","cos"], default="cos")
+    kpg.add_argument("--prefix", default="kappa_profile_h")
+    grp_kpg = kpg.add_mutually_exclusive_group(required=False)
+    grp_kpg.add_argument("--epsilon-cos", type=float, default=None)
+    grp_kpg.add_argument("--omega-lambda", type=float, default=None)
 
     # zprof
     zp = sx.add_parser("zprof", help="Radius-resolved zero-parameter collapse in z=g_N/a0")
@@ -364,30 +367,6 @@ def main(argv=None):
             )
             print(f"Saved: {png}")
 
-        # NEW: kappa-geom
-        elif args.exp_cmd == "kappa-geom":
-            out = EXP.kappa_geom_per_galaxy(
-                results_dir=args.results, data_path=args.data,
-                eta=args.eta, frac_vmax=args.frac_vmax, nsamp=args.nsamp,
-                epsilon_cos=args.epsilon_cos, omega_lambda=args.omega_lambda,
-                y_source=args.y_source, eps_norm=args.eps_norm,
-                rstar_from=args.rstar_from,
-                regression=args.regression, deming_lambda=args.deming_lambda,
-                interpolate_rstar=args.interp_rstar, h_col=args.h_col,
-                out_prefix=args.prefix
-            )
-            print(json.dumps(out, indent=2))
-
-        # NEW: kappa-prof-geom
-        elif args.exp_cmd == "kappa-prof-geom":
-            df, png = EXP.kappa_radius_resolved_geom(
-                results_dir=args.results, data_path=args.data,
-                eta=args.eta, epsilon_cos=args.epsilon_cos, omega_lambda=args.omega_lambda,
-                nbins=args.nbins, min_per_bin=args.min_per_bin,
-                eps_norm=args.eps_norm, h_col=args.h_col, out_prefix=args.prefix
-            )
-            print(f"Saved: {png}")
-
         elif args.exp_cmd == "kappa-fit":
             out = EXP.kappa_two_param_fit(
                 results_dir=args.results, prefix=args.prefix,
@@ -403,6 +382,29 @@ def main(argv=None):
                     n_boot=args.bootstrap, min_per_bin=args.min_per_bin, seed=args.seed
                 )
                 print(json.dumps(boot, indent=2))
+
+        # === NEW dispatch: geometry-based ===
+        elif args.exp_cmd == "kappa-geom":
+            out = EXP.kappa_geom_per_galaxy(
+                results_dir=args.results, data_path=args.data, geom_path=args.geom, h_col=args.h_col,
+                eta=args.eta, frac_vmax=args.frac_vmax, nsamp=args.nsamp,
+                epsilon_cos=args.epsilon_cos, omega_lambda=args.omega_lambda,
+                y_source=args.y_source, eps_norm=args.eps_norm,
+                rstar_from=args.rstar_from,
+                regression=args.regression, deming_lambda=args.deming_lambda,
+                interpolate_rstar=args.interp_rstar,
+                out_prefix=args.prefix
+            )
+            print(json.dumps(out, indent=2))
+
+        elif args.exp_cmd == "kappa-prof-geom":
+            df, png = EXP.kappa_radius_resolved_geom(
+                results_dir=args.results, data_path=args.data, geom_path=args.geom, h_col=args.h_col,
+                eta=args.eta, epsilon_cos=args.epsilon_cos, omega_lambda=args.omega_lambda,
+                nbins=args.nbins, min_per_bin=args.min_per_bin,
+                eps_norm=args.eps_norm, out_prefix=args.prefix
+            )
+            print(f"Saved: {png}")
 
         elif args.exp_cmd == "zprof":
             df, png = EXP.z_profile(
