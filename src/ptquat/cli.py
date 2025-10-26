@@ -33,7 +33,7 @@ def main(argv=None):
     s4g.add_argument("--out", default="dataset/geometry/h_catalog.csv", help="Output h-catalog CSV path")
     s4g.add_argument("--prefer", choices=["thin","thick"], default="thin", help="Prefer thin or thick disk thickness")
     s4g.add_argument("--default-rel-err", type=float, default=0.25, help="Fallback relative error when no error column")
-    # ★ 新增：明確 IDs、鏡像、逾時、重試、verbose
+    # 明確 IDs、鏡像、逾時、重試、verbose
     s4g.add_argument("--ids", nargs="*", default=None, help="Explicit VizieR catalog IDs (e.g. J/A+A/548/A126)")
     s4g.add_argument("--mirror", default=None, help="Preferred VizieR mirror host (e.g. vizier.cfa.harvard.edu)")
     s4g.add_argument("--timeout", type=float, default=120.0, help="HTTP timeout (seconds) per request")
@@ -142,7 +142,7 @@ def main(argv=None):
     kgal.add_argument("--y-source", choices=["model","obs","obs-debias"], default="model")
     kgal.add_argument("--eps-norm", choices=["fit","cos"], default="fit")
     kgal.add_argument("--rstar-from", choices=["model","obs"], default="model")
-    # NEW: regression + lambda + r* interpolation
+    # regression + lambda + r* interpolation
     kgal.add_argument("--regression", choices=["ols","deming"], default="deming")
     kgal.add_argument("--deming-lambda", type=float, default=1.0)
     kgal.add_argument("--no-interp-rstar", action="store_false", dest="interp_rstar",
