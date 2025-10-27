@@ -1507,6 +1507,7 @@ def z_per_galaxy(results_dir: str,
                  out_prefix: str = "z_gal") -> Dict[str, Any]:
     """
     每星系在 r* 的單點：x=z(r*)，y=ε_eff(r*)/ε_den；r* 可用內插。
+    會輸出 per-galaxy CSV 與散點圖；若 model=ptq-screen 且有 q_median，疊上 y_th(z)=S f_q(z)。
     """
     assert y_source in ("model", "obs", "obs-debias")
     assert rstar_from in ("model", "obs")
@@ -1517,8 +1518,10 @@ def z_per_galaxy(results_dir: str,
     model = str(summ["model"])
     H0_si = float(summ.get("H0_si", H0_SI))
     eps_fit = float(summ.get("epsilon_median", np.nan))
+    q_med = summ.get("q_median", None)
     sig_med = float(summ.get("sigma_sys_median", 0.0))
 
+    # 分母 ε_den 與 a0
     eps_den = float(eps_fit) if eps_norm == "fit" else _eps_cos_from_args(epsilon_cos, omega_lambda)
     if not (np.isfinite(eps_den) and eps_den > 0):
         raise ValueError("Invalid eps_den for z_gal.")
@@ -1549,79 +1552,105 @@ def z_per_galaxy(results_dir: str,
             i_star = int(idxs[0]) if len(idxs) > 0 else int(np.nanargmax(v_ref))
             i_star = max(0, min(i_star, len(r) - 1))
             r_star = float(r[i_star])
-        i_near = int(np.nanargmin(np.abs(r - r_star)))
 
-        # z(r*)
-        r_m = max(r_star * KPC, 1e-30)
-        gN_i = (float(vbar2[i_near]) * (KM**2)) / r_m
-        z_star = gN_i / max(a0_SI, 1e-30)
+        # 最近點作為誤差參考
+        i_near = int(np.nanargmin(np.abs(r - r_star)))
+        vbar2_i = float(vbar2[i_near])
 
         # y(r*)
-        denom_i = float(linear_term_kms2(1.0, np.asarray([r_star]), H0_si=H0_si)[0])
+        denom = float(linear_term_kms2(1.0, np.asarray([r_star]), H0_si=H0_si)[0])
         if y_source == "model":
             v0 = float(np.interp(r_star, r, v_mod))
-            y_med = (v0**2 - float(vbar2[i_near])) / denom_i
-            y_lo = y_hi = np.nan
+            eps_eff_med = (v0**2 - vbar2_i) / denom
+            eps_lo = eps_hi = np.nan
+            sig_y = np.nan
         elif y_source == "obs":
             C_full = build_covariance(
                 v_mod, r, g.v_err, g.D_Mpc, g.D_err_Mpc,
                 g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med
             )
             try:
-                Vs = rng.multivariate_normal(mean=g.v_obs, cov=C_full, size=nsamp)
+                Vs = rng.multivariate_normal(mean=v_obs, cov=C_full, size=nsamp)
                 v_star = _interp_rows_at_scalar(r, Vs, r_star)
-                y_s = (v_star**2 - float(vbar2[i_near])) / denom_i
-                y_med = float(np.nanpercentile(y_s, 50))
-                y_lo = float(np.nanpercentile(y_s, 16))
-                y_hi = float(np.nanpercentile(y_s, 84))
+                eps_s = (v_star**2 - vbar2_i) / denom
+                eps_eff_med = float(np.nanpercentile(eps_s, 50))
+                eps_lo = float(np.nanpercentile(eps_s, 16))
+                eps_hi = float(np.nanpercentile(eps_s, 84))
             except np.linalg.LinAlgError:
                 sig_i = float(np.sqrt(np.clip(np.diag(C_full)[i_near], 1e-30, np.inf)))
-                v0 = float(np.interp(r_star, r, g.v_obs))
-                y_med = (v0**2 - float(vbar2[i_near])) / denom_i
-                y_lo = y_med - (2 * v0 * sig_i) / denom_i
-                y_hi = y_med + (2 * v0 * sig_i) / denom_i
-        else:
+                v0 = float(np.interp(r_star, r, v_obs))
+                eps_eff_med = (v0**2 - vbar2_i) / denom
+                eps_lo = eps_eff_med - (2 * v0 * sig_i) / denom
+                eps_hi = eps_eff_med + (2 * v0 * sig_i) / denom
+            # 近似 σy（僅用於覆蓋率統計）
+            v0 = float(np.interp(r_star, r, v_obs))
+            sig_v = float(g.v_err[i_near])
+            sig_y = (2.0 * abs(v0) * sig_v) / (denom * float(eps_den))
+        else:  # obs-debias
             sig2_meas = float(g.v_err[i_near] ** 2)
-            v0 = float(np.interp(r_star, r, g.v_obs))
-            y_med = ((v0**2 - sig2_meas) - float(vbar2[i_near])) / denom_i
+            v0 = float(np.interp(r_star, r, v_obs))
+            eps_eff_med = ((v0**2 - sig2_meas) - vbar2_i) / denom
             try:
                 C_meas = np.diag(np.asarray(g.v_err, float) ** 2)
-                Vs = rng.multivariate_normal(mean=g.v_obs, cov=C_meas, size=nsamp)
+                Vs = rng.multivariate_normal(mean=v_obs, cov=C_meas, size=nsamp)
                 v_star = _interp_rows_at_scalar(r, Vs, r_star)
-                y_s = ((v_star**2 - sig2_meas) - float(vbar2[i_near])) / denom_i
-                y_lo = float(np.nanpercentile(y_s, 16))
-                y_hi = float(np.nanpercentile(y_s, 84))
+                eps_s = ((v_star**2 - sig2_meas) - vbar2_i) / denom
+                eps_lo = float(np.nanpercentile(eps_s, 16))
+                eps_hi = float(np.nanpercentile(eps_s, 84))
             except np.linalg.LinAlgError:
                 sig_i = float(np.sqrt(max(sig2_meas, 1e-30)))
                 base = max(v0**2 - sig2_meas, 0.0) ** 0.5
-                y_lo = y_med - (2 * base * sig_i) / denom_i
-                y_hi = y_med + (2 * base * sig_i) / denom_i
+                eps_lo = eps_eff_med - (2 * base * sig_i) / denom
+                eps_hi = eps_eff_med + (2 * base * sig_i) / denom
+            # 近似 σy（僅用於覆蓋率）
+            sig_v = float(g.v_err[i_near])
+            base = max(v0**2 - sig2_meas, 0.0) ** 0.5
+            sig_y = (2.0 * base * sig_v) / (denom * float(eps_den)) if base > 0 else np.nan
+
+        # x = z(r*) = g_N(r*)/a0
+        r_m = max(r_star * KPC, 1e-30)
+        gN_star = (vbar2_i * (KM**2)) / r_m
+        z_star = gN_star / max(a0_SI, 1e-30)
 
         rows.append(dict(
             galaxy=name,
             r_star_kpc=r_star,
             z_star=z_star,
-            y_star=y_med / eps_den,
-            y_p16=(y_lo / eps_den if np.isfinite(y_lo) else np.nan),
-            y_p84=(y_hi / eps_den if np.isfinite(y_hi) else np.nan)
+            y_eps_over_epsden=eps_eff_med / float(eps_den),
+            y_p16=(eps_lo / float(eps_den)) if np.isfinite(eps_lo) else np.nan,
+            y_p84=(eps_hi / float(eps_den)) if np.isfinite(eps_hi) else np.nan,
+            sigma_y=float(sig_y) if np.isfinite(sig_y) else np.nan
         ))
 
-    out_df = pd.DataFrame(rows)
+    df = pd.DataFrame(rows).replace([np.inf, -np.inf], np.nan)
+    df = df.dropna(subset=["z_star", "y_eps_over_epsden"])
     out_csv = res / f"{out_prefix}_per_galaxy.csv"
-    out_df.to_csv(out_csv, index=False)
+    df.to_csv(out_csv, index=False)
 
+    # 可能的理論曲線與覆蓋率
+    S = float(eps_fit / eps_den) if np.isfinite(eps_fit) else np.nan
+    cov68 = cov95 = None
+    yth = None
+    if (model == "ptq-screen") and (q_med is not None) and np.isfinite(S):
+        zvals = df["z_star"].values
+        yth = S * _f_q(zvals, float(q_med))
+        if "sigma_y" in df.columns:
+            dy = np.abs(df["y_eps_over_epsden"].values - yth)
+            m = np.isfinite(dy) & np.isfinite(df["sigma_y"].values)
+            if m.any():
+                k68, k95 = 1.0, 1.96
+                cov68 = float((dy[m] <= k68 * df["sigma_y"].values[m]).mean())
+                cov95 = float((dy[m] <= k95 * df["sigma_y"].values[m]).mean())
+
+    # 圖
     import matplotlib.pyplot as plt
-    fig, ax = plt.subplots(figsize=(5.2, 4.0), dpi=150)
-    if len(out_df) > 0:
-        ax.scatter(out_df["z_star"], out_df["y_star"], s=20, alpha=0.8, label="galaxies")
-    if (model == "ptq-screen") and (summ.get("q_median", None) is not None):
-        S = float(eps_fit / eps_den) if np.isfinite(eps_fit) else np.nan
-        if np.isfinite(S):
-            zmin = max(1e-3, float(np.nanquantile(out_df["z_star"], 0.01))) if len(out_df) > 0 else 1e-3
-            zmax = float(np.nanquantile(out_df["z_star"], 0.99)) if len(out_df) > 0 else 10.0
-            zgrid = np.linspace(zmin, zmax, 400)
-            ax.plot(zgrid, S * _f_q(zgrid, float(summ["q_median"])), linestyle="--", linewidth=1.3,
-                    label=rf"zero-param $S f_q(z)$ (q={float(summ['q_median']):.2f})")
+    fig, ax = plt.subplots(figsize=(5.4, 4.0), dpi=150)
+    if len(df) > 0:
+        ax.scatter(df["z_star"], df["y_eps_over_epsden"], s=20, alpha=0.8, label="galaxies @ r*")
+    if yth is not None:
+        zgrid = np.linspace(max(1e-4, float(df["z_star"].min())), float(df["z_star"].max()), 400)
+        ax.plot(zgrid, S * _f_q(zgrid, float(q_med)), linestyle="--", linewidth=1.3,
+                label=rf"zero-param $S f_q(z)$ (q={float(q_med):.2f})")
     ax.set_xlabel(r"$z_\ast=g_N(r_\ast)/a_0$")
     ylab_den = r"\varepsilon_{\rm cos}" if eps_norm == "cos" else r"\varepsilon_{\rm fit}"
     ax.set_ylabel(rf"$\varepsilon_{{\rm eff}}(r_\ast)/{ylab_den}$")
@@ -1629,11 +1658,15 @@ def z_per_galaxy(results_dir: str,
     out_png = res / f"{out_prefix}.png"
     fig.tight_layout(); fig.savefig(out_png); plt.close(fig)
 
-    out = dict(N=int(len(out_df)), eps_norm=eps_norm, eps_den=float(eps_den),
-               epsilon_fit=float(eps_fit), H0_si=float(H0_si), a0_SI=float(a0_SI),
-               frac_vmax=float(frac_vmax), y_source=y_source, rstar_from=rstar_from,
-               interpolate_rstar=bool(interpolate_rstar),
-               csv=str(out_csv), png=str(out_png))
+    out = dict(
+        N=int(len(df)),
+        eps_norm=eps_norm,
+        eps_den=float(eps_den),
+        epsilon_fit=float(eps_fit),
+        S=float(S) if np.isfinite(S) else None,
+        coverage68=cov68, coverage95=cov95,
+        csv=str(out_csv), png=str(out_png)
+    )
     with open(res / f"{out_prefix}_summary.json", "w") as f:
         json.dump(out, f, indent=2)
     return out
