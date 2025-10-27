@@ -205,7 +205,7 @@ def cmd_build_h(args: argparse.Namespace) -> None:
     kpc_per_arcsec = D_kpc * ARCS2RAD
     df["h_kpc"] = df["h_arcsec"] * kpc_per_arcsec
     df["h_kpc_err_hi"] = df["hz_e_hi_arcsec"] * kpc_per_arcsec
-    df["h_kpc_err_lo"] = df["hz_e_lo_arcsec"] * kpc_perarcsec
+    df["h_kpc_err_lo"] = df["hz_e_lo_arcsec"] * kpc_per_arcsec  # <-- fixed typo
 
     # Keys
     df["galaxy_h"] = df["Galaxy"].astype(str)
