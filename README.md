@@ -131,29 +131,77 @@ Each run writes:
 
 ```bash
 python - <<'PY'
-import yaml, pandas as pd, pathlib as P
+import yaml, pandas as pd
+from pathlib import Path
+import math
+
+def read_summary(yml_path: str) -> dict:
+    p = Path(yml_path)
+    s = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+
+    # 取得/回推 k
+    k = s.get("k_parameters")
+    logL = s.get("logL_total_full")
+    N = s.get("N_total") or s.get("N")
+    AIC_full = s.get("AIC_full")
+    BIC_full = s.get("BIC_full")
+
+    # 若缺 k 但有 AIC_full、logL → 由 AIC = 2k - 2 logL 回推
+    if k is None and AIC_full is not None and logL is not None:
+        k = 0.5 * (AIC_full + 2.0*logL)
+        # 四捨五入為整數參數數目
+        k = int(round(k))
+
+    # 若缺 AIC_full 可由 k、logL 回推
+    if AIC_full is None and (k is not None) and (logL is not None):
+        AIC_full = 2*k - 2*logL
+
+    # 若缺 BIC_full 可由 k、N、logL 回推
+    if BIC_full is None and (k is not None) and (N is not None) and (logL is not None):
+        BIC_full = k*math.log(N) - 2*logL
+
+    row = dict(
+        k = k,
+        chi2 = s.get("chi2_total"),
+        AIC_full = AIC_full,
+        BIC_full = BIC_full,
+        AIC_quad = s.get("AIC_quad"),
+        BIC_quad = s.get("BIC_quad"),
+        sigma_sys_med = s.get("sigma_sys_median"),
+        epsilon_med = s.get("epsilon_median"),
+        a0_med = s.get("a0_median"),
+        N = N,
+    )
+    return row
+
 runs = {
-  "PTQ-screen": "results/ptq_screen/global_summary.yaml",
-  "PTQ-v":      "results/ptq_nu/global_summary.yaml",
-  "PTQ":        "results/ejpc_main/global_summary.yaml",
-  "Baryon":     "results/ejpc_baryon/global_summary.yaml",
-  "NFW-1p":     "results/ejpc_nfw1p/global_summary.yaml",
-  "MOND":       "results/ejpc_mond/global_summary.yaml",
+  "PTQ-screen": "results/full_20251014_084358/ptq-screen_gauss/global_summary.yaml",
+  "PTQ-v":      "results/full_20251014_084358/ptq-nu_gauss/global_summary.yaml",
+  "PTQ":        "results/full_20251014_084358/ptq_gauss/global_summary.yaml",
+  "Baryon":     "results/full_20251014_084358/baryon_gauss/global_summary.yaml",
+  "NFW-1p":     "results/full_20251014_084358/nfw1p_gauss/global_summary.yaml",
+  "MOND":       "results/full_20251014_084358/mond_gauss/global_summary.yaml",
 }
+
 rows=[]
 for name, yml in runs.items():
-    s=yaml.safe_load(open(yml))
-    rows.append(dict(model=name,k=s["k_parameters"],chi2=s["chi2_total"],
-                     AIC_full=s["AIC_full"],BIC_full=s["BIC_full"],
-                     AIC_quad=s["AIC_quad"],BIC_quad=s["BIC_quad"],
-                     sigma_sys_med=s["sigma_sys_median"],
-                     epsilon_med=s.get("epsilon_median"),
-                     a0_med=s.get("a0_median"),
-                     N=s["N_total"]))
-df=(pd.DataFrame(rows).set_index("model").sort_values("BIC_full"))
-df.to_csv("results/ejpc_model_compare.csv")
+    try:
+        row = read_summary(yml)
+        row["model"] = name
+        rows.append(row)
+    except FileNotFoundError:
+        rows.append(dict(model=name))  # 故障時保留占位
+        print(f"[WARN] missing file: {yml}")
+    except Exception as e:
+        rows.append(dict(model=name))
+        print(f"[WARN] {name}: {e}")
+
+df = pd.DataFrame(rows).set_index("model")
+# 僅在 BIC_full 存在時排序，否則跳過排序避免錯誤
+df = df.sort_values("BIC_full", na_position="last") if "BIC_full" in df.columns else df
+df.to_csv("results/all_model_compare.csv")
 print(df[["k","chi2","AIC_full","BIC_full","AIC_quad","BIC_quad","sigma_sys_med","epsilon_med","a0_med"]])
-print("Saved results/ejpc_model_compare.csv")
+print("Saved results/all_model_compare.csv")
 PY
 ```
 
