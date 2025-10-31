@@ -132,12 +132,18 @@ def main(argv=None):
     ppl.add_argument("--nbins", type=int, default=24)
     ppl.add_argument("--prefix", default="plateau")
 
-    # closure
-    pcl = sx.add_parser("closure", help="Cross-scale closure test: epsilon_cos vs epsilon_RC")
+    # closure (★擴充：支援繪製 Fig.3)
+    pcl = sx.add_parser("closure", help="Cross-scale closure test: epsilon_cos vs epsilon_RC (+ optional Fig.3)")
     pcl.add_argument("--results", required=True)
     group = pcl.add_mutually_exclusive_group(required=True)
     group.add_argument("--epsilon-cos", type=float, default=None)
     group.add_argument("--omega-lambda", type=float, default=None)
+    pcl.add_argument("--plot", type=str, default=None,
+                     help="若設定，將 Fig.3 ΩΛ–ε 曲線輸出到此路徑（例如 paper_figs/omega_eps_curve.png）")
+    pcl.add_argument("--omega-sigma", type=float, default=None,
+                     help="ΩΛ 的 1σ 帶狀（可選）")
+    pcl.add_argument("--eps-max", type=float, default=3.0,
+                     help="ε 軸的最大值（預設 3.0）")
 
     # kappa-gal
     kgal = sx.add_parser("kappa-gal", help="Per-galaxy kappa check")
@@ -321,8 +327,33 @@ def main(argv=None):
             print(f"Saved: {png}")
 
         elif args.exp_cmd == "closure":
-            out = EXP.closure_test(args.results, epsilon_cos=args.epsilon_cos, omega_lambda=args.omega_lambda)
+            # 先計算/回推 cosmology 對應
+            if args.omega_lambda is not None:
+                omega = float(args.omega_lambda)
+                if not (0.0 < omega < 1.0):
+                    raise SystemExit("Ω_Λ must be in (0,1)")
+                eps_cos = (omega/(1.0-omega))**0.5
+            else:
+                eps_cos = float(args.epsilon_cos)
+                omega = eps_cos**2/(1.0+eps_cos**2)
+
+            # 既有 closure 計算（寫 YAML 等）
+            out = EXP.closure_test(args.results, epsilon_cos=eps_cos, omega_lambda=omega)
             print(json.dumps(out, indent=2))
+
+            # 可選：順手產生 Fig.3
+            if args.plot:
+                try:
+                    from .plotting import plot_omega_eps_curve
+                    plot_omega_eps_curve(
+                        omega=omega,
+                        omega_sigma=args.omega_sigma,
+                        out_path=args.plot,
+                        eps_max=args.eps_max,
+                    )
+                    print(f"[closure] wrote figure: {args.plot}")
+                except Exception as e:
+                    print(f"[closure] WARN: failed to write plot ({e})")
 
         elif args.exp_cmd == "kappa-gal":
             out = EXP.kappa_per_galaxy(

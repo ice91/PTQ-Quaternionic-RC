@@ -65,7 +65,7 @@ def plot_residual_plateau(df_points, df_binned, outpath: Path):
     fig.savefig(outpath, dpi=160)
     plt.close(fig)
 
-# --- 新增：BTFR 在正確座標（y=V_f^4, x=M_b），理論斜率=1 ---
+# --- BTFR 在正確座標（y=V_f^4, x=M_b），理論斜率=1 ---
 def plot_btfr_one2one(Mb: np.ndarray,
                       Vf: np.ndarray,
                       outpath_png: str,
@@ -98,3 +98,62 @@ def plot_btfr_one2one(Mb: np.ndarray,
     fig.tight_layout()
     fig.savefig(outpath_png)
     plt.close(fig)
+
+# --- 新增：Fig.3 ΩΛ–ε 曲線（含 Planck 帶狀與交點） ---
+def plot_omega_eps_curve(
+    omega: float,
+    omega_sigma: float | None = None,
+    out_path: str = "paper_figs/omega_eps_curve.png",
+    eps_min: float = 0.0,
+    eps_max: float = 3.0,
+    ngrid: int = 500,
+    title: str | None = None,
+):
+    """
+    繪製 Ω_Λ(ε) = ε^2 / (1+ε^2)，可選擇加上 Planck 1σ 帶狀與交會 ε_cos。
+    生成單一 PNG：`out_path`。
+    """
+    import os
+    import math
+
+    # 曲線
+    eps = np.linspace(eps_min, eps_max, ngrid)
+    omega_curve = eps**2 / (1.0 + eps**2)
+
+    # 由 omega 推 ε_cos
+    omega = float(omega)
+    if not (0.0 < omega < 1.0):
+        raise ValueError(f"omega-lambda must be in (0,1), got {omega}")
+    eps_cos = math.sqrt(omega / (1.0 - omega))
+
+    # 繪圖
+    fig, ax = plt.subplots(figsize=(5.6, 4.0), dpi=150)
+    ax.plot(eps, omega_curve, linewidth=2.0)
+
+    # 可選：不確定帶
+    if omega_sigma is not None and omega_sigma > 0:
+        lo = np.clip(omega - omega_sigma, 0.0, 0.999999)
+        hi = np.clip(omega + omega_sigma, 0.0, 0.999999)
+        ax.fill_between(eps, lo, hi, alpha=0.25)
+
+    # 交會導線
+    ax.axhline(omega, linestyle="--", linewidth=1.0)
+    ax.axvline(eps_cos, linestyle="--", linewidth=1.0)
+
+    # 標註
+    ax.set_xlim(eps_min, eps_max)
+    ax.set_ylim(0.0, 1.0)
+    ax.set_xlabel(r"$\varepsilon$")
+    ax.set_ylabel(r"$\Omega_\Lambda(\varepsilon)=\varepsilon^2/(1+\varepsilon^2)$")
+    if title:
+        ax.set_title(title)
+    ax.text(
+        0.02, 0.96,
+        rf"$\Omega_\Lambda={omega:.3f}$,  $\varepsilon_{{\rm cos}}=\sqrt{{\Omega/(1-\Omega)}}={eps_cos:.3f}$",
+        transform=ax.transAxes, va="top"
+    )
+    os.makedirs(Path(out_path).parent.as_posix() or ".", exist_ok=True)
+    fig.tight_layout()
+    fig.savefig(out_path)
+    plt.close(fig)
+    return dict(omega=omega, epsilon_cos=eps_cos, out=str(out_path))

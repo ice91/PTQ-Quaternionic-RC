@@ -12,8 +12,7 @@ make_paper_artifacts.py  (robust version)
   並在 out_dir/<model>_gauss/ 產生至少含 AIC_full/BIC_full 的 YAML（找得到就複製，找不到就寫 stub）。
 - results 根目錄採多重 fallback：parent(--out)/results、parent(--data)/results、cwd/results。
 - 圖片複製也會對多個根目錄做遞迴搜尋（plateau*.png, kappa_*.png）。
-
-此腳本的目的不是重作 fit/實驗，只是「蒐整成品」，能跑在 CI/測試環境中。
+- ★ 新增 Fig.3 產生器：--make-omega-eps --omega <float> [--omega-sigma <float>] [--figdir <dir>]
 """
 
 from __future__ import annotations
@@ -67,7 +66,7 @@ def _candidate_results_roots(args) -> list[Path]:
     # 最後：cwd/results
     roots.append(Path.cwd() / "results")
 
-    # 去重 & 僅保留存在的（但我們仍會記住第一個作為「主」路徑）
+    # 去重
     seen = set()
     uniq = []
     for r in roots:
@@ -79,12 +78,10 @@ def _candidate_results_roots(args) -> list[Path]:
     return uniq
 
 def _choose_results_dir(args) -> Path:
-    # 第一個存在的就選為主 results_dir；都不存在則用第一個候選的路徑（仍可建立 stub）
     cands = _candidate_results_roots(args)
     for c in cands:
         if c.exists():
             return c
-    # 若都不存在，至少回傳第一順位作為預設
     return cands[0]
 
 def _find_model_dirs(results_roots: list[Path], models: list[str] | None) -> list[tuple[str, Path]]:
@@ -97,7 +94,6 @@ def _find_model_dirs(results_roots: list[Path], models: list[str] | None) -> lis
 
     if models:
         for m in models:
-            # 優先回傳第一個存在的；都沒有就用第一個猜測
             guesses = [(m, r / f"{m}_gauss") for r in results_roots]
             chosen = None
             for mm, p in guesses:
@@ -105,17 +101,15 @@ def _find_model_dirs(results_roots: list[Path], models: list[str] | None) -> lis
                     chosen = (mm, p)
                     break
             if chosen is None:
-                # 仍然回傳第一個猜測（用來產生 out_dir/<m>_gauss stub）
                 chosen = guesses[0]
             pairs.append(chosen)
         return pairs
 
-    # models 未指定，掃描所有 roots
     seen = set()
     for root in results_roots:
         for sub in root.glob("*_gauss"):
             if sub.is_dir():
-                name = sub.name[:-6]  # 去掉字尾 " _gauss"
+                name = sub.name[:-6]
                 key = (name, sub.resolve())
                 if key not in seen:
                     seen.add(key)
@@ -123,13 +117,11 @@ def _find_model_dirs(results_roots: list[Path], models: list[str] | None) -> lis
     return pairs
 
 def _gather_figures_into(figdir: Path, model_dirs: list[tuple[str, Path]], extra_roots: list[Path]) -> int:
-    """把 plateau*.png 與 kappa_*.png 複製到 figdir。會在 model_dirs 給的目錄與 extra_roots 做遞迴搜尋。"""
+    """把 plateau*.png 與 kappa_*.png 複製到 figdir。"""
     _ensure_dir(figdir)
     patterns = ["plateau*.png", "kappa_*.png"]
 
-    # 優先從模型目錄搜
     roots = [mdir for _, mdir in model_dirs if mdir.exists()]
-    # 若找不到任何，從額外 roots（可能是另一個推斷到的 results 位置）再搜
     roots += [r for r in extra_roots if r.exists()]
 
     copied = 0
@@ -137,7 +129,6 @@ def _gather_figures_into(figdir: Path, model_dirs: list[tuple[str, Path]], extra
     for r in roots:
         for pat in patterns:
             for src in r.rglob(pat):
-                # 避免重覆複製
                 sp = src.resolve()
                 if sp in seen_srcs:
                     continue
@@ -153,7 +144,6 @@ def _gather_figures_into(figdir: Path, model_dirs: list[tuple[str, Path]], extra
 def _emit_compare_csv(rows: list[dict], out_csv: Path) -> None:
     """寫出 ejpc_model_compare.csv；至少包含 'model' 欄位，若有則加上 AIC_full/BIC_full。"""
     _ensure_dir(out_csv.parent)
-    # 彙整所有欄位
     fieldnames = ["model"]
     for extra in ("AIC_full", "BIC_full"):
         if any(extra in r for r in rows):
@@ -191,18 +181,21 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--do-btfr", action="store_true", help="(compat) No-op in this streamlined script.")
     ap.add_argument("--make-closure-panel", action="store_true", help="(compat) No-op in this streamlined script.")
 
+    # ★ 新增 Fig.3 產生器
+    ap.add_argument("--make-omega-eps", action="store_true",
+                    help="Generate Fig.3 ΩΛ–ε curve into --figdir/omega_eps_curve.png")
+    ap.add_argument("--omega", type=float, default=None,
+                    help="ΩΛ central value (required if --make-omega-eps)")
+    ap.add_argument("--omega-sigma", type=float, default=None,
+                    help="ΩΛ 1σ band (optional)")
+
     args = ap.parse_args(argv)
 
-    # 選主 results_dir 與 out_dir
     primary_results = _choose_results_dir(args)
-    # out 未指定時，預設寫到 primary_results/ejpc_run
     out_dir = Path(args.out).resolve() if args.out else (primary_results / "ejpc_run").resolve()
     _ensure_dir(out_dir)
 
-    # 建立候選 roots（包含 primary 與所有 fallback）
     results_roots = _candidate_results_roots(args)
-
-    # 找模型目錄（若 --models 指定，即使資料夾不存在也會回傳一個猜測路徑）
     model_pairs = _find_model_dirs(results_roots, args.models)
 
     # 將 YAML 摘要拷貝/建立到 out_dir/<model>_gauss/global_summary.yaml
@@ -216,7 +209,6 @@ def main(argv: list[str] | None = None) -> int:
         if _copy_if_exists(src_yaml, dst_yaml):
             y = _read_yaml(dst_yaml) or {}
         else:
-            # 建立最小 YAML（測試只檢查 key 存在）
             y = {
                 "AIC_full": None,
                 "BIC_full": None,
@@ -230,7 +222,6 @@ def main(argv: list[str] | None = None) -> int:
                 row[k] = y.get(k)
         compare_rows.append(row)
 
-    # 輸出比較表
     _emit_compare_csv(compare_rows, out_dir / "ejpc_model_compare.csv")
 
     # 複製圖檔（若 figdir 指定）
@@ -238,13 +229,27 @@ def main(argv: list[str] | None = None) -> int:
         figdir = Path(args.figdir).resolve()
         copied = _gather_figures_into(figdir, model_pairs, results_roots)
         print(f"[make_paper_artifacts] figures copied -> {copied}")
+    else:
+        figdir = None
+
+    # ★ 產生 Fig.3（若指定）
+    if args.make_omega_eps:
+        if args.omega is None:
+            raise SystemExit("--make-omega-eps requires --omega")
+        if figdir is None:
+            figdir = out_dir / "paper_figs"
+        _ensure_dir(figdir)
+        out_png = figdir / "omega_eps_curve.png"
+        from ptquat.plotting import plot_omega_eps_curve
+        plot_omega_eps_curve(omega=args.omega, omega_sigma=args.omega_sigma, out_path=str(out_png))
+        print(f"[bundle] Fig.3 saved → {out_png}")
 
     # 診斷輸出
     print(f"[make_paper_artifacts] primary results_dir = {primary_results}")
     print(f"[make_paper_artifacts] all results roots   = {[str(r) for r in results_roots]}")
     print(f"[make_paper_artifacts] out_dir             = {out_dir}")
-    if args.figdir:
-        print(f"[make_paper_artifacts] figdir             = {Path(args.figdir).resolve()}")
+    if figdir:
+        print(f"[make_paper_artifacts] figdir             = {figdir}")
     print(f"[make_paper_artifacts] models              = {[m for m, _ in model_pairs]}")
     print(f"[make_paper_artifacts] compare CSV         = {out_dir/'ejpc_model_compare.csv'}")
 

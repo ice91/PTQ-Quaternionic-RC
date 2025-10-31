@@ -1,4 +1,4 @@
-.PHONY: data-h data-merge data-all data-h-cli data-h-audit test
+.PHONY: data-h data-merge data-all data-h-cli data-h-audit fig-omega test
 
 # Paths
 SPARC    := dataset/sparc_tidy.csv
@@ -25,7 +25,6 @@ $(SPARC_H): $(H_CAT)
 
 # Back-compat aliases: keep old targets but point to preferred route
 data-h: data-h-cli
-
 data-all: data-h data-merge
 
 # --------------------------------------------------------------------
@@ -43,6 +42,13 @@ data-h-audit:
 	  --alias $(ALIASES) \
 	  --unmatched $(UNMATCH)
 	@echo "[OK] Audit route completed."
+
+# --------------------------------------------------------------------
+# Paper figures
+# --------------------------------------------------------------------
+fig-omega:
+	python scripts/make_paper_artifacts.py --data $(SPARC) \
+	  --make-omega-eps --omega 0.69 --omega-sigma 0.01 --figdir paper_figs
 
 # --------------------------------------------------------------------
 # Tests
