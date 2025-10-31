@@ -192,7 +192,7 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     primary_results = _choose_results_dir(args)
-    out_dir = Path(args.out).resolve() if args.out else (primary_results / "ejpc_run").resolve()
+    out_dir = Path(args.out).resolve() if args.out else (primary_results / "paper_run").resolve()
     _ensure_dir(out_dir)
 
     results_roots = _candidate_results_roots(args)
@@ -222,7 +222,7 @@ def main(argv: list[str] | None = None) -> int:
                 row[k] = y.get(k)
         compare_rows.append(row)
 
-    _emit_compare_csv(compare_rows, out_dir / "ejpc_model_compare.csv")
+    _emit_compare_csv(compare_rows, out_dir / "all_model_compare.csv")
 
     # 複製圖檔（若 figdir 指定）
     if args.figdir:
