@@ -251,7 +251,7 @@ def main(argv: list[str] | None = None) -> int:
     if figdir:
         print(f"[make_paper_artifacts] figdir             = {figdir}")
     print(f"[make_paper_artifacts] models              = {[m for m, _ in model_pairs]}")
-    print(f"[make_paper_artifacts] compare CSV         = {out_dir/'ejpc_model_compare.csv'}")
+    print(f"[make_paper_artifacts] compare CSV         = {out_dir/'all_model_compare.csv'}")
 
     return 0
 
