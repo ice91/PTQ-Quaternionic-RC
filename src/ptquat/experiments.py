@@ -15,7 +15,13 @@ from .models import (
     model_v_ptq, model_v_ptq_split, model_v_ptq_nu, model_v_ptq_screen,
     vbar_squared_kms2, linear_term_kms2
 )
-from .fit_global import run as run_fit
+from .fit_global import (
+    run as run_fit,
+    _layout,
+    _unpack,
+    log_likelihood_per_galaxy,
+    log_likelihood_full_per_galaxy,
+)
 from .plotting import plot_residual_plateau, plot_ppc_hist
 
 
@@ -207,7 +213,8 @@ def scan_H0(data_path: str,
             H0_list: List[float],
             **fit_kwargs) -> pd.DataFrame:
     out_dir = Path(out_root); out_dir.mkdir(parents=True, exist_ok=True)
-    rows = []
+    rows_diag = []
+    rows_full = []
     for H0 in H0_list:
         outdir = out_dir / f"{model}_H0_{H0:.1f}"
         summ = _call_fit(data_path, str(outdir), model=model, H0_kms_mpc=H0, **fit_kwargs)
@@ -1324,6 +1331,447 @@ def kappa_radius_resolved_geom(results_dir: str,
         json.dump(dict(eta=eta, eps_den=float(eps_den)), f, indent=2)
 
     return binned, out_png
+
+
+# -------------------------------
+# Model compare: WAIC from posterior samples
+# -------------------------------
+def _waic_from_chain(log_lik_mat: np.ndarray) -> Tuple[float, float, float]:
+    """
+    log_lik_mat: (n_samples, n_data_points) per-galaxy log-likelihoods.
+    Returns (waic, p_waic).
+    WAIC = -2 * (lppd - p_waic)
+    lppd = sum_i log(mean_s(exp(ll_i)))
+    p_waic = sum_i var_s(ll_i)
+    """
+    n_samples = log_lik_mat.shape[0]
+    # lppd_i = log(mean(exp(ll_i))), use logsumexp for stability
+    ll_max = np.nanmax(log_lik_mat, axis=0, keepdims=True)
+    ll_shift = log_lik_mat - ll_max
+    lppd = np.log(np.nanmean(np.exp(np.clip(ll_shift, -700, 700)), axis=0)) + np.squeeze(ll_max)
+    lppd = np.where(np.isfinite(lppd), lppd, -np.inf)
+    p_waic = np.nanvar(log_lik_mat, axis=0)
+    p_waic = np.where(np.isfinite(p_waic), p_waic, 0.0)
+    lppd_sum = float(np.sum(lppd))
+    p_waic_sum = float(np.sum(p_waic))
+    waic = -2.0 * (lppd_sum - p_waic_sum)
+    return lppd_sum, p_waic_sum, waic
+
+
+def compare_models_waic(
+    data_path: str,
+    fit_root: str,
+    models: List[str],
+    outdir: str,
+    seed: int = 0,
+    burn_frac: float = 1.0 / 3.0,
+    thin: int = 10,
+    run_fits_if_missing: bool = False,
+    fit_steps: int = 100,
+    fit_nwalkers: str = "2x",
+) -> Dict[str, Any]:
+    """
+    Compute WAIC for each model from posterior samples (chain.h5), write compare_table.csv,
+    compare_table.tex, rank_plot.png/pdf, manifest.yaml.
+    If run_fits_if_missing, run short fits with backend when chain.h5 is absent.
+    """
+    import subprocess
+
+    out_path = Path(outdir)
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    gdict = load_tidy_sparc(data_path)
+    galaxies = [gdict[k] for k in sorted(gdict.keys())]
+    G = len(galaxies)
+    N_total = sum(len(g.r_kpc) for g in galaxies)
+
+    a0_range = (5e-11, 2e-10)
+    logM_range = (9.0, 13.0)
+    fit_root_p = Path(fit_root)
+
+    rows_diag: list[dict] = []
+    rows_full: list[dict] = []
+    for model in models:
+        res_dir = fit_root_p / f"{model}_gauss"
+        chain_path = res_dir / "chain.h5"
+        summ_path = res_dir / "global_summary.yaml"
+
+        if (not chain_path.exists()) or (run_fits_if_missing and not summ_path.exists()):
+            if run_fits_if_missing:
+                res_dir.mkdir(parents=True, exist_ok=True)
+                run_fit([
+                    f"--data-path={data_path}",
+                    f"--outdir={res_dir}",
+                    f"--model={model}",
+                    f"--prior=galaxies-only",
+                    f"--sigma-sys=4.0",
+                    f"--steps={fit_steps}",
+                    f"--nwalkers={fit_nwalkers}",
+                    f"--seed={seed}",
+                    f"--backend-hdf5={chain_path}",
+                    f"--thin-by={thin}",
+                ])
+            else:
+                raise FileNotFoundError(
+                    f"chain.h5 not found at {chain_path}. Run fits with --backend-hdf5 {chain_path} first."
+                )
+
+        if not summ_path.exists():
+            raise FileNotFoundError(f"global_summary.yaml not found at {summ_path}")
+
+        summ = yaml.safe_load(open(summ_path, encoding="utf-8"))
+        H0_si = float(summ.get("H0_si", H0_SI))
+        like_kind = str(summ.get("likelihood", "gauss"))
+        t_dof = float(summ.get("t_dof", 8.0))
+        sigma_sys = float(summ.get("sigma_sys_median", 4.0))
+
+        from emcee.backends import HDFBackend
+        backend = HDFBackend(str(chain_path))
+        n_steps = backend.iteration
+        burn = int(n_steps * burn_frac)
+        chain = backend.get_chain(discard=burn, flat=True, thin=thin)
+        n_samples = chain.shape[0]
+
+        L = _layout(model, G, sigma_sys_learn=True, a0_fixed=None)
+        k_params = L["k"]
+
+        log_lik_list_diag = []
+        log_lik_list_full = []
+        for s in range(n_samples):
+            theta = chain[s]
+            ll_diag = log_likelihood_per_galaxy(
+                theta, galaxies, sigma_sys, H0_si, L,
+                c0=10.0, c_slope=-0.1, a0_fixed=None,
+                like_kind=like_kind, t_dof=t_dof
+            )
+            ll_full = log_likelihood_full_per_galaxy(
+                theta, galaxies, sigma_sys, H0_si, L,
+                c0=10.0, c_slope=-0.1, a0_fixed=None,
+                like_kind=like_kind, t_dof=t_dof
+            )
+            log_lik_list_diag.append(ll_diag)
+            log_lik_list_full.append(ll_full)
+        log_lik_mat = np.array(log_lik_list_diag)       # (S, N_total)
+        log_lik_full_mat = np.array(log_lik_list_full)  # (S, G)
+
+        # Diagnostics
+        ll_shape = log_lik_mat.shape
+        ll_mean = float(np.nanmean(log_lik_mat))
+        lppd, p_waic, waic = _waic_from_chain(log_lik_mat)
+        lppd_full, p_waic_full, waic_full = _waic_from_chain(log_lik_full_mat)
+        p_waic_per_point = float(p_waic / max(N_total, 1))
+        print(f"[compare] {model}: log_lik shape={ll_shape}, "
+              f"mean log_lik per-point={ll_mean:.3f}, "
+              f"mean p_waic per-point={p_waic_per_point:.3f}")
+
+        rows_diag.append({
+            "model": model,
+            "lppd": lppd,
+            "waic": waic,
+            "p_waic": p_waic,
+            "n_params": k_params,
+            "n_data": N_total,
+            "mean_loglik_per_point": ll_mean,
+            "_n_samples": n_samples,
+        })
+
+        rows_full.append({
+            "model": model,
+            "waic": waic_full,
+            "p_waic": p_waic_full,
+            "n_params": k_params,
+            "n_data": G,
+        })
+
+    df = pd.DataFrame(rows_diag)
+    n_samp = int(df["_n_samples"].iloc[0]) if len(df) else 0
+    df["mean_lppd_per_point"] = df["lppd"] / df["n_data"].clip(lower=1)
+    df = df.drop(columns=["_n_samples"])
+    waic_min = df["waic"].min()
+    df["delta_waic"] = df["waic"] - waic_min
+    df["rank"] = df["waic"].rank().astype(int)
+    df = df.sort_values("waic").reset_index(drop=True)
+
+    # Primary compare table (diag + per_point)
+    df.to_csv(out_path / "compare_table.csv", index=False)
+
+    # Breakdown table relative to best (smallest WAIC) for diag+per_point
+    if len(df):
+        best_idx = df["waic"].idxmin()
+        best = df.loc[best_idx]
+        d_lppd = df["lppd"] - float(best["lppd"])
+        d_pwaic = df["p_waic"] - float(best["p_waic"])
+        d_waic = df["waic"] - float(best["waic"])
+        breakdown = pd.DataFrame({
+            "model": df["model"],
+            "lppd": df["lppd"],
+            "p_waic": df["p_waic"],
+            "waic": df["waic"],
+            "delta_lppd_vs_best": d_lppd,
+            "delta_pwaic_vs_best": d_pwaic,
+            "delta_waic_vs_best": d_waic,
+        })
+        breakdown.to_csv(out_path / "breakdown.csv", index=False)
+
+        # Print ΔWAIC decomposition: ΔWAIC = -2[(Δlppd) - (ΔpWAIC)]
+        print("[compare] ΔWAIC decomposition (diag+per_point vs best WAIC model):")
+        for _, r in breakdown.iterrows():
+            if r["model"] == best["model"]:
+                continue
+            dl = float(r["delta_lppd_vs_best"])
+            dp = float(r["delta_pwaic_vs_best"])
+            dwaic = float(r["delta_waic_vs_best"])
+            check = -2.0 * (dl - dp)
+            print(f"  {r['model']}: Δlppd={dl:.3f}, ΔpWAIC={dp:.3f}, "
+                  f"ΔWAIC={dwaic:.3f}, -2[(Δlppd)-(ΔpWAIC)]={check:.3f}")
+
+    # Full-covariance, per-galaxy WAIC table
+    df_full = pd.DataFrame(rows_full)
+    if len(df_full):
+        waic_min_full = df_full["waic"].min()
+        df_full["delta_waic"] = df_full["waic"] - waic_min_full
+        df_full = df_full.sort_values("waic").reset_index(drop=True)
+        df_full["cov_mode"] = "full"
+        df_full["unit"] = "per_gal"
+        df_full.to_csv(out_path / "compare_table_covfull_pergal.csv", index=False)
+
+        # Combined table of all modes
+        df_diag_for_all = df[["model", "waic", "delta_waic", "p_waic", "n_data"]].copy()
+        df_diag_for_all["cov_mode"] = "diag"
+        df_diag_for_all["unit"] = "per_point"
+
+        df_full_for_all = df_full[["model", "waic", "delta_waic", "p_waic", "n_data", "cov_mode", "unit"]].copy()
+        df_all = pd.concat([df_diag_for_all, df_full_for_all], ignore_index=True)
+        df_all.to_csv(out_path / "compare_table_all_modes.csv", index=False)
+
+    # LaTeX table
+    tex = "\\begin{tabular}{lrrrrrr}\n"
+    tex += "\\toprule\nModel & WAIC & $\\Delta$WAIC & $p_{\\mathrm{WAIC}}$ & $k$ & $N$ & Rank \\\\\n\\midrule\n"
+    for _, r in df.iterrows():
+        tex += f"{r['model']} & {r['waic']:.1f} & {r['delta_waic']:.1f} & {r['p_waic']:.1f} & {int(r['n_params'])} & {int(r['n_data'])} & {int(r['rank'])} \\\\\n"
+    tex += "\\bottomrule\n\\end{tabular}\n"
+    (out_path / "compare_table.tex").write_text(tex, encoding="utf-8")
+
+    # Bar plot (ΔWAIC)
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots(figsize=(6, 3.5), dpi=150)
+    x = np.arange(len(df))
+    ax.barh(x, df["delta_waic"].values, color="steelblue", alpha=0.8)
+    ax.set_yticks(x)
+    ax.set_yticklabels(df["model"].values)
+    ax.set_xlabel(r"$\Delta$WAIC")
+    ax.invert_yaxis()
+    fig.tight_layout()
+    fig.savefig(out_path / "rank_plot.png")
+    fig.savefig(out_path / "rank_plot.pdf")
+    plt.close(fig)
+
+    # manifest
+    try:
+        git_hash = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=Path(__file__).resolve().parents[2], text=True
+        ).strip()
+    except Exception:
+        git_hash = "unknown"
+
+    cmd_str = "ptquat exp compare --models " + " ".join(models) + f" --data {data_path} --fit-root {fit_root} --outdir {outdir} --seed {seed}"
+    manifest = {
+        "git_hash": git_hash,
+        "command": cmd_str,
+        "n_samples": n_samp,
+        "seed": seed,
+        "models": models,
+    }
+    with open(out_path / "manifest.yaml", "w", encoding="utf-8") as f:
+        yaml.safe_dump(manifest, f, sort_keys=False)
+
+    return {"compare_table": str(out_path / "compare_table.csv"), "df": df}
+
+
+# -------------------------------
+# LOO: PSIS-LOO via ArviZ
+# -------------------------------
+def loo_compare_models(
+    data_path: str,
+    fit_root: str,
+    models: List[str],
+    outdir: str,
+    seed: int = 0,
+    burn_frac: float = 1.0 / 3.0,
+    thin: int = 10,
+    run_fits_if_missing: bool = False,
+    fit_steps: int = 100,
+    fit_nwalkers: str = "2x",
+) -> Dict[str, Any]:
+    """
+    Compare models using PSIS-LOO (via ArviZ).
+
+    - Uses diag-covariance, per-point log-likelihood (same as WAIC diag mode).
+    - Builds an InferenceData with log_likelihood and calls az.loo(pointwise=True).
+    - Writes loo_table.csv, pareto_k.csv, pareto_k_hist.png, elpd_difference_plot.png.
+    """
+    try:
+        import arviz as az  # type: ignore[import]
+    except Exception as e:  # pragma: no cover - runtime dependency
+        raise SystemExit(
+            "ArviZ (arviz) is required for `ptquat exp loo` but is not importable.\n"
+            "Please install it in your environment (e.g. `pip install arviz`) and retry."
+        ) from e
+
+    out_path = Path(outdir)
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    gdict = load_tidy_sparc(data_path)
+    galaxies = [gdict[k] for k in sorted(gdict.keys())]
+    G = len(galaxies)
+    N_total = sum(len(g.r_kpc) for g in galaxies)
+
+    fit_root_p = Path(fit_root)
+
+    # Flattened observation metadata (shared across models)
+    obs_gal: List[str] = []
+    obs_r: List[float] = []
+    for g in galaxies:
+        for r in g.r_kpc:
+            obs_gal.append(g.name)
+            obs_r.append(float(r))
+
+    rows: List[dict] = []
+    pareto_rows: List[dict] = []
+
+    for model in models:
+        res_dir = fit_root_p / f"{model}_gauss"
+        chain_path = res_dir / "chain.h5"
+        summ_path = res_dir / "global_summary.yaml"
+
+        if (not chain_path.exists()) or (run_fits_if_missing and not summ_path.exists()):
+            if run_fits_if_missing:
+                res_dir.mkdir(parents=True, exist_ok=True)
+                run_fit([
+                    f"--data-path={data_path}",
+                    f"--outdir={res_dir}",
+                    f"--model={model}",
+                    f"--prior=galaxies-only",
+                    f"--sigma-sys=4.0",
+                    f"--steps={fit_steps}",
+                    f"--nwalkers={fit_nwalkers}",
+                    f"--seed={seed}",
+                    f"--backend-hdf5={chain_path}",
+                    f"--thin-by={thin}",
+                ])
+            else:
+                raise FileNotFoundError(
+                    f"chain.h5 not found at {chain_path}. Run fits with --backend-hdf5 {chain_path} first."
+                )
+
+        if not summ_path.exists():
+            raise FileNotFoundError(f"global_summary.yaml not found at {summ_path}")
+
+        summ = yaml.safe_load(open(summ_path, encoding="utf-8"))
+        H0_si = float(summ.get("H0_si", H0_SI))
+        like_kind = str(summ.get("likelihood", "gauss"))
+        t_dof = float(summ.get("t_dof", 8.0))
+        sigma_sys = float(summ.get("sigma_sys_median", 4.0))
+
+        from emcee.backends import HDFBackend
+        backend = HDFBackend(str(chain_path))
+        n_steps = backend.iteration
+        burn = int(n_steps * burn_frac)
+        chain = backend.get_chain(discard=burn, flat=True, thin=thin)
+        n_samples = chain.shape[0]
+
+        L = _layout(model, G, sigma_sys_learn=True, a0_fixed=None)
+
+        log_lik_list: List[np.ndarray] = []
+        for s in range(n_samples):
+            theta = chain[s]
+            ll = log_likelihood_per_galaxy(
+                theta, galaxies, sigma_sys, H0_si, L,
+                c0=10.0, c_slope=-0.1, a0_fixed=None,
+                like_kind=like_kind, t_dof=t_dof
+            )
+            log_lik_list.append(ll)
+        log_lik_mat = np.array(log_lik_list)  # (S, N_total)
+
+        # Build InferenceData with shape (chain, draw, obs) = (1, S, N)
+        idata = az.from_dict(log_likelihood={"y": log_lik_mat[None, :, :]})
+        loo_res = az.loo(idata, pointwise=True)
+
+        elpd_loo = float(loo_res.loo)
+        p_loo = float(loo_res.p_loo)
+        looic = float(loo_res.looic)
+        pareto_k = np.asarray(loo_res.pareto_k)
+
+        rows.append({
+            "model": model,
+            "elpd_loo": elpd_loo,
+            "p_loo": p_loo,
+            "looic": looic,
+            "n_data": N_total,
+        })
+
+        if pareto_k.size != N_total:
+            raise RuntimeError(f"pareto_k size {pareto_k.size} != N_total={N_total}")
+        frac_good = float(np.mean(pareto_k < 0.7))
+        print(f"[loo] {model}: pareto_k<0.7 fraction = {frac_good:.3f}")
+
+        for idx, k in enumerate(pareto_k):
+            pareto_rows.append(dict(
+                model=model,
+                obs_index=int(idx),
+                galaxy=obs_gal[idx],
+                radius=obs_r[idx],
+                pareto_k=float(k),
+            ))
+
+    # LOO table (model-level)
+    df = pd.DataFrame(rows)
+    if len(df):
+        looic_min = df["looic"].min()
+        df["delta_looic"] = df["looic"] - looic_min
+        df["rank"] = df["looic"].rank().astype(int)
+        df = df.sort_values("looic").reset_index(drop=True)
+    df.to_csv(out_path / "loo_table.csv", index=False)
+
+    # pareto_k diagnostics
+    df_k = pd.DataFrame(pareto_rows)
+    df_k.to_csv(out_path / "pareto_k.csv", index=False)
+
+    if not df_k.empty:
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots(figsize=(6, 4), dpi=150)
+        for model in df_k["model"].unique():
+            kk = df_k.loc[df_k["model"] == model, "pareto_k"].values
+            ax.hist(kk, bins=20, alpha=0.5, label=model, range=(0.0, max(1.0, float(kk.max()))))
+        ax.set_xlabel("Pareto k")
+        ax.set_ylabel("count")
+        ax.set_title("Pareto k diagnostics (PSIS-LOO)")
+        ax.legend()
+        fig.tight_layout()
+        fig.savefig(out_path / "pareto_k_hist.png")
+        plt.close(fig)
+
+    # elpd difference plot (relative to best LOOIC)
+    if len(df) and len(df) > 1:
+        best_idx = df["looic"].idxmin()
+        best = df.loc[best_idx]
+        df["delta_elpd"] = df["elpd_loo"] - float(best["elpd_loo"])
+
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots(figsize=(6, 3.5), dpi=150)
+        x = np.arange(len(df))
+        ax.axhline(0.0, color="k", linewidth=1.0)
+        ax.bar(x, df["delta_elpd"].values, color="steelblue", alpha=0.8)
+        ax.set_xticks(x)
+        ax.set_xticklabels(df["model"].values, rotation=45, ha="right")
+        ax.set_ylabel(r"$\Delta \mathrm{elpd}_{\mathrm{LOO}}$ vs best")
+        ax.set_title("ELPD-LOO differences")
+        fig.tight_layout()
+        fig.savefig(out_path / "elpd_difference_plot.png")
+        plt.close(fig)
+
+    return {"loo_table": str(out_path / "loo_table.csv"), "df": df}
+
 
 # ---- 追加到檔尾：z-space zero-parameter tests ----
 

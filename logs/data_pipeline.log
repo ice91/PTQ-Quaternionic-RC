@@ -1,0 +1,138 @@
+# PTQ-Quaternionic-RC data pipeline — stdout/stderr
+# Steps: ptquat fetch → preprocess → (geom s4g-hcat failed) → vizier_s4g_query.sh + etl_s4g_h.py → h_catalog + sparc_with_h
+
+/Users/rocky/.matplotlib is not a writable directory
+Matplotlib created a temporary cache directory at /var/folders/by/p4chysln4pggrk9mlvg3qjmh0000gn/T/matplotlib-rpig95_x because there was an issue with the default path (/Users/rocky/.matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+2026-03-02 13:47:14.989 system_profiler[27189:17611812] XType: Using static font registry.
+Matplotlib is building the font cache; this may take a moment.
+[fetch] table1 names=175 rows=175
+[fetch] table2 names=175 rows=3391 Vbulge_nonzero=1141
+Saved: {'table1': PosixPath('dataset/raw/vizier_table1.csv'), 'table2': PosixPath('dataset/raw/vizier_table2.csv')}
+/Users/rocky/.matplotlib is not a writable directory
+Matplotlib created a temporary cache directory at /var/folders/by/p4chysln4pggrk9mlvg3qjmh0000gn/T/matplotlib-jybfxhlg because there was an issue with the default path (/Users/rocky/.matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+2026-03-02 13:47:39.304 system_profiler[27245:17612146] XType: Using static font registry.
+Matplotlib is building the font cache; this may take a moment.
+Tidy CSV saved to dataset/sparc_tidy.csv
+--- preprocess exit 0 ---
+/Users/rocky/.matplotlib is not a writable directory
+Matplotlib created a temporary cache directory at /var/folders/by/p4chysln4pggrk9mlvg3qjmh0000gn/T/matplotlib-tkv4hlsv because there was an issue with the default path (/Users/rocky/.matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+2026-03-02 13:48:37.503 system_profiler[27283:17612591] XType: Using static font registry.
+Matplotlib is building the font cache; this may take a moment.
+Traceback (most recent call last):
+  File "/Users/rocky/PTQ-Quaternionic-RC/.venv/bin/ptquat", line 8, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/Users/rocky/PTQ-Quaternionic-RC/src/ptquat/cli.py", line 266, in main
+    df = build_s4g_h_catalog(
+        sparc_tidy_csv=args.sparc,
+    ...<7 lines>...
+        verbose=args.verbose,
+    )
+  File "/Users/rocky/PTQ-Quaternionic-RC/src/ptquat/geometry.py", line 316, in build_s4g_h_catalog
+    raise RuntimeError("雖找到 S4G 相關表格，但無法對齊到任何 SPARC 星系或缺少厚度欄。")
+RuntimeError: 雖找到 S4G 相關表格，但無法對齊到任何 SPARC 星系或缺少厚度欄。
+[S4G] Downloading: https://vizier.cds.unistra.fr/viz-bin/asu-tsv?-source=J/A+A/587/A160/tablea1&-out=Galaxy,Dist,hz,e_hz1,e_hz2&-out.max=unlimited
+[S4G] Saved -> dataset/geometry/s4g_tablea1.tsv
+[S4G] SHA256 -> dataset/geometry/s4g_tablea1.tsv.sha256
+--- vizier_s4g exit 0 ---
+[ETL] h-catalog -> dataset/geometry/h_catalog.csv (N=1345)
+[ETL] outliers -> dataset/geometry/h_z_outliers.csv
+[ETL] merged -> dataset/geometry/sparc_with_h.csv (matched rows with h: 313)
+[ETL] unmatched -> dataset/geometry/unmatched_galaxies.csv (unique=72)
+--- etl_s4g_h exit 0 ---
+==== RUN START $(date) ====
+/Users/rocky/.matplotlib is not a writable directory
+Matplotlib created a temporary cache directory at /var/folders/by/p4chysln4pggrk9mlvg3qjmh0000gn/T/matplotlib-my0ujeu2 because there was an issue with the default path (/Users/rocky/.matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+2026-03-02 16:29:40.349 system_profiler[41925:17717843] XType: Using static font registry.
+Matplotlib is building the font cache; this may take a moment.
+/Users/rocky/.matplotlib is not a writable directory
+Matplotlib created a temporary cache directory at /var/folders/by/p4chysln4pggrk9mlvg3qjmh0000gn/T/matplotlib-vndg1rj8 because there was an issue with the default path (/Users/rocky/.matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+2026-03-02 16:30:10.050 system_profiler[41959:17718447] XType: Using static font registry.
+Matplotlib is building the font cache; this may take a moment.
+/Users/rocky/.matplotlib is not a writable directory
+Matplotlib created a temporary cache directory at /var/folders/by/p4chysln4pggrk9mlvg3qjmh0000gn/T/matplotlib-cr6zgwaj because there was an issue with the default path (/Users/rocky/.matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+2026-03-02 16:45:31.299 system_profiler[42647:17729460] XType: Using static font registry.
+Matplotlib is building the font cache; this may take a moment.
+/Users/rocky/.matplotlib is not a writable directory
+Matplotlib created a temporary cache directory at /var/folders/by/p4chysln4pggrk9mlvg3qjmh0000gn/T/matplotlib-eg22eayh because there was an issue with the default path (/Users/rocky/.matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+2026-03-02 16:46:00.389 system_profiler[42673:17729812] XType: Using static font registry.
+Matplotlib is building the font cache; this may take a moment.
+==== DATA PIPELINE (README fallback) START Tue Mar  3 08:44:34 CST 2026 ====
+--- Step 1: ptquat fetch ---
+/Users/rocky/.matplotlib is not a writable directory
+Matplotlib created a temporary cache directory at /var/folders/by/p4chysln4pggrk9mlvg3qjmh0000gn/T/matplotlib-edx6nu_5 because there was an issue with the default path (/Users/rocky/.matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+2026-03-03 08:44:37.577 system_profiler[73170:18081055] XType: Using static font registry.
+Matplotlib is building the font cache; this may take a moment.
+--- Step 2: ptquat preprocess ---
+/Users/rocky/.matplotlib is not a writable directory
+Matplotlib created a temporary cache directory at /var/folders/by/p4chysln4pggrk9mlvg3qjmh0000gn/T/matplotlib-5paq8kmr because there was an issue with the default path (/Users/rocky/.matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+2026-03-03 08:45:01.934 system_profiler[73181:18081309] XType: Using static font registry.
+Matplotlib is building the font cache; this may take a moment.
+--- Step 3: vizier_s4g_query.sh ---
+[S4G] Downloading: https://vizier.cds.unistra.fr/viz-bin/asu-tsv?-source=J/A+A/587/A160/tablea1&-out=Galaxy,Dist,hz,e_hz1,e_hz2&-out.max=unlimited
+[S4G] Saved -> dataset/geometry/s4g_tablea1.tsv
+[S4G] SHA256 -> dataset/geometry/s4g_tablea1.tsv.sha256
+--- Step 4: etl_s4g_h.py ---
+[ETL] h-catalog -> dataset/geometry/h_catalog.csv (N=1345)
+[ETL] outliers -> dataset/geometry/h_z_outliers.csv
+[ETL] merged -> dataset/geometry/sparc_with_h.csv (matched rows with h: 0)
+[ETL] unmatched -> dataset/geometry/unmatched_galaxies.csv (unique=2)
+==== DATA PIPELINE END Tue Mar  3 08:45:25 CST 2026 ====
+/Users/rocky/.matplotlib is not a writable directory
+Matplotlib created a temporary cache directory at /var/folders/by/p4chysln4pggrk9mlvg3qjmh0000gn/T/matplotlib-bvu3t_wp because there was an issue with the default path (/Users/rocky/.matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+2026-03-03 08:46:38.804 system_profiler[73276:18082279] XType: Using static font registry.
+Matplotlib is building the font cache; this may take a moment.
+==== DATA PIPELINE (README fallback) START Tue Mar  3 08:47:40 CST 2026 ====
+--- Step 1: ptquat fetch ---
+Matplotlib is building the font cache; this may take a moment.
+--- Step 2: ptquat preprocess ---
+--- Step 3: vizier_s4g_query.sh ---
+[S4G] Downloading: https://vizier.cds.unistra.fr/viz-bin/asu-tsv?-source=J/A+A/587/A160/tablea1&-out=Galaxy,Dist,hz,e_hz1,e_hz2&-out.max=unlimited
+[S4G] Saved -> dataset/geometry/s4g_tablea1.tsv
+[S4G] SHA256 -> dataset/geometry/s4g_tablea1.tsv.sha256
+--- Step 4: etl_s4g_h.py ---
+[ETL] h-catalog -> dataset/geometry/h_catalog.csv (N=1345)
+[ETL] outliers -> dataset/geometry/h_z_outliers.csv
+[ETL] merged -> dataset/geometry/sparc_with_h.csv (matched rows with h: 0)
+[ETL] unmatched -> dataset/geometry/unmatched_galaxies.csv (unique=2)
+==== DATA PIPELINE END Tue Mar  3 08:48:10 CST 2026 ====
+==== DATA PIPELINE (README fallback) START Tue Mar  3 08:48:48 CST 2026 ====
+--- Step 1: ptquat fetch ---
+Matplotlib is building the font cache; this may take a moment.
+--- Step 2: ptquat preprocess ---
+--- Step 3: vizier_s4g_query.sh ---
+[S4G] Downloading: https://vizier.cds.unistra.fr/viz-bin/asu-tsv?-source=J/A+A/587/A160/tablea1&-out=Galaxy,Dist,hz,e_hz1,e_hz2&-out.max=unlimited
+[S4G] Saved -> dataset/geometry/s4g_tablea1.tsv
+[S4G] SHA256 -> dataset/geometry/s4g_tablea1.tsv.sha256
+--- Step 4: etl_s4g_h.py ---
+[ETL] h-catalog -> dataset/geometry/h_catalog.csv (N=1345)
+[ETL] outliers -> dataset/geometry/h_z_outliers.csv
+[ETL] merged -> dataset/geometry/sparc_with_h.csv (matched rows with h: 0)
+[ETL] unmatched -> dataset/geometry/unmatched_galaxies.csv (unique=2)
+==== DATA PIPELINE END Tue Mar  3 08:49:19 CST 2026 ====
+=== Tue Mar  3 08:57:39 CST 2026 ptquat fetch ===
+[fetch] table1 names=175 rows=175
+[fetch] table2 names=175 rows=3391 Vbulge_nonzero=1141
+Saved: {'table1': PosixPath('dataset/raw/vizier_table1.csv'), 'table2': PosixPath('dataset/raw/vizier_table2.csv')}
+=== Tue Mar  3 08:57:42 CST 2026 ptquat preprocess ===
+Tidy CSV saved to dataset/sparc_tidy.csv
+=== Tue Mar  3 08:57:45 CST 2026 ptquat geom s4g-hcat ===
+Traceback (most recent call last):
+  File "/Users/rocky/PTQ-Quaternionic-RC/.venv/bin/ptquat", line 8, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/Users/rocky/PTQ-Quaternionic-RC/src/ptquat/cli.py", line 266, in main
+    df = build_s4g_h_catalog(
+        sparc_tidy_csv=args.sparc,
+    ...<7 lines>...
+        verbose=args.verbose,
+    )
+  File "/Users/rocky/PTQ-Quaternionic-RC/src/ptquat/geometry.py", line 316, in build_s4g_h_catalog
+    raise RuntimeError("雖找到 S4G 相關表格，但無法對齊到任何 SPARC 星系或缺少厚度欄。")
+RuntimeError: 雖找到 S4G 相關表格，但無法對齊到任何 SPARC 星系或缺少厚度欄。
+=== Tue Mar  3 08:58:20 CST 2026 Fallback: etl_s4g_h.py (ptquat geom s4g-hcat failed - VizieR S4G tables did not align with SPARC names) ===
+[ETL] h-catalog -> dataset/geometry/h_catalog.csv (N=1345)
+[ETL] outliers -> dataset/geometry/h_z_outliers.csv
+[ETL] merged -> dataset/geometry/sparc_with_h.csv (matched rows with h: 313)
+[ETL] unmatched -> dataset/geometry/unmatched_galaxies.csv (unique=72)
+=== Tue Mar  3 08:58:20 CST 2026 DONE (via etl_s4g_h) ===

@@ -197,6 +197,142 @@ def log_likelihood(theta: np.ndarray,
     return total
 
 
+def log_likelihood_per_galaxy(theta: np.ndarray,
+                              galaxies: List[GalaxyData],
+                              sigma_sys_fixed: float,
+                              H0_si: float,
+                              L: dict,
+                              c0: float,
+                              c_slope: float,
+                              a0_fixed: Optional[float],
+                              like_kind: str,
+                              t_dof: float) -> np.ndarray:
+    """
+    Return per-data-point log-likelihood flattened over all galaxies.
+
+    Shape: (N_total,), where N_total = sum_i n_i and n_i is the number
+    of radial points in galaxy i. For WAIC we approximate pointwise
+    contributions by using only the diagonal of the covariance matrix.
+    """
+    pars = _unpack(theta, L)
+    m = L["model"]
+    sigma_use = pars.get("sigma", sigma_sys_fixed)
+
+    ll_list: list[np.ndarray] = []
+
+    for gi, g in enumerate(galaxies):
+        if m == "ptq":
+            U = float(pars["U"][gi]); eps = float(pars["eps"])
+            def vfun(rk): return model_v_ptq(U, eps, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+        elif m == "ptq-nu":
+            U = float(pars["U"][gi]); eps = float(pars["eps"])
+            def vfun(rk): return model_v_ptq_nu(U, eps, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+        elif m == "ptq-screen":
+            U = float(pars["U"][gi]); eps = float(pars["eps"]); q = float(np.exp(pars["lq"]))
+            def vfun(rk): return model_v_ptq_screen(U, eps, q, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+        elif m == "ptq-split":
+            Ud = float(pars["Ud"][gi]); Ub = float(pars["Ub"][gi]); eps = float(pars["eps"])
+            def vfun(rk): return model_v_ptq_split(Ud, Ub, eps, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+        elif m == "baryon":
+            U = float(pars["U"][gi])
+            def vfun(rk): return model_v_baryon(U, rk, g.v_disk, g.v_bulge, g.v_gas)
+        elif m == "mond":
+            U = float(pars["U"][gi]); a0 = a0_fixed if a0_fixed is not None else (10.0 ** pars["log10a0"])
+            def vfun(rk): return model_v_mond(U, a0, rk, g.v_disk, g.v_bulge, g.v_gas)
+        elif m == "nfw1p":
+            U = float(pars["U"][gi]); lM = float(pars["lM"][gi])
+            def vfun(rk): return model_v_nfw1p(U, lM, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si, c0=c0, c_slope=c_slope)
+        else:
+            raise ValueError("Unknown model: " + m)
+
+        v_mod = vfun(g.r_kpc)
+        Cg = build_covariance(v_mod, g.r_kpc, g.v_err, g.D_Mpc, g.D_err_Mpc,
+                              g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sigma_use)
+
+        r = np.asarray(g.v_obs, float) - np.asarray(v_mod, float)
+        diag = np.clip(np.diag(Cg), 1e-30, np.inf)
+
+        if like_kind == "t":
+            nu = max(float(t_dof), 2.0001)
+            # univariate Student-t with variance=diag
+            from math import lgamma, log, pi
+            sigma2 = diag
+            log_norm = (
+                lgamma(0.5 * (nu + 1.0))
+                - lgamma(0.5 * nu)
+                - 0.5 * np.log(nu * pi * sigma2)
+            )
+            ll = log_norm - 0.5 * (nu + 1.0) * np.log1p((r * r) / (nu * sigma2))
+        else:
+            # Gaussian pointwise log-likelihood using diagonal variances
+            ll = -0.5 * ((r * r) / diag + np.log(2.0 * np.pi * diag))
+
+        ll_list.append(ll)
+
+    if not ll_list:
+        return np.zeros(0)
+    return np.concatenate(ll_list)
+
+
+def log_likelihood_full_per_galaxy(theta: np.ndarray,
+                                   galaxies: List[GalaxyData],
+                                   sigma_sys_fixed: float,
+                                   H0_si: float,
+                                   L: dict,
+                                   c0: float,
+                                   c_slope: float,
+                                   a0_fixed: Optional[float],
+                                   like_kind: str,
+                                   t_dof: float) -> np.ndarray:
+    """
+    Return multivariate log-likelihood per galaxy using the full covariance C_g.
+
+    Shape: (G,), where G is the number of galaxies. This is used for
+    cov_mode='full', unit='per_gal' WAIC comparisons.
+    """
+    pars = _unpack(theta, L)
+    m = L["model"]
+    sigma_use = pars.get("sigma", sigma_sys_fixed)
+
+    def _ll(y_obs, y_mod, C):
+        if like_kind == "t":
+            return student_t_loglike(y_obs, y_mod, C, t_dof)
+        return gaussian_loglike(y_obs, y_mod, C)
+
+    vals = np.zeros(len(galaxies))
+    for gi, g in enumerate(galaxies):
+        if m == "ptq":
+            U = float(pars["U"][gi]); eps = float(pars["eps"])
+            def vfun(rk): return model_v_ptq(U, eps, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+        elif m == "ptq-nu":
+            U = float(pars["U"][gi]); eps = float(pars["eps"])
+            def vfun(rk): return model_v_ptq_nu(U, eps, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+        elif m == "ptq-screen":
+            U = float(pars["U"][gi]); eps = float(pars["eps"]); q = float(np.exp(pars["lq"]))
+            def vfun(rk): return model_v_ptq_screen(U, eps, q, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+        elif m == "ptq-split":
+            Ud = float(pars["Ud"][gi]); Ub = float(pars["Ub"][gi]); eps = float(pars["eps"])
+            def vfun(rk): return model_v_ptq_split(Ud, Ub, eps, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+        elif m == "baryon":
+            U = float(pars["U"][gi])
+            def vfun(rk): return model_v_baryon(U, rk, g.v_disk, g.v_bulge, g.v_gas)
+        elif m == "mond":
+            U = float(pars["U"][gi]); a0 = a0_fixed if a0_fixed is not None else (10.0 ** pars["log10a0"])
+            def vfun(rk): return model_v_mond(U, a0, rk, g.v_disk, g.v_bulge, g.v_gas)
+        elif m == "nfw1p":
+            U = float(pars["U"][gi]); lM = float(pars["lM"][gi])
+            def vfun(rk): return model_v_nfw1p(U, lM, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si, c0=c0, c_slope=c_slope)
+        else:
+            raise ValueError("Unknown model: " + m)
+
+        v_mod = vfun(g.r_kpc)
+        Cg = build_covariance(v_mod, g.r_kpc, g.v_err, g.D_Mpc, g.D_err_Mpc,
+                              g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sigma_use)
+        vals[gi] = _ll(g.v_obs, v_mod, Cg)
+
+    return vals
+
+
 def log_posterior(theta: np.ndarray,
                   galaxies: List[GalaxyData],
                   sigma_sys_fixed: float,

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,17 +7,29 @@ name = "ptquat-rc"
 version = "0.1.0"
 requires-python = ">=3.9"
 dependencies = [
-  "numpy>=1.23",
+  "astropy>=5.3",
+  "astroquery>=0.4.7",
   "pandas>=2.0",
-  "matplotlib>=3.7",
-  "emcee>=3.1",
+  "numpy>=1.24",
   "tqdm>=4.66",
   "PyYAML>=6.0",
-  "astropy>=6.0",
-  "astroquery>=0.4.7",
-  "statsmodels>=0.14.0"
+  "matplotlib>=3.7",
+  "emcee>=3.1",
+  "h5py>=3.8",
+  "pytest>=8.0",
+  "scipy>=1.11",
+  "statsmodels>=0.14.0",
+  "arviz>=0.16"
 ]
 
 [project.scripts]
 ptquat = "ptquat.cli:main"
 
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.packages.find_namespace]
+where = ["src"]

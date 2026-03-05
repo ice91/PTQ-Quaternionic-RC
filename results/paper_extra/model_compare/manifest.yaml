@@ -1,0 +1,10 @@
+git_hash: 2528bcc0f54f9196d9b3d768d18909e29aa93e73
+command: ptquat exp compare --models ptq-screen mond nfw1p baryon --data dataset/sparc_tidy.csv
+  --fit-root results --outdir results/paper_extra/model_compare --seed 0
+n_samples: 1128
+seed: 0
+models:
+- ptq-screen
+- mond
+- nfw1p
+- baryon

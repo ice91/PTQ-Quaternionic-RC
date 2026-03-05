@@ -59,6 +59,8 @@ import pandas as pd
 # Constants
 # ---------------------------
 ARCS2RAD = 1.0 / 206265.0  # arcsec -> rad
+# kpc per arcsec per Mpc: used in tests as K
+K = 0.00484813681109536
 EPS = 1e-12
 
 
@@ -85,6 +87,13 @@ def _canon_name(s: str) -> str:
     # Cyrillic lookalikes occasionally leak in OCR/exports
     s = s.replace("О", "O").replace("А", "A").replace("В", "B").replace("С", "C")
     return s
+
+
+def _norm_name(s: str) -> str:
+    """
+    Backwards-compatible alias used in tests; normalizes galaxy names.
+    """
+    return _canon_name(s)
 
 
 def _read_aliases(path: Path | None) -> Dict[str, str]:

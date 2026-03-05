@@ -132,6 +132,19 @@ def main(argv=None):
     ppl.add_argument("--nbins", type=int, default=24)
     ppl.add_argument("--prefix", default="plateau")
 
+    # loo (PSIS-LOO model comparison)
+    ploo = sx.add_parser("loo", help="Compare models via PSIS-LOO (ArviZ)")
+    ploo.add_argument("--models", nargs="+", default=["ptq-screen", "mond", "nfw1p", "baryon"],
+                      help="Models to compare (default: ptq-screen mond nfw1p baryon)")
+    ploo.add_argument("--data", default="dataset/sparc_tidy.csv", help="SPARC tidy CSV")
+    ploo.add_argument("--fit-root", default="results", help="Root dir containing <model>_gauss/chain.h5")
+    ploo.add_argument("--outdir", required=True, help="Output dir for LOO outputs")
+    ploo.add_argument("--seed", type=int, default=0, help="Seed (for manifest/fit)")
+    ploo.add_argument("--burn-frac", type=float, default=1.0/3.0, help="Burn-in fraction")
+    ploo.add_argument("--thin", type=int, default=10, help="Thin factor for chain")
+    ploo.add_argument("--run-fits", action="store_true", help="Run short fits if chain.h5 missing")
+    ploo.add_argument("--fit-steps", type=int, default=100, help="Steps when --run-fits")
+
     # closure (★擴充：支援繪製 Fig.3)
     pcl = sx.add_parser("closure", help="Cross-scale closure test: epsilon_cos vs epsilon_RC (+ optional Fig.3)")
     pcl.add_argument("--results", required=True)
@@ -144,6 +157,19 @@ def main(argv=None):
                      help="ΩΛ 的 1σ 帶狀（可選）")
     pcl.add_argument("--eps-max", type=float, default=3.0,
                      help="ε 軸的最大值（預設 3.0）")
+
+    # compare (WAIC model comparison)
+    pcmp = sx.add_parser("compare", help="Compare models via WAIC from posterior samples")
+    pcmp.add_argument("--models", nargs="+", default=["ptq-screen", "mond", "nfw1p", "baryon"],
+                      help="Models to compare (default: ptq-screen mond nfw1p baryon)")
+    pcmp.add_argument("--data", default="dataset/sparc_tidy.csv", help="SPARC tidy CSV")
+    pcmp.add_argument("--fit-root", default="results", help="Root dir containing <model>_gauss/chain.h5")
+    pcmp.add_argument("--outdir", required=True, help="Output dir for compare_table.csv, rank_plot, manifest")
+    pcmp.add_argument("--seed", type=int, default=0, help="Seed (for manifest)")
+    pcmp.add_argument("--burn-frac", type=float, default=1.0/3.0, help="Burn-in fraction")
+    pcmp.add_argument("--thin", type=int, default=10, help="Thin factor for chain")
+    pcmp.add_argument("--run-fits", action="store_true", help="Run short fits if chain.h5 missing")
+    pcmp.add_argument("--fit-steps", type=int, default=100, help="Steps when --run-fits")
 
     # kappa-gal
     kgal = sx.add_parser("kappa-gal", help="Per-galaxy kappa check")
@@ -354,6 +380,36 @@ def main(argv=None):
                     print(f"[closure] wrote figure: {args.plot}")
                 except Exception as e:
                     print(f"[closure] WARN: failed to write plot ({e})")
+
+        elif args.exp_cmd == "compare":
+            out = EXP.compare_models_waic(
+                data_path=args.data,
+                fit_root=args.fit_root,
+                models=args.models,
+                outdir=args.outdir,
+                seed=args.seed,
+                burn_frac=args.burn_frac,
+                thin=args.thin,
+                run_fits_if_missing=args.run_fits,
+                fit_steps=args.fit_steps,
+            )
+            print(f"Saved: {out['compare_table']}")
+            print(out["df"].to_string(index=False))
+
+        elif args.exp_cmd == "loo":
+            out = EXP.loo_compare_models(
+                data_path=args.data,
+                fit_root=args.fit_root,
+                models=args.models,
+                outdir=args.outdir,
+                seed=args.seed,
+                burn_frac=args.burn_frac,
+                thin=args.thin,
+                run_fits_if_missing=args.run_fits,
+                fit_steps=args.fit_steps,
+            )
+            print(f"Saved: {out['loo_table']}")
+            print(out["df"].to_string(index=False))
 
         elif args.exp_cmd == "kappa-gal":
             out = EXP.kappa_per_galaxy(
