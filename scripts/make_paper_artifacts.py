@@ -490,6 +490,15 @@ def main(argv: list[str] | None = None) -> int:
         plot_omega_eps_curve(omega=args.omega, omega_sigma=args.omega_sigma, out_path=str(out_png))
         print(f"[bundle] Fig.3 saved → {out_png}")
 
+    # ★ 彙整 WAIC/LOO/pWAIC 至 results/paper_artifacts/
+    paper_root = primary_results / "paper_artifacts"
+    _try_build_waic_artifacts(primary_results, paper_root)
+    _try_build_loo_artifacts(primary_results, paper_root)
+    _try_build_pwaic_artifacts(primary_results, paper_root)
+    _build_summary_markdown(paper_root, primary_results)
+    if (paper_root / "paper_results_summary.md").exists():
+        print(f"[make_paper_artifacts] paper_artifacts → {paper_root}")
+
     # 診斷輸出
     print(f"[make_paper_artifacts] primary results_dir = {primary_results}")
     print(f"[make_paper_artifacts] all results roots   = {[str(r) for r in results_roots]}")

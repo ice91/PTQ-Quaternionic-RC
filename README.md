@@ -1,10 +1,10 @@
-
 # PTQ-Quaternionic-RC — SPARC Rotation-Curve Pipeline
 
 **TL;DR.**  
 This repo reproduces the experiments in our paper where **PTQ is positioned as the physical origin of MOND**.  
 We compare **Baryon-only**, **NFW-1p**, **MOND(ν)**, **PTQ (linear)**, **PTQ-ν**, and **PTQ-screen**, report **full-likelihood AIC/BIC**, and run a robustness/closure suite including **PPC**, **error stress (×2)**, **inner-masking**, **H₀ scan**, and **κ-checks** (cross-scale tests).  
-We also include a **κ–h regression** linking disk scale-height (h) with **epicyclic frequency** (\kappa) and **surface density** (\Sigma).
+We also include **Bayesian model comparison** via **WAIC** and **PSIS-LOO** (`ptquat exp compare`, `ptquat exp loo`), **pWAIC diagnostics** (per-galaxy / per-radius), and **paper-artifact aggregation** (tables, figures, summary) via `scripts/make_paper_artifacts.py`.  
+A **κ–h regression** links disk scale-height (h) with **epicyclic frequency** (κ) and **surface density** (Σ).
 
 Key dictionary:  
 $$[  
@@ -54,17 +54,23 @@ Columns in the tidy CSV include:
 
 ### 1.3 S4G disk scale-heights (h) & merge into SPARC
 
-This step builds the **S4G** disk thickness scale (h) catalog, including distances, and merges it with **SPARC** data to produce a single file for the **κ–h** experiment.
+This step builds the **S4G** disk thickness scale (h) catalog and merges it with **SPARC** for the **κ–h** experiment.
+
+**Option A — ptquat CLI (recommended):**
 
 ```bash
-# Archive the VizieR query and perform minimal ETL
+ptquat geom s4g-hcat --sparc dataset/sparc_tidy.csv --out dataset/geometry/h_catalog.csv
+ptquat geom s4g-join --sparc dataset/sparc_tidy.csv --h dataset/geometry/h_catalog.csv --out dataset/geometry/sparc_with_h.csv
+```
+
+**Option B — scripts (VizieR + ETL):**
+
+```bash
 bash scripts/vizier_s4g_query.sh
 python scripts/etl_s4g_h.py --sparc dataset/sparc_tidy.csv
 ```
 
-This produces `dataset/geometry/h_catalog.csv` and `dataset/geometry/sparc_with_h.csv`.
-
-SHA-256 checksums are written alongside the outputs to verify byte-level identity.
+Outputs: `dataset/geometry/h_catalog.csv`, `dataset/geometry/sparc_with_h.csv`. SHA-256 checksums are written alongside to verify byte-level identity.
 
 ---
 
@@ -205,6 +211,37 @@ print("Saved results/all_model_compare.csv")
 PY
 ```
 
+### 3.1 WAIC model comparison (`ptquat exp compare`)
+
+From posterior samples, compute **WAIC** (Watanabe–Akaike Information Criterion) for model comparison. Outputs go to a chosen `--outdir` (e.g. `results/paper_extra/model_compare/`).
+
+```bash
+ptquat exp compare --models ptq-screen mond nfw1p baryon \
+  --data dataset/sparc_tidy.csv \
+  --fit-root results \
+  --outdir results/paper_extra/model_compare \
+  --seed 0
+```
+
+- **Outputs:** `compare_table.csv`, `compare_table.tex`, `rank_plot.png` / `rank_plot.pdf`, `manifest.yaml`, and optionally `breakdown.csv`, `compare_table_covfull_pergal.csv`, `compare_table_all_modes.csv`.  
+- **pWAIC diagnostics** (when run): `pwaic_diagnostics/var_loglik_points.csv`, `pwaic_by_galaxy.csv`, `top20_galaxies_pwaic.csv`, and plots (`pwaic_by_galaxy_bar.png`, `radius_vs_varloglik.png`).
+- **Options:** `--run-fits` to run short MCMC fits if `chain.h5` or `global_summary.yaml` are missing; `--burn-frac`, `--thin` for chain post-processing.
+
+`compare_table.csv` columns: `model`, `waic`, `delta_waic`, `p_waic`, `n_params`, `n_data`, `rank`, and optionally `lppd`, `mean_lppd_per_point`, `mean_loglik_per_point`.
+
+### 3.2 PSIS-LOO (`ptquat exp loo`)
+
+Compare models via **Pareto-smoothed importance sampling LOO** (requires `arviz`).
+
+```bash
+ptquat exp loo --models ptq-screen mond nfw1p baryon \
+  --data dataset/sparc_tidy.csv --fit-root results \
+  --outdir results/paper_extra/loo_compare --seed 0
+```
+
+- **Outputs:** `loo_table.csv` (model, elpd_loo, p_loo, looic, delta_looic, rank), `pareto_k.csv`, `pareto_k_hist.png`, `elpd_difference_plot.png`.
+- Use `--run-fits` if chains are missing. Prefer `pareto k < 0.7` for most points when interpreting LOO.
+
 ---
 
 ## 4. Robustness suite (as in the paper)
@@ -291,7 +328,23 @@ python -m ptq.experiments.kappa_h \
 
 ---
 
-## 8. Reproducibility
+## 8. Paper artifacts (tables & figures for the paper)
+
+The script `scripts/make_paper_artifacts.py` aggregates comparison results and writes LaTeX tables, PDF figures, and a short summary into `results/paper_artifacts/`. Run after `ptquat exp compare` and `ptquat exp loo` so that WAIC/LOO/pWAIC outputs exist under `results/paper_extra/`.
+
+```bash
+python scripts/make_paper_artifacts.py --data dataset/sparc_tidy.csv --out results/paper_run
+```
+
+- **Tables (`.tex`):** `waic_compare_table.tex`, `loo_compare_table.tex`, `pwaic_top_galaxies_table.tex` (when corresponding compare/diagnostic outputs exist).
+- **Figures (`.pdf`):** `model_compare_waic.pdf`, `model_compare_loo.pdf`, `pwaic_by_galaxy_bar.pdf`.
+- **Summary:** `paper_results_summary.md` — WAIC comparison, LOO comparison, pWAIC diagnostics, and key conclusions.
+
+The script infers `results/` from `--out` or `--data`; it also writes `ejpc_model_compare.csv` and optional `--figdir` figure copies. It automatically populates `results/paper_artifacts/` under the chosen results root whenever the corresponding WAIC/LOO/pWAIC outputs exist (e.g. under `results/paper_extra/model_compare/` and `results/paper_extra/loo_compare/`). Use `--results-dir` to point at a specific results root.
+
+---
+
+## 9. Reproducibility
 
 - Fix seeds via `--seed`; enable HDF5 backends via `--backend-hdf5 results/<run>/chain.h5 --resume`.
     
@@ -300,7 +353,7 @@ python -m ptq.experiments.kappa_h \
 
 ---
 
-## 9. Field glossary (what the YAML/JSON fields mean)
+## 10. Field glossary (what the YAML/JSON fields mean)
 
 **Fit YAML (`global_summary.yaml`)**
 
@@ -309,7 +362,7 @@ python -m ptq.experiments.kappa_h \
 
 ---
 
-## 10. Optional ablations & knobs
+## 11. Optional ablations & knobs
 
 - **Student-t likelihood** (`--likelihood t --t-dof 8`) for RC fits.
     
@@ -318,7 +371,28 @@ python -m ptq.experiments.kappa_h \
 
 ---
 
-## 11. Citation
+## 12. Project layout & extending with new experiments
+
+Directory layout relevant to **statistical analysis and new experiments**:
+
+| Path | Purpose |
+|------|--------|
+| `src/ptquat/experiments.py` | WAIC/LOO comparison (`compare_models_waic`, `loo_compare_models`), pWAIC diagnostics, PPC, stress, closure, plateau, κ–gal |
+| `src/ptquat/fit_global.py` | MCMC fitting; `log_likelihood_per_galaxy` (per-point, diag cov for WAIC), `log_likelihood_full_per_galaxy` (per-galaxy, full cov) |
+| `src/ptquat/likelihood.py` | Likelihood and covariance construction |
+| `src/ptquat/cli.py` | CLI: `exp compare`, `exp loo`, `fit`, `geom`, etc. |
+| `scripts/make_paper_artifacts.py` | Aggregates WAIC/LOO/pWAIC outputs → `results/paper_artifacts/` (tables, figures, summary) |
+
+**Adding a new statistical or comparison experiment:**
+
+1. **New metric (e.g. another information criterion):** Implement the computation in `experiments.py` (e.g. from posterior samples or `log_lik` matrices). Use the same `fit_root` / `global_summary.yaml` + `chain.h5` layout as WAIC/LOO.
+2. **New CLI subcommand:** In `cli.py`, add a subparser under `exp` and call the new function in `experiments.py`; keep outputs under `results/<run_id>/<experiment_name>/` with a small `manifest.yaml` (git hash, command, seed).
+3. **Log-likelihood shape:** WAIC/LOO expect `log_lik` of shape `(n_samples, n_data)` (per-point) or `(n_samples, n_galaxies)` for per-galaxy; ensure your new metric is consistent with the same convention.
+4. **Paper artifacts:** If the new experiment produces tables or figures, extend `make_paper_artifacts.py` with a `_try_build_<name>_artifacts(results_root, paper_root)` and call it from `main()` so `results/paper_artifacts/` stays the single entry point for the paper.
+
+---
+
+## 13. Citation
 
 If you use this code or reproduce our results, please cite the accompanying paper (TBD) and this repository.
 
