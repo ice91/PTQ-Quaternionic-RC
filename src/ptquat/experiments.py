@@ -13,6 +13,7 @@ from .constants import H0_SI, KPC, KM
 from .models import (
     model_v_baryon, model_v_mond, model_v_nfw1p,
     model_v_ptq, model_v_ptq_split, model_v_ptq_nu, model_v_ptq_screen,
+    model_v_mond_screen,
     vbar_squared_kms2, linear_term_kms2
 )
 from .fit_global import (
@@ -110,7 +111,7 @@ def ppc_check(results_dir: str, data_path: str, out_prefix: str = "ppc") -> dict
     hit68 = 0
     hit95 = 0
     for g in galaxies:
-        if model in ("ptq", "ptq-nu", "ptq-screen", "baryon", "mond", "nfw1p"):
+        if model in ("ptq", "ptq-nu", "ptq-screen", "baryon", "mond", "mond-screen", "nfw1p"):
             U = float(per.loc[g.name, "Upsilon_med"])
         if model == "ptq-split":
             Ud = float(per.loc[g.name, "Upsilon_med"])
@@ -130,6 +131,9 @@ def ppc_check(results_dir: str, data_path: str, out_prefix: str = "ppc") -> dict
             def vfun(rk): return model_v_baryon(U, rk, g.v_disk, g.v_bulge, g.v_gas)
         elif model == "mond":
             def vfun(rk): return model_v_mond(U, a0_med, rk, g.v_disk, g.v_bulge, g.v_gas)
+        elif model == "mond-screen":
+            q_use = float(q_med) if q_med is not None else 1.0
+            def vfun(rk): return model_v_mond_screen(U, a0_med, q_use, rk, g.v_disk, g.v_bulge, g.v_gas)
         elif model == "nfw1p":
             def vfun(rk): return model_v_nfw1p(U, lM, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_SI)
         else:
@@ -280,6 +284,11 @@ def residual_plateau(results_dir: str,
             U = float(per.loc[gname, "Upsilon_med"])
             vmod = model_v_mond(U, a0, g.r_kpc, g.v_disk, g.v_bulge, g.v_gas)
             vbar2 = vbar_squared_kms2(U, g.v_disk, g.v_bulge, g.v_gas)
+        elif model == "mond-screen":
+            U = float(per.loc[gname, "Upsilon_med"])
+            q_use = float(q) if q is not None else 1.0
+            vmod = model_v_mond_screen(U, a0, q_use, g.r_kpc, g.v_disk, g.v_bulge, g.v_gas)
+            vbar2 = vbar_squared_kms2(U, g.v_disk, g.v_bulge, g.v_gas)
         elif model == "nfw1p":
             U = float(per.loc[gname, "Upsilon_med"])
             lM = float(per.loc[gname, "log10_M200_med"])
@@ -327,34 +336,178 @@ def residual_plateau(results_dir: str,
 # -------------------------------
 # 交叉尺度閉合檢驗：ε_cos v.s. ε_RC
 # -------------------------------
+def _closure_one(results_dir: str, epsilon_cos: float) -> Dict[str, Any]:
+    """
+    Single-point closure: compare epsilon_RC (from fit) to epsilon_cos (cosmology anchor).
+    Shared by closure_test (single run) and closure_sensitivity_scan.
+    Does not write any file.
+    """
+    results = yaml.safe_load(open(Path(results_dir) / "global_summary.yaml", encoding="utf-8"))
+    eps_rc = results.get("epsilon_median")
+    eps16 = results.get("epsilon_p16")
+    eps84 = results.get("epsilon_p84")
+    if eps_rc is None:
+        raise ValueError("No epsilon in results; not a PTQ-family fit.")
+    epsilon_cos = float(epsilon_cos)
+    sig = 0.5 * abs(float(eps84) - float(eps16)) if (eps16 is not None and eps84 is not None) else np.nan
+    diff = float(eps_rc) - epsilon_cos
+    if np.isfinite(sig) and sig > 0:
+        pass_1 = abs(diff) <= 1.0 * sig
+        pass_2 = abs(diff) <= 2.0 * sig
+        pass_3 = abs(diff) <= 3.0 * sig
+    else:
+        pass_1 = pass_2 = pass_3 = None
+    return dict(
+        epsilon_RC=float(eps_rc),
+        sigma_RC=float(sig),
+        epsilon_cos=epsilon_cos,
+        diff=float(diff),
+        pass_within_1sigma=pass_1,
+        pass_within_2sigma=pass_2,
+        pass_within_3sigma=pass_3,
+    )
+
+
 def closure_test(results_dir: str,
                  epsilon_cos: Optional[float] = None,
                  omega_lambda: Optional[float] = None) -> Dict:
-    results = yaml.safe_load(open(Path(results_dir) / "global_summary.yaml"))
-    eps_rc, eps16, eps84 = results.get("epsilon_median"), results.get("epsilon_p16"), results.get("epsilon_p84")
-    if eps_rc is None:
-        raise ValueError("No epsilon in results; not a PTQ-family fit.")
-
     if epsilon_cos is None:
         if omega_lambda is None:
             raise ValueError("Provide epsilon_cos or omega_lambda.")
         if not (0.0 < omega_lambda < 1.0):
             raise ValueError("omega_lambda must be in (0,1).")
         epsilon_cos = math.sqrt(omega_lambda / (1.0 - omega_lambda))
-
-    sig = 0.5 * abs(float(eps84) - float(eps16)) if (eps16 is not None and eps84 is not None) else np.nan
-    diff = float(eps_rc) - float(epsilon_cos)
-    result = dict(
-        epsilon_RC=float(eps_rc),
-        epsilon_cos=float(epsilon_cos),
-        sigma_RC=float(sig),
-        diff=float(diff),
-        pass_within_3sigma=(abs(diff) <= 3.0 * sig if np.isfinite(sig) else None)
-    )
+    result = _closure_one(results_dir, float(epsilon_cos))
+    # Keep backward-compatible keys for closure_test.yaml (diff, pass_within_3sigma)
     out = Path(results_dir) / "closure_test.yaml"
-    with open(out, "w") as f:
-        yaml.safe_dump(result, f)
+    with open(out, "w", encoding="utf-8") as f:
+        yaml.safe_dump({
+            "epsilon_RC": result["epsilon_RC"],
+            "epsilon_cos": result["epsilon_cos"],
+            "sigma_RC": result["sigma_RC"],
+            "diff": result["diff"],
+            "pass_within_3sigma": result["pass_within_3sigma"],
+        }, f)
     return result
+
+
+def closure_sensitivity_scan(
+    results_dir: str,
+    outdir: str,
+    epsilon_cos_min: Optional[float] = None,
+    epsilon_cos_max: Optional[float] = None,
+    omega_lambda_min: Optional[float] = None,
+    omega_lambda_max: Optional[float] = None,
+    n: int = 11,
+) -> Dict[str, Any]:
+    """
+    Scan closure over a range of epsilon_cos (or omega_lambda).
+    Uses same single-point logic as closure_test via _closure_one.
+    Writes closure_sensitivity.csv, closure_sensitivity.yaml, closure_sensitivity_plot.png, manifest.yaml to outdir.
+    """
+    import subprocess
+    import matplotlib.pyplot as plt
+
+    out_path = Path(outdir)
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    if epsilon_cos_min is not None and epsilon_cos_max is not None:
+        epsilon_cos_values = np.linspace(float(epsilon_cos_min), float(epsilon_cos_max), int(n))
+        mode = "epsilon_cos_scan"
+        notes = f"epsilon_cos in [{epsilon_cos_min}, {epsilon_cos_max}], n={n}"
+    elif omega_lambda_min is not None and omega_lambda_max is not None:
+        ol_min, ol_max = float(omega_lambda_min), float(omega_lambda_max)
+        if not (0.0 < ol_min < 1.0 and 0.0 < ol_max < 1.0):
+            raise ValueError("omega_lambda_min and omega_lambda_max must be in (0,1).")
+        omega_values = np.linspace(ol_min, ol_max, int(n))
+        # epsilon_cos = sqrt(Omega_L / (1 - Omega_L))
+        epsilon_cos_values = np.sqrt(omega_values / (1.0 - omega_values))
+        mode = "omega_lambda_scan"
+        notes = f"omega_lambda in [{ol_min}, {ol_max}], n={n}"
+    else:
+        raise ValueError("Provide (epsilon_cos_min, epsilon_cos_max) or (omega_lambda_min, omega_lambda_max).")
+
+    rows: List[dict] = []
+    for eps_cos in epsilon_cos_values:
+        one = _closure_one(results_dir, float(eps_cos))
+        ol = (eps_cos ** 2) / (1.0 + eps_cos ** 2)  # omega_lambda from epsilon_cos
+        rows.append({
+            "epsilon_RC": one["epsilon_RC"],
+            "sigma_RC": one["sigma_RC"],
+            "epsilon_cos": float(eps_cos),
+            "omega_lambda": float(ol),
+            "delta_epsilon": one["diff"],
+            "pass_within_1sigma": one["pass_within_1sigma"],
+            "pass_within_2sigma": one["pass_within_2sigma"],
+            "pass_within_3sigma": one["pass_within_3sigma"],
+            "mode": mode,
+            "notes": notes,
+        })
+
+    df = pd.DataFrame(rows)
+    df.to_csv(out_path / "closure_sensitivity.csv", index=False)
+
+    # Summary YAML
+    eps_rc = rows[0]["epsilon_RC"]
+    sig_rc = rows[0]["sigma_RC"]
+    n_pass_1 = sum(1 for r in rows if r["pass_within_1sigma"] is True)
+    n_pass_2 = sum(1 for r in rows if r["pass_within_2sigma"] is True)
+    n_pass_3 = sum(1 for r in rows if r["pass_within_3sigma"] is True)
+    summary = {
+        "results_dir": str(results_dir),
+        "mode": mode,
+        "n_points": len(rows),
+        "epsilon_RC": eps_rc,
+        "sigma_RC": sig_rc,
+        "epsilon_cos_range": [float(epsilon_cos_values.min()), float(epsilon_cos_values.max())],
+        "pass_within_1sigma_count": n_pass_1,
+        "pass_within_2sigma_count": n_pass_2,
+        "pass_within_3sigma_count": n_pass_3,
+    }
+    if mode == "omega_lambda_scan":
+        summary["omega_lambda_range"] = [float(omega_lambda_min), float(omega_lambda_max)]
+    with open(out_path / "closure_sensitivity.yaml", "w", encoding="utf-8") as f:
+        yaml.safe_dump(summary, f, sort_keys=False)
+
+    # Plot: x = epsilon_cos (or omega_lambda), y = delta_epsilon, with ±1/2/3 sigma band
+    fig, ax = plt.subplots(figsize=(6, 4), dpi=150)
+    x = df["epsilon_cos"].values
+    if mode == "omega_lambda_scan":
+        x = df["omega_lambda"].values
+        ax.set_xlabel(r"$\Omega_\Lambda$")
+    else:
+        ax.set_xlabel(r"$\varepsilon_{\rm cos}$")
+    y = df["delta_epsilon"].values
+    ax.axhline(0, color="gray", linestyle="--", alpha=0.7)
+    ax.fill_between(x, -sig_rc, sig_rc, alpha=0.2, color="green", label=r"±1$\sigma$")
+    ax.fill_between(x, -2 * sig_rc, 2 * sig_rc, alpha=0.15, color="green")
+    ax.fill_between(x, -3 * sig_rc, 3 * sig_rc, alpha=0.1, color="green", label=r"±3$\sigma$")
+    ax.plot(x, y, "o-", color="steelblue", markersize=4, label=r"$\varepsilon_{\rm RC} - \varepsilon_{\rm cos}$")
+    ax.set_ylabel(r"$\Delta\varepsilon$")
+    ax.set_title("Closure sensitivity: strict closure when band contains zero")
+    ax.legend(loc="best")
+    ax.grid(True, alpha=0.25)
+    fig.tight_layout()
+    fig.savefig(out_path / "closure_sensitivity_plot.png")
+    plt.close(fig)
+
+    try:
+        git_hash = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=Path(__file__).resolve().parents[2], text=True
+        ).strip()
+    except Exception:
+        git_hash = "unknown"
+    manifest = {
+        "git_hash": git_hash,
+        "results_dir": str(results_dir),
+        "mode": mode,
+        "n": n,
+        "notes": notes,
+    }
+    with open(out_path / "manifest.yaml", "w", encoding="utf-8") as f:
+        yaml.safe_dump(manifest, f, sort_keys=False)
+
+    return {"closure_sensitivity_csv": str(out_path / "closure_sensitivity.csv"), "df": df}
 
 
 # ====== Kappa checks ======
@@ -397,6 +550,11 @@ def _make_vfun(model: str, H0_si: float, per_row: pd.Series, g: GalaxyData,
     elif model == "mond":
         U = float(per_row["Upsilon_med"])
         vfun = lambda rk: model_v_mond(U, a0, rk, g.v_disk, g.v_bulge, g.v_gas)
+        vbar2 = vbar_squared_kms2(U, g.v_disk, g.v_bulge, g.v_gas)
+    elif model == "mond-screen":
+        U = float(per_row["Upsilon_med"])
+        q_use = float(q) if q is not None else 1.0
+        vfun = lambda rk: model_v_mond_screen(U, a0, q_use, rk, g.v_disk, g.v_bulge, g.v_gas)
         vbar2 = vbar_squared_kms2(U, g.v_disk, g.v_bulge, g.v_gas)
     elif model == "nfw1p":
         U = float(per_row["Upsilon_med"])
@@ -1336,6 +1494,129 @@ def kappa_radius_resolved_geom(results_dir: str,
 # -------------------------------
 # Model compare: WAIC from posterior samples
 # -------------------------------
+def _write_pwaic_diagnostics(
+    out_path: Path,
+    galaxies: List[GalaxyData],
+    log_lik_mat: np.ndarray,
+    model_name: str,
+    summ: dict,
+    per: pd.DataFrame,
+    cov_mode: str = "diag",
+) -> None:
+    """
+    Write pWAIC decomposition / localization diagnostics from log_lik_mat (n_samples, N_total).
+    Uses same point order as log_likelihood_per_galaxy: flattened by galaxy (sorted name), then by radius.
+    """
+    import matplotlib.pyplot as plt
+
+    if log_lik_mat.size == 0 or log_lik_mat.shape[0] < 2:
+        return
+    var_loglik = np.nanvar(log_lik_mat, axis=0)  # (N_total,)
+    N_total = var_loglik.size
+    H0_si = float(summ.get("H0_si", H0_SI))
+    eps = summ.get("epsilon_median")
+    q = summ.get("q_median")
+    a0 = summ.get("a0_median")
+
+    diag_dir = out_path / "pwaic_diagnostics"
+    diag_dir.mkdir(parents=True, exist_ok=True)
+
+    # Point-level: galaxy, radius, var_loglik, v_obs, v_model_mean
+    rows_pts: List[dict] = []
+    idx = 0
+    for g in galaxies:
+        if g.name not in per.index:
+            idx += len(g.r_kpc)
+            continue
+        vfun, _ = _make_vfun(model_name, H0_si, per.loc[g.name], g, eps, q, a0)
+        v_mod = np.asarray(vfun(g.r_kpc), float)
+        for j in range(len(g.r_kpc)):
+            if idx < N_total:
+                rows_pts.append({
+                    "galaxy": g.name,
+                    "radius": float(g.r_kpc[j]),
+                    "var_loglik": float(var_loglik[idx]),
+                    "v_obs": float(g.v_obs[j]),
+                    "v_model_mean": float(v_mod[j]),
+                })
+            idx += 1
+
+    if rows_pts:
+        pd.DataFrame(rows_pts).to_csv(diag_dir / "var_loglik_points.csv", index=False)
+
+    # Per-galaxy: pwaic_contribution = sum of var_loglik for points in galaxy
+    rows_gal: List[dict] = []
+    offset = 0
+    for g in galaxies:
+        n_pts = len(g.r_kpc)
+        end = offset + n_pts
+        if end > N_total:
+            break
+        contrib = float(np.sum(var_loglik[offset:end]))
+        mean_var = float(np.mean(var_loglik[offset:end])) if n_pts > 0 else 0.0
+        rows_gal.append({
+            "galaxy": g.name,
+            "pwaic_contribution": contrib,
+            "n_points": n_pts,
+            "mean_var_loglik": mean_var,
+        })
+        offset = end
+
+    if not rows_gal:
+        return
+    df_gal = pd.DataFrame(rows_gal)
+    df_gal.to_csv(diag_dir / "pwaic_by_galaxy.csv", index=False)
+    df_top20 = df_gal.sort_values("pwaic_contribution", ascending=False).head(20)
+    df_top20.to_csv(diag_dir / "top20_galaxies_pwaic.csv", index=False)
+
+    # Plots
+    fig, ax = plt.subplots(figsize=(8, 4), dpi=150)
+    x = np.arange(len(df_top20))
+    ax.bar(x, df_top20["pwaic_contribution"].values, color="firebrick", alpha=0.8)
+    ax.set_xticks(x)
+    ax.set_xticklabels(df_top20["galaxy"].values, rotation=60, ha="right")
+    ax.set_ylabel("pWAIC contribution")
+    ax.set_title(f"Top galaxies by pWAIC ({model_name}, cov={cov_mode})")
+    fig.tight_layout()
+    fig.savefig(diag_dir / "pwaic_by_galaxy_bar.png")
+    plt.close(fig)
+
+    if rows_pts:
+        df_pt = pd.DataFrame(rows_pts)
+        fig, ax = plt.subplots(figsize=(6, 4), dpi=150)
+        ax.scatter(df_pt["radius"], df_pt["var_loglik"], s=4, alpha=0.4)
+        ax.set_xlabel("radius [kpc]")
+        ax.set_ylabel(r"Var$_s$(log $p_{si}$)")
+        ax.set_title(f"pWAIC localization: radius vs var(loglik) ({model_name})")
+        fig.tight_layout()
+        fig.savefig(diag_dir / "radius_vs_varloglik.png")
+        plt.close(fig)
+
+    # Optional: top20 points by var_loglik, pwaic_by_radius (global radius bins)
+    if rows_pts:
+        df_pt = pd.DataFrame(rows_pts)
+        top20_pts = df_pt.nlargest(20, "var_loglik")
+        top20_pts.to_csv(diag_dir / "top20_points_varloglik.csv", index=False)
+        r_edges = [0, 2, 5, 10, 20, 50, 1e4]
+        df_pt["r_bin"] = np.digitize(df_pt["radius"], r_edges)
+        by_radius = df_pt.groupby("r_bin").agg(
+            radius_min_kpc=("radius", "min"),
+            radius_max_kpc=("radius", "max"),
+            pwaic_contribution=("var_loglik", "sum"),
+            n_points=("var_loglik", "count"),
+        ).reset_index()
+        by_radius.to_csv(diag_dir / "pwaic_by_radius.csv", index=False)
+    summary = {
+        "model": model_name,
+        "cov_mode": cov_mode,
+        "n_points": int(N_total),
+        "n_galaxies": len(rows_gal),
+        "p_waic_total": float(np.sum(var_loglik)),
+    }
+    with open(diag_dir / "diagnostics_summary.yaml", "w", encoding="utf-8") as f:
+        yaml.safe_dump(summary, f, sort_keys=False)
+
+
 def _waic_from_chain(log_lik_mat: np.ndarray) -> Tuple[float, float, float]:
     """
     log_lik_mat: (n_samples, n_data_points) per-galaxy log-likelihoods.
@@ -1369,6 +1650,7 @@ def compare_models_waic(
     run_fits_if_missing: bool = False,
     fit_steps: int = 100,
     fit_nwalkers: str = "2x",
+    pwaic_diagnostics: bool = True,
 ) -> Dict[str, Any]:
     """
     Compute WAIC for each model from posterior samples (chain.h5), write compare_table.csv,
@@ -1584,6 +1866,45 @@ def compare_models_waic(
     }
     with open(out_path / "manifest.yaml", "w", encoding="utf-8") as f:
         yaml.safe_dump(manifest, f, sort_keys=False)
+
+    # pWAIC decomposition / localization diagnostics (from best WAIC model, diag cov)
+    if pwaic_diagnostics and len(df) > 0:
+        best_model = str(df.iloc[0]["model"])
+        try:
+            res_dir = fit_root_p / f"{best_model}_gauss"
+            chain_path = res_dir / "chain.h5"
+            summ_path = res_dir / "global_summary.yaml"
+            if chain_path.exists() and summ_path.exists():
+                summ = yaml.safe_load(open(summ_path, encoding="utf-8"))
+                per = pd.read_csv(res_dir / "per_galaxy_summary.csv").set_index("galaxy")
+                from emcee.backends import HDFBackend
+                backend = HDFBackend(str(chain_path))
+                burn = int(backend.iteration * burn_frac)
+                chain = backend.get_chain(discard=burn, flat=True, thin=thin)
+                L = _layout(best_model, G, sigma_sys_learn=True, a0_fixed=None)
+                sigma_sys = float(summ.get("sigma_sys_median", 4.0))
+                H0_si = float(summ.get("H0_si", H0_SI))
+                like_kind = str(summ.get("likelihood", "gauss"))
+                t_dof = float(summ.get("t_dof", 8.0))
+                log_lik_list = []
+                for s in range(chain.shape[0]):
+                    ll = log_likelihood_per_galaxy(
+                        chain[s], galaxies, sigma_sys, H0_si, L,
+                        c0=10.0, c_slope=-0.1, a0_fixed=None,
+                        like_kind=like_kind, t_dof=t_dof,
+                    )
+                    log_lik_list.append(ll)
+                log_lik_mat = np.array(log_lik_list)
+                _write_pwaic_diagnostics(
+                    out_path, galaxies, log_lik_mat, best_model, summ, per, cov_mode="diag",
+                )
+                manifest["pwaic_diagnostics_model"] = best_model
+                manifest["pwaic_diagnostics_cov_mode"] = "diag"
+                with open(out_path / "manifest.yaml", "w", encoding="utf-8") as f:
+                    yaml.safe_dump(manifest, f, sort_keys=False)
+                print(f"[compare] pWAIC diagnostics written to {out_path / 'pwaic_diagnostics'}")
+        except Exception as e:
+            print(f"[compare] pWAIC diagnostics skipped: {e}")
 
     return {"compare_table": str(out_path / "compare_table.csv"), "df": df}
 

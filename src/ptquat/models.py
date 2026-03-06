@@ -124,6 +124,17 @@ def model_v_ptq_nu(Upsilon: float,
     return np.sqrt(v2)
 
 
+# ---------- Screening kernel ν_q(y) (shared by PTQ-screen and mond-screen) ----------
+
+def nu_q(y: np.ndarray, q: float) -> np.ndarray:
+    """
+    Global screening interpolating function: ν_q(y) = 0.5 + sqrt(0.25 + y^{-q}).
+    Used by both ptq-screen (a0 = ε c H0) and mond-screen (a0 free).
+    """
+    y = np.maximum(np.asarray(y, float), 1e-12)
+    return 0.5 + np.sqrt(0.25 + np.power(y, -float(q)))
+
+
 # ---------- PTQ-screen：加強/變鈍的轉換（全域指數 q） ----------
 
 def model_v_ptq_screen(Upsilon: float,
@@ -145,8 +156,30 @@ def model_v_ptq_screen(Upsilon: float,
     r_m = r_kpc * KPC
     gN = (vN2 * (KM**2)) / np.maximum(r_m, 1e-12)                        # m/s^2
     y  = np.maximum(gN / a0_si, 1e-12)
-    # generalized "simple-ν"
-    nu = 0.5 + np.sqrt(0.25 + np.power(y, -float(q)))
+    nu = nu_q(y, q)
+    v2 = vN2 * nu
+    return np.sqrt(v2)
+
+
+# ---------- mond-screen：matched-kernel MOND control (same ν_q, free a0) ----------
+
+def model_v_mond_screen(Upsilon: float,
+                        a0_si: float,
+                        q: float,
+                        r_kpc: np.ndarray,
+                        v_disk_kms: np.ndarray,
+                        v_bulge_kms: np.ndarray,
+                        v_gas_kms: np.ndarray) -> np.ndarray:
+    """
+    MOND with same screening kernel as PTQ-screen (ν_q), but a0 is a free parameter.
+    Matched-kernel control for comparing MOND vs PTQ-screen on equal footing.
+    """
+    a0_si = max(float(a0_si), 1e-30)
+    vN2 = Upsilon * (v_disk_kms**2 + v_bulge_kms**2) + v_gas_kms**2      # (km/s)^2
+    r_m = r_kpc * KPC
+    gN = (vN2 * (KM**2)) / np.maximum(r_m, 1e-12)                        # m/s^2
+    y  = np.maximum(gN / a0_si, 1e-12)
+    nu = nu_q(y, q)
     v2 = vN2 * nu
     return np.sqrt(v2)
 

@@ -13,7 +13,7 @@ from .likelihood import build_covariance, gaussian_loglike, student_t_loglike
 from .constants import H0_SI
 from .models import (
     model_v_ptq, model_v_ptq_split, model_v_baryon, model_v_mond, model_v_nfw1p,
-    model_v_ptq_nu, model_v_ptq_screen
+    model_v_ptq_nu, model_v_ptq_screen, model_v_mond_screen,
 )
 
 # ------------------------- 參數版型 -------------------------
@@ -38,6 +38,11 @@ def _layout(model: str, G: int, sigma_sys_learn: bool,
     elif model == "mond":
         if a0_fixed is None:
             L["i_log10a0"] = s; s += 1
+        L["sl_U"] = slice(s, s+G); s += G
+    elif model == "mond-screen":
+        if a0_fixed is None:
+            L["i_log10a0"] = s; s += 1
+        L["i_lq"] = s; s += 1
         L["sl_U"] = slice(s, s+G); s += G
     elif model == "nfw1p":
         L["sl_U"]   = slice(s, s+G); s += G
@@ -92,7 +97,7 @@ def log_prior(theta: np.ndarray,
             return -np.inf
 
     # screen: prior on q (via lq)
-    if m == "ptq-screen":
+    if m == "ptq-screen" or m == "mond-screen":
         lq = pars["lq"]
         q  = float(np.exp(lq))
         if not (0.25 <= q <= 8.0):
@@ -101,7 +106,7 @@ def log_prior(theta: np.ndarray,
         lp += -0.5*((lq-mu_lq)/sig_lq)**2 - np.log(sig_lq*np.sqrt(2*np.pi))
 
     # Upsilon priors
-    if m in ("ptq","ptq-nu","ptq-screen","baryon","mond","nfw1p"):
+    if m in ("ptq","ptq-nu","ptq-screen","baryon","mond","mond-screen","nfw1p"):
         U = pars["U"]
         for u in U:
             if not (0.05 <= u <= 1.5):
@@ -116,8 +121,8 @@ def log_prior(theta: np.ndarray,
             mu_u, sig_u = 0.5, 0.1
             lp += -0.5*((u-mu_u)/sig_u)**2 - np.log(sig_u*np.sqrt(2*np.pi))
 
-    # MOND a0 prior (if sampled)
-    if m == "mond" and ("log10a0" in pars):
+    # MOND / mond-screen a0 prior (if sampled)
+    if m in ("mond", "mond-screen") and ("log10a0" in pars):
         lo, hi = a0_range
         loglo, loghi = np.log10(lo), np.log10(hi)
         if not (loglo <= pars["log10a0"] <= loghi):
@@ -184,6 +189,10 @@ def log_likelihood(theta: np.ndarray,
         elif m == "mond":
             U = float(pars["U"][gi]); a0 = a0_fixed if a0_fixed is not None else (10.0**pars["log10a0"])
             def vfun(rk): return model_v_mond(U, a0, rk, g.v_disk, g.v_bulge, g.v_gas)
+        elif m == "mond-screen":
+            U = float(pars["U"][gi]); a0 = a0_fixed if a0_fixed is not None else (10.0**pars["log10a0"])
+            q = float(np.exp(pars["lq"]))
+            def vfun(rk): return model_v_mond_screen(U, a0, q, rk, g.v_disk, g.v_bulge, g.v_gas)
         elif m == "nfw1p":
             U  = float(pars["U"][gi]); lM = float(pars["lM"][gi])
             def vfun(rk): return model_v_nfw1p(U, lM, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si, c0=c0, c_slope=c_slope)
@@ -239,6 +248,10 @@ def log_likelihood_per_galaxy(theta: np.ndarray,
         elif m == "mond":
             U = float(pars["U"][gi]); a0 = a0_fixed if a0_fixed is not None else (10.0 ** pars["log10a0"])
             def vfun(rk): return model_v_mond(U, a0, rk, g.v_disk, g.v_bulge, g.v_gas)
+        elif m == "mond-screen":
+            U = float(pars["U"][gi]); a0 = a0_fixed if a0_fixed is not None else (10.0 ** pars["log10a0"])
+            q = float(np.exp(pars["lq"]))
+            def vfun(rk): return model_v_mond_screen(U, a0, q, rk, g.v_disk, g.v_bulge, g.v_gas)
         elif m == "nfw1p":
             U = float(pars["U"][gi]); lM = float(pars["lM"][gi])
             def vfun(rk): return model_v_nfw1p(U, lM, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si, c0=c0, c_slope=c_slope)
@@ -319,6 +332,10 @@ def log_likelihood_full_per_galaxy(theta: np.ndarray,
         elif m == "mond":
             U = float(pars["U"][gi]); a0 = a0_fixed if a0_fixed is not None else (10.0 ** pars["log10a0"])
             def vfun(rk): return model_v_mond(U, a0, rk, g.v_disk, g.v_bulge, g.v_gas)
+        elif m == "mond-screen":
+            U = float(pars["U"][gi]); a0 = a0_fixed if a0_fixed is not None else (10.0 ** pars["log10a0"])
+            q = float(np.exp(pars["lq"]))
+            def vfun(rk): return model_v_mond_screen(U, a0, q, rk, g.v_disk, g.v_bulge, g.v_gas)
         elif m == "nfw1p":
             U = float(pars["U"][gi]); lM = float(pars["lM"][gi])
             def vfun(rk): return model_v_nfw1p(U, lM, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si, c0=c0, c_slope=c_slope)
@@ -361,7 +378,7 @@ def parse_args(argv=None):
     )
     ap.add_argument("--data-path", required=True)
     ap.add_argument("--outdir", default="results")
-    ap.add_argument("--model", choices=["ptq","ptq-nu","ptq-screen","ptq-split","baryon","mond","nfw1p"], default="ptq")
+    ap.add_argument("--model", choices=["ptq","ptq-nu","ptq-screen","ptq-split","baryon","mond","mond-screen","nfw1p"], default="ptq")
 
     # cosmology / noise
     ap.add_argument("--sigma-sys", type=float, default=4.0, help="Velocity floor [km/s].")
@@ -439,7 +456,13 @@ def run(argv=None):
     if args.model == "ptq-screen":
         p0[:, s] = rng.normal(0.0, 0.2, size=nwalkers); s += 1
 
-    if args.model in ("ptq","ptq-nu","ptq-screen"):
+    if args.model == "mond-screen":
+        if args.a0_si is None:
+            loglo, loghi = np.log10(a0_range[0]), np.log10(a0_range[1])
+            p0[:, s] = rng.uniform(loglo, loghi, size=nwalkers); s += 1
+        p0[:, s] = rng.normal(0.0, 0.2, size=nwalkers); s += 1  # lq
+        p0[:, s:s+G] = np.clip(rng.normal(0.5, 0.05, size=(nwalkers, G)), 0.1, 1.5); s += G
+    elif args.model in ("ptq","ptq-nu","ptq-screen"):
         p0[:, s:s+G] = np.clip(rng.normal(0.5, 0.05, size=(nwalkers, G)), 0.1, 1.5); s += G
     elif args.model == "ptq-split":
         p0[:, s:s+G] = np.clip(rng.normal(0.5, 0.06, size=(nwalkers, G)), 0.1, 1.5); s += G
@@ -523,12 +546,19 @@ def run(argv=None):
                       sampler.get_chain(discard=burn, flat=True, thin=thin)[:, col])
         q_lin = np.exp(lq_samples)
         qnt = np.percentile(q_lin, [16,50,84]); q_stats = (float(qnt[1]), float(qnt[0]), float(qnt[2]))
-    if args.model == "mond" and ("i_log10a0" in L):
+    if args.model in ("mond", "mond-screen") and ("i_log10a0" in L):
         a0_samp = (backend.get_chain(discard=burn, flat=True, thin=thin)[:, L["i_log10a0"]]
                    if backend is not None else
                    sampler.get_chain(discard=burn, flat=True, thin=thin)[:, L["i_log10a0"]])
         a0_lin = 10.0**a0_samp
         qnt = np.percentile(a0_lin, [16,50,84]); a0_stats = (float(qnt[1]), float(qnt[0]), float(qnt[2]))
+    if args.model == "mond-screen" and ("i_lq" in L):
+        col = L["i_lq"]
+        lq_samples = (backend.get_chain(discard=burn, flat=True, thin=thin)[:, col]
+                      if backend is not None else
+                      sampler.get_chain(discard=burn, flat=True, thin=thin)[:, col])
+        q_lin = np.exp(lq_samples)
+        qnt = np.percentile(q_lin, [16,50,84]); q_stats = (float(qnt[1]), float(qnt[0]), float(qnt[2]))
 
     sig_samp = (backend.get_chain(discard=burn, flat=True, thin=thin)[:, L["i_lnsig"]]
                 if backend is not None else
@@ -542,7 +572,7 @@ def run(argv=None):
     chi2_tot = 0.0
     logL_tot = 0.0
 
-    if args.model in ("ptq","ptq-nu","ptq-screen","baryon","mond","nfw1p"):
+    if args.model in ("ptq","ptq-nu","ptq-screen","baryon","mond","mond-screen","nfw1p"):
         U_med = P["U"]
     elif args.model == "ptq-split":
         Ud_med, Ub_med = P["Ud"], P["Ub"]
@@ -552,7 +582,7 @@ def run(argv=None):
     sigma_use = float(P["sigma"])
     eps_use   = float(P["eps"]) if "eps" in P else None
     a0_use    = (args.a0_si if args.a0_si is not None else (10.0**P["log10a0"] if "log10a0" in P else None))
-    q_use     = float(np.exp(P["lq"])) if "lq" in P else None
+    q_use     = float(np.exp(P["lq"])) if "lq" in P else None  # ptq-screen and mond-screen
 
     def _ll(y_obs, y_mod, C):
         if args.likelihood == "t":
@@ -579,6 +609,9 @@ def run(argv=None):
         elif args.model == "mond":
             U = float(U_med[gi])
             def vfun(rk): return model_v_mond(U, a0_use, rk, g.v_disk, g.v_bulge, g.v_gas)
+        elif args.model == "mond-screen":
+            U = float(U_med[gi])
+            def vfun(rk): return model_v_mond_screen(U, a0_use, q_use, rk, g.v_disk, g.v_bulge, g.v_gas)
         elif args.model == "nfw1p":
             U  = float(U_med[gi]); lM = float(lM_med[gi])
             def vfun(rk): return model_v_nfw1p(U, lM, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si, c0=args.c0, c_slope=args.c_slope)
@@ -592,7 +625,7 @@ def run(argv=None):
         r = g.v_obs - v_mod
         alpha = np.linalg.solve(Cg, r)
         chi2_g = float(r @ alpha)
-        nu_g = max(len(g.r_kpc) - (2 if args.model=="ptq-split" else 1), 1)
+        nu_g = max(len(g.r_kpc) - (2 if args.model == "ptq-split" else 1), 1)
         chi2_red_g = chi2_g / nu_g
         ll_g = _ll(g.v_obs, v_mod, Cg)
 
@@ -603,7 +636,7 @@ def run(argv=None):
         rows.append(dict(
             galaxy=g.name,
             n=len(g.r_kpc),
-            Upsilon_med=(float(Ud_med[gi]) if args.model=="ptq-split" else float(U_med[gi])),
+            Upsilon_med=(float(Ud_med[gi]) if args.model == "ptq-split" else float(U_med[gi])),
             Upsilon_bulge_med=(float(Ub_med[gi]) if args.model=="ptq-split" else None),
             log10_M200_med=(float(lM_med[gi]) if args.model=="nfw1p" else None),
             chi2=chi2_g,
@@ -637,7 +670,7 @@ def run(argv=None):
         q_median=(float(q_stats[0]) if q_stats else None),
         q_p16=(float(q_stats[1]) if q_stats else None),
         q_p84=(float(q_stats[2]) if q_stats else None),
-        a0_median=(float(a0_stats[0]) if a0_stats else (float(args.a0_si) if args.model=="mond" and args.a0_si is not None else None)),
+        a0_median=(float(a0_stats[0]) if a0_stats else (float(args.a0_si) if args.model in ("mond", "mond-screen") and args.a0_si is not None else None)),
         a0_p16=(float(a0_stats[1]) if a0_stats else None),
         a0_p84=(float(a0_stats[2]) if a0_stats else None),
         chi2_total=float(chi2_tot), logL_total_full=float(logL_tot),

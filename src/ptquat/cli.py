@@ -58,7 +58,7 @@ def main(argv=None):
     p2.add_argument("--nwalkers", default="4x")
     p2.add_argument("--steps", type=int, default=12000)
     p2.add_argument("--seed", type=int, default=42)
-    p2.add_argument("--model", choices=["ptq","ptq-nu","ptq-screen","ptq-split","baryon","mond","nfw1p"], default="ptq")
+    p2.add_argument("--model", choices=["ptq","ptq-nu","ptq-screen","ptq-split","baryon","mond","mond-screen","nfw1p"], default="ptq")
     p2.add_argument("--a0-si", type=float, default=None)
     p2.add_argument("--a0-range", type=str, default="5e-11,2e-10")
     p2.add_argument("--logM200-range", type=str, default="9,13")
@@ -84,7 +84,7 @@ def main(argv=None):
     pst = sx.add_parser("stress", help="Inflate i_err/D_err and re-fit")
     pst.add_argument("--data", default="dataset/sparc_tidy.csv")
     pst.add_argument("--outroot", default="results/stress")
-    pst.add_argument("--model", choices=["ptq","ptq-nu","ptq-screen","ptq-split","baryon","mond","nfw1p"], default="ptq-screen")
+    pst.add_argument("--model", choices=["ptq","ptq-nu","ptq-screen","ptq-split","baryon","mond","mond-screen","nfw1p"], default="ptq-screen")
     pst.add_argument("--scale-i", type=float, default=2.0)
     pst.add_argument("--scale-D", type=float, default=2.0)
     pst.add_argument("--prior", choices=["galaxies-only","planck-anchored"], default="galaxies-only")
@@ -100,7 +100,7 @@ def main(argv=None):
     pmk = sx.add_parser("mask", help="Mask inner radii r<rmin_kpc and re-fit")
     pmk.add_argument("--data", default="dataset/sparc_tidy.csv")
     pmk.add_argument("--outroot", default="results/mask")
-    pmk.add_argument("--model", choices=["ptq","ptq-nu","ptq-screen","ptq-split","baryon","mond","nfw1p"], default="ptq-screen")
+    pmk.add_argument("--model", choices=["ptq","ptq-nu","ptq-screen","ptq-split","baryon","mond","mond-screen","nfw1p"], default="ptq-screen")
     pmk.add_argument("--rmin-kpc", type=float, default=2.0)
     pmk.add_argument("--prior", choices=["galaxies-only","planck-anchored"], default="galaxies-only")
     pmk.add_argument("--sigma-sys", type=float, default=4.0)
@@ -115,7 +115,7 @@ def main(argv=None):
     ph0 = sx.add_parser("H0", help="Scan H0 sensitivity")
     ph0.add_argument("--data", default="dataset/sparc_tidy.csv")
     ph0.add_argument("--outroot", default="results/H0_scan")
-    ph0.add_argument("--model", choices=["ptq","ptq-nu","ptq-screen"], default="ptq-screen")
+    ph0.add_argument("--model", choices=["ptq","ptq-nu","ptq-screen","mond-screen"], default="ptq-screen")
     ph0.add_argument("--H0-list", type=float, nargs="+", default=[60.0, 67.4, 70.0, 73.0, 76.0])
     ph0.add_argument("--prior", choices=["galaxies-only","planck-anchored"], default="galaxies-only")
     ph0.add_argument("--sigma-sys", type=float, default=4.0)
@@ -158,6 +158,16 @@ def main(argv=None):
     pcl.add_argument("--eps-max", type=float, default=3.0,
                      help="ε 軸的最大值（預設 3.0）")
 
+    # closure-scan (sensitivity over epsilon_cos or omega_lambda)
+    pscan = sx.add_parser("closure-scan", help="Closure sensitivity scan over epsilon_cos or omega_lambda")
+    pscan.add_argument("--results", required=True, help="Fit results dir (e.g. results/ptq-screen_gauss)")
+    pscan.add_argument("--outdir", required=True, help="Output dir for closure_sensitivity.csv, plot, manifest")
+    pscan.add_argument("--n", type=int, default=11, help="Number of scan points (default 11)")
+    pscan.add_argument("--epsilon-cos-min", type=float, default=None, help="Scan epsilon_cos: min (use with --epsilon-cos-max)")
+    pscan.add_argument("--epsilon-cos-max", type=float, default=None, help="Scan epsilon_cos: max")
+    pscan.add_argument("--omega-lambda-min", type=float, default=None, help="Scan omega_lambda: min (use with --omega-lambda-max)")
+    pscan.add_argument("--omega-lambda-max", type=float, default=None, help="Scan omega_lambda: max")
+
     # compare (WAIC model comparison)
     pcmp = sx.add_parser("compare", help="Compare models via WAIC from posterior samples")
     pcmp.add_argument("--models", nargs="+", default=["ptq-screen", "mond", "nfw1p", "baryon"],
@@ -170,6 +180,8 @@ def main(argv=None):
     pcmp.add_argument("--thin", type=int, default=10, help="Thin factor for chain")
     pcmp.add_argument("--run-fits", action="store_true", help="Run short fits if chain.h5 missing")
     pcmp.add_argument("--fit-steps", type=int, default=100, help="Steps when --run-fits")
+    pcmp.add_argument("--no-pwaic-diagnostics", action="store_true",
+                      help="Skip writing pWAIC diagnostics to <outdir>/pwaic_diagnostics/")
 
     # kappa-gal
     kgal = sx.add_parser("kappa-gal", help="Per-galaxy kappa check")
@@ -381,6 +393,31 @@ def main(argv=None):
                 except Exception as e:
                     print(f"[closure] WARN: failed to write plot ({e})")
 
+        elif args.exp_cmd == "closure-scan":
+            if args.epsilon_cos_min is not None and args.epsilon_cos_max is not None:
+                if args.omega_lambda_min is not None or args.omega_lambda_max is not None:
+                    raise SystemExit("Use either epsilon_cos range or omega_lambda range, not both.")
+                out = EXP.closure_sensitivity_scan(
+                    args.results, args.outdir,
+                    epsilon_cos_min=args.epsilon_cos_min,
+                    epsilon_cos_max=args.epsilon_cos_max,
+                    n=args.n,
+                )
+            elif args.omega_lambda_min is not None and args.omega_lambda_max is not None:
+                out = EXP.closure_sensitivity_scan(
+                    args.results, args.outdir,
+                    omega_lambda_min=args.omega_lambda_min,
+                    omega_lambda_max=args.omega_lambda_max,
+                    n=args.n,
+                )
+            else:
+                raise SystemExit(
+                    "Provide (--epsilon-cos-min and --epsilon-cos-max) or "
+                    "(--omega-lambda-min and --omega-lambda-max)."
+                )
+            print(f"Saved: {out['closure_sensitivity_csv']}")
+            print(out["df"].to_string(index=False))
+
         elif args.exp_cmd == "compare":
             out = EXP.compare_models_waic(
                 data_path=args.data,
@@ -392,6 +429,7 @@ def main(argv=None):
                 thin=args.thin,
                 run_fits_if_missing=args.run_fits,
                 fit_steps=args.fit_steps,
+                pwaic_diagnostics=not args.no_pwaic_diagnostics,
             )
             print(f"Saved: {out['compare_table']}")
             print(out["df"].to_string(index=False))
