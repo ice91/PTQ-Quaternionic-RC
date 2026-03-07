@@ -1910,6 +1910,112 @@ def compare_models_waic(
 
 
 # -------------------------------
+# LOO compatibility helpers (ArviZ 0.x / 1.x)
+# -------------------------------
+def _make_loo_data(log_lik_mat: np.ndarray):
+    """
+    Build an object accepted by ArviZ LOO across API generations.
+
+    Input
+    -----
+    log_lik_mat : ndarray, shape (n_samples, n_observations)
+
+    Output
+    ------
+    InferenceData (ArviZ 0.x) or DataTree (ArviZ 1.x-compatible path)
+    """
+    log_lik_mat = np.asarray(log_lik_mat, dtype=float)
+    if log_lik_mat.ndim != 2:
+        raise ValueError(f"log_lik_mat must be 2D, got shape={log_lik_mat.shape}")
+
+    n_samples, _n_obs = log_lik_mat.shape
+    # expected shape for ArviZ-style likelihood containers: (chain, draw, obs)
+    log_lik_3d = log_lik_mat[None, :, :]
+    # dummy posterior so reff/shape conventions remain valid
+    posterior_dummy = np.zeros((1, n_samples), dtype=float)
+
+    # ArviZ 0.x legacy path
+    try:
+        import arviz as az  # local import for compatibility probing
+        return az.from_dict(
+            posterior={"_dummy": posterior_dummy},
+            log_likelihood={"y": log_lik_3d},
+        )
+    except TypeError:
+        # New ArviZ 1.x path: from_dict moved to arviz_base and takes nested `data`
+        pass
+
+    try:
+        from arviz_base import from_dict as az_from_dict  # type: ignore
+    except Exception as e:
+        raise RuntimeError(
+            "Could not construct LOO input for current ArviZ installation. "
+            "Legacy `arviz.from_dict(...)` failed, and `arviz_base.from_dict(...)` "
+            "is not available."
+        ) from e
+
+    data = {
+        "posterior": {"_dummy": posterior_dummy},
+        "log_likelihood": {"y": log_lik_3d},
+    }
+    return az_from_dict(data)
+
+
+def _get_loo_callable():
+    """
+    Return a LOO callable compatible with current environment.
+    Prefer `arviz.loo` when present; otherwise fall back to `arviz_stats.loo`.
+    """
+    try:
+        import arviz as az  # type: ignore[import]
+        if hasattr(az, "loo"):
+            return az.loo
+    except Exception:
+        pass
+
+    try:
+        from arviz_stats import loo as loo_fn  # type: ignore[import]
+        return loo_fn
+    except Exception as e:
+        raise RuntimeError(
+            "No LOO callable available. Neither `arviz.loo` nor `arviz_stats.loo` "
+            "could be imported."
+        ) from e
+
+
+def _extract_loo_metrics(loo_res) -> Tuple[float, float, float, np.ndarray]:
+    """
+    Extract (elpd_loo, p_loo, looic, pareto_k) across ArviZ result variants.
+    Works with older ELPDData (`elpd_loo`, `p_loo`) and newer variants (`elpd`, `p`).
+    """
+    def _get(names, default=np.nan):
+        for name in names:
+            # attribute-style
+            if hasattr(loo_res, name):
+                try:
+                    return getattr(loo_res, name)
+                except Exception:
+                    pass
+            # mapping / Series-style
+            try:
+                return loo_res[name]
+            except Exception:
+                pass
+        return default
+
+    elpd_loo = _get(["elpd_loo", "loo", "elpd"])
+    p_loo = _get(["p_loo", "p"])
+    looic = _get(["looic"], default=np.nan)
+    pareto_k = _get(["pareto_k"], default=np.array([]))
+
+    elpd_loo = float(elpd_loo)
+    p_loo = float(p_loo)
+    looic = float(looic) if np.isfinite(looic) else float(-2.0 * elpd_loo)
+    pareto_k = np.asarray(pareto_k, dtype=float)
+
+    return elpd_loo, p_loo, looic, pareto_k
+
+# -------------------------------
 # LOO: PSIS-LOO via ArviZ
 # -------------------------------
 def loo_compare_models(
@@ -1925,19 +2031,23 @@ def loo_compare_models(
     fit_nwalkers: str = "2x",
 ) -> Dict[str, Any]:
     """
-    Compare models using PSIS-LOO (via ArviZ).
+    Compare models using PSIS-LOO.
 
-    - Uses diag-covariance, per-point log-likelihood (same as WAIC diag mode).
-    - Builds an InferenceData with log_likelihood and calls az.loo(pointwise=True).
-    - Writes loo_table.csv, pareto_k.csv, pareto_k_hist.png, elpd_difference_plot.png.
+    Compatibility notes
+    -------------------
+    - ArviZ 0.x accepted:
+        az.from_dict(log_likelihood={"y": ...})
+    - ArviZ 1.x uses arviz_base.from_dict(data={...}) / DataTree-style inputs.
+
+    This function supports both by routing data packaging through `_make_loo_data()`.
     """
+    # import check only; actual callable resolved via helper
     try:
         import arviz as az  # type: ignore[import]
-    except Exception as e:  # pragma: no cover - runtime dependency
-        raise SystemExit(
-            "ArviZ (arviz) is required for `ptquat exp loo` but is not importable.\n"
-            "Please install it in your environment (e.g. `pip install arviz`) and retry."
-        ) from e
+    except Exception:
+        az = None  # noqa: F841
+
+    loo_fn = _get_loo_callable()
 
     out_path = Path(outdir)
     out_path.mkdir(parents=True, exist_ok=True)
@@ -2012,16 +2122,24 @@ def loo_compare_models(
                 like_kind=like_kind, t_dof=t_dof
             )
             log_lik_list.append(ll)
+
         log_lik_mat = np.array(log_lik_list)  # (S, N_total)
+        if log_lik_mat.shape != (n_samples, N_total):
+            raise RuntimeError(
+                f"{model}: unexpected log_lik_mat shape {log_lik_mat.shape}, expected {(n_samples, N_total)}"
+            )
 
-        # Build InferenceData with shape (chain, draw, obs) = (1, S, N)
-        idata = az.from_dict(log_likelihood={"y": log_lik_mat[None, :, :]})
-        loo_res = az.loo(idata, pointwise=True)
+        # Build ArviZ-compatible object across API generations
+        idata = _make_loo_data(log_lik_mat)
 
-        elpd_loo = float(loo_res.loo)
-        p_loo = float(loo_res.p_loo)
-        looic = float(loo_res.looic)
-        pareto_k = np.asarray(loo_res.pareto_k)
+        # var_name='y' works for both old/new style if the log_likelihood variable is named y
+        try:
+            loo_res = loo_fn(idata, pointwise=True, var_name="y")
+        except TypeError:
+            # Some versions may not accept var_name explicitly
+            loo_res = loo_fn(idata, pointwise=True)
+
+        elpd_loo, p_loo, looic, pareto_k = _extract_loo_metrics(loo_res)
 
         rows.append({
             "model": model,
@@ -2032,7 +2150,10 @@ def loo_compare_models(
         })
 
         if pareto_k.size != N_total:
-            raise RuntimeError(f"pareto_k size {pareto_k.size} != N_total={N_total}")
+            raise RuntimeError(
+                f"{model}: pareto_k size {pareto_k.size} != N_total={N_total}"
+            )
+
         frac_good = float(np.mean(pareto_k < 0.7))
         print(f"[loo] {model}: pareto_k<0.7 fraction = {frac_good:.3f}")
 
@@ -2063,7 +2184,8 @@ def loo_compare_models(
         fig, ax = plt.subplots(figsize=(6, 4), dpi=150)
         for model in df_k["model"].unique():
             kk = df_k.loc[df_k["model"] == model, "pareto_k"].values
-            ax.hist(kk, bins=20, alpha=0.5, label=model, range=(0.0, max(1.0, float(kk.max()))))
+            xmax = max(1.0, float(np.nanmax(kk))) if len(kk) else 1.0
+            ax.hist(kk, bins=20, alpha=0.5, label=model, range=(0.0, xmax))
         ax.set_xlabel("Pareto k")
         ax.set_ylabel("count")
         ax.set_title("Pareto k diagnostics (PSIS-LOO)")
@@ -2092,8 +2214,6 @@ def loo_compare_models(
         plt.close(fig)
 
     return {"loo_table": str(out_path / "loo_table.csv"), "df": df}
-
-
 # ---- 追加到檔尾：z-space zero-parameter tests ----
 
 def _cH0_SI_from_summary(H0_si: float) -> float:
