@@ -53,6 +53,48 @@ def _copy_if_exists(src: Path, dst: Path) -> bool:
         return True
     return False
 
+
+def _resolve_compare_dir(results_root: Path) -> Path | None:
+    """
+    優先使用新版 equal12000 fresh 產生的 core 路徑，
+    若不存在再 fallback 到舊版路徑。
+    """
+    core = results_root / "paper_extra" / "model_compare_core"
+    if core.is_dir():
+        return core
+    legacy = results_root / "paper_extra" / "model_compare"
+    if legacy.is_dir():
+        return legacy
+    return None
+
+
+def _resolve_loo_dir(results_root: Path) -> Path | None:
+    """同上，但針對 LOO compare 輸出。"""
+    core = results_root / "paper_extra" / "loo_compare_core"
+    if core.is_dir():
+        return core
+    legacy = results_root / "paper_extra" / "loo_compare"
+    if legacy.is_dir():
+        return legacy
+    return None
+
+
+def _resolve_pwaic_diag_dir(results_root: Path) -> Path | None:
+    """
+    pWAIC 診斷目錄：
+    - 優先：paper_extra/model_compare_core/pwaic_diagnostics
+    - 再來：paper_extra/model_compare/pwaic_diagnostics
+    """
+    cmp_dir = _resolve_compare_dir(results_root)
+    if cmp_dir is not None:
+        core_diag = cmp_dir / "pwaic_diagnostics"
+        if core_diag.is_dir():
+            return core_diag
+    legacy_diag = results_root / "paper_extra" / "model_compare" / "pwaic_diagnostics"
+    if legacy_diag.is_dir():
+        return legacy_diag
+    return None
+
 def _candidate_results_roots(args) -> list[Path]:
     roots: list[Path] = []
     # 主推斷：parent(--out)/results
@@ -159,8 +201,8 @@ def _emit_compare_csv(rows: list[dict], out_csv: Path) -> None:
 
 def _try_build_waic_artifacts(results_root: Path, paper_root: Path) -> None:
     """從 WAIC compare 輸出整理成 paper_artifacts 的表格與圖。"""
-    waic_dir = results_root / "paper_extra" / "model_compare"
-    if not waic_dir.is_dir():
+    waic_dir = _resolve_compare_dir(results_root)
+    if waic_dir is None:
         return
 
     _ensure_dir(paper_root)
@@ -197,7 +239,9 @@ def _try_build_loo_artifacts(results_root: Path, paper_root: Path) -> None:
     """從 PSIS-LOO compare 輸出整理成表格與圖。"""
     import pandas as pd
 
-    loo_dir = results_root / "paper_extra" / "loo_compare"
+    loo_dir = _resolve_loo_dir(results_root)
+    if loo_dir is None:
+        return
     csv_path = loo_dir / "loo_table.csv"
     if not csv_path.exists():
         return
@@ -268,7 +312,9 @@ def _try_build_pwaic_artifacts(results_root: Path, paper_root: Path) -> None:
     import pandas as pd
     import matplotlib.pyplot as plt
 
-    diag_dir = results_root / "paper_extra" / "model_compare" / "pwaic_diagnostics"
+    diag_dir = _resolve_pwaic_diag_dir(results_root)
+    if diag_dir is None:
+        return
     bygal_csv = diag_dir / "pwaic_by_galaxy.csv"
     if not bygal_csv.exists():
         return
@@ -312,20 +358,32 @@ def _build_summary_markdown(paper_root: Path, results_root: Path) -> None:
     import pandas as pd
 
     lines: list[str] = []
+    _ensure_dir(paper_root)
 
-    # --- WAIC comparison ---
-    waic_csv = results_root / "paper_extra" / "model_compare" / "compare_table.csv"
-    if waic_csv.exists():
-        df_w = pd.read_csv(waic_csv)
-        df_w = df_w.sort_values("waic").reset_index(drop=True)
+    # ------------------------------------------------------------
+    # WAIC comparison（支援 core 與 legacy 路徑）
+    # ------------------------------------------------------------
+
+    waic_dir = _resolve_compare_dir(results_root)
+    df_w = None
+    if waic_dir is not None:
+        waic_csv = waic_dir / "compare_table.csv"
+        if waic_csv.exists():
+            df_w = pd.read_csv(waic_csv)
+            if not df_w.empty:
+                df_w = df_w.sort_values("waic").reset_index(drop=True)
+
+    if df_w is not None and not df_w.empty:
         best = df_w.iloc[0]
         lines.append("## WAIC comparison")
         lines.append("")
         lines.append(f"- **最佳 WAIC 模型**: `{best['model']}` (WAIC ≈ {best['waic']:.1f})")
-        for name in ("mond", "ptq-screen"):
-            if name in set(df_w["model"]):
-                r = df_w.loc[df_w["model"] == name].iloc[0]
-                lines.append(f"- `{name}`: WAIC ≈ {r['waic']:.1f}, ΔWAIC ≈ {r['delta_waic']:.1f}")
+        if "delta_waic" in df_w.columns:
+            for _, r in df_w.iterrows():
+                lines.append(
+                    f"- `{r['model']}`: WAIC ≈ {r['waic']:.1f}, ΔWAIC ≈ {r['delta_waic']:.1f}, "
+                    f"pWAIC ≈ {r.get('p_waic', float('nan')):.1f}"
+                )
         lines.append("")
     else:
         lines.append("## WAIC comparison")
@@ -333,22 +391,32 @@ def _build_summary_markdown(paper_root: Path, results_root: Path) -> None:
         lines.append("- （尚未找到 WAIC compare_table.csv）")
         lines.append("")
 
-    # --- LOO comparison ---
-    loo_csv = results_root / "paper_extra" / "loo_compare" / "loo_table.csv"
-    if loo_csv.exists():
-        df_l = pd.read_csv(loo_csv)
-        df_l = df_l.sort_values("looic").reset_index(drop=True)
+    # ------------------------------------------------------------
+    # LOO comparison（同樣支援 core / legacy）
+    # ------------------------------------------------------------
+
+    loo_dir = _resolve_loo_dir(results_root)
+    df_l = None
+    if loo_dir is not None:
+        loo_csv = loo_dir / "loo_table.csv"
+        if loo_csv.exists():
+            df_l = pd.read_csv(loo_csv)
+            if not df_l.empty:
+                df_l = df_l.sort_values("looic").reset_index(drop=True)
+                if "delta_looic" not in df_l.columns:
+                    looic_min = df_l["looic"].min()
+                    df_l["delta_looic"] = df_l["looic"] - looic_min
+
+    if df_l is not None and not df_l.empty:
         best_l = df_l.iloc[0]
         lines.append("## LOO comparison")
         lines.append("")
         lines.append(f"- **最佳 LOO 模型**: `{best_l['model']}` (LOOIC ≈ {best_l['looic']:.1f})")
-        for name in ("mond", "ptq-screen"):
-            if name in set(df_l["model"]):
-                r = df_l.loc[df_l["model"] == name].iloc[0]
-                lines.append(
-                    f"- `{name}`: elpd_loo ≈ {r['elpd_loo']:.1f}, "
-                    f"LOOIC ≈ {r['looic']:.1f}, ΔLOOIC ≈ {r.get('delta_looic', 0.0):.1f}"
-                )
+        for _, r in df_l.iterrows():
+            lines.append(
+                f"- `{r['model']}`: elpd_loo ≈ {r['elpd_loo']:.1f}, "
+                f"LOOIC ≈ {r['looic']:.1f}, ΔLOOIC ≈ {r.get('delta_looic', 0.0):.1f}"
+            )
         lines.append("")
     else:
         lines.append("## LOO comparison")
@@ -356,11 +424,20 @@ def _build_summary_markdown(paper_root: Path, results_root: Path) -> None:
         lines.append("- （尚未找到 LOO loo_table.csv）")
         lines.append("")
 
-    # --- pWAIC diagnostics ---
-    bygal_csv = results_root / "paper_extra" / "model_compare" / "pwaic_diagnostics" / "pwaic_by_galaxy.csv"
-    if bygal_csv.exists():
-        df_g = pd.read_csv(bygal_csv)
-        df_g = df_g.sort_values("pwaic_contribution", ascending=False).reset_index(drop=True)
+    # ------------------------------------------------------------
+    # pWAIC diagnostics（core / legacy）
+    # ------------------------------------------------------------
+
+    diag_dir = _resolve_pwaic_diag_dir(results_root)
+    df_g = None
+    if diag_dir is not None:
+        bygal_csv = diag_dir / "pwaic_by_galaxy.csv"
+        if bygal_csv.exists():
+            df_g = pd.read_csv(bygal_csv)
+            if not df_g.empty:
+                df_g = df_g.sort_values("pwaic_contribution", ascending=False).reset_index(drop=True)
+
+    if df_g is not None and not df_g.empty:
         lines.append("## pWAIC diagnostics")
         lines.append("")
         lines.append("- 最高 pWAIC 貢獻的前幾個星系：")
@@ -376,18 +453,76 @@ def _build_summary_markdown(paper_root: Path, results_root: Path) -> None:
         lines.append("- （尚未找到 pWAIC by-galaxy 診斷輸出）")
         lines.append("")
 
-    # --- Key conclusions ---
+    # ------------------------------------------------------------
+    # Key conclusions（依據實際 csv 動態生成）
+    # ------------------------------------------------------------
+
     lines.append("## Key conclusions")
     lines.append("")
-    lines.append(
-        textwrap.dedent(
-            """\
-            - WAIC 與 LOO 都可用來比較 MOND 與 PTQ 家族模型的整體擬合與預測能力。
-            - 目前結果顯示，在本次 SPARC 資料與設定下，MOND 在 WAIC / LOOIC 上仍優於 PTQ-screen。
-            - pWAIC 分解顯示，少數星系與半徑區域對複雜度懲罰有顯著貢獻，適合作為後續針對性診斷與模型改進的重點對象。
-            """
-        ).strip()
-    )
+
+    # 1. WAIC / LOO 最佳模型
+    waic_best_model = df_w.iloc[0]["model"] if (df_w is not None and not df_w.empty) else None
+    loo_best_model = df_l.iloc[0]["model"] if (df_l is not None and not df_l.empty) else None
+
+    if waic_best_model is not None:
+        lines.append(f"- **WAIC** 最佳模型：`{waic_best_model}`")
+    else:
+        lines.append("- **WAIC** 最佳模型：資料缺失（compare_table.csv 未找到）")
+
+    if loo_best_model is not None:
+        lines.append(f"- **LOO** 最佳模型：`{loo_best_model}`")
+    else:
+        lines.append("- **LOO** 最佳模型：資料缺失（loo_table.csv 未找到）")
+
+    # 2. 比較 WAIC 與 LOO 是否選到同一個最佳模型
+    if waic_best_model and loo_best_model:
+        if waic_best_model == loo_best_model:
+            lines.append(f"- WAIC 與 LOO 一致選出同一個最佳模型：`{waic_best_model}`。")
+        else:
+            lines.append(
+                f"- WAIC 與 LOO 最佳模型不同：WAIC → `{waic_best_model}`，"
+                f"LOO → `{loo_best_model}`。"
+            )
+    else:
+        lines.append("- WAIC / LOO 至少有一者缺失，無法比較兩者是否一致。")
+
+    # 3. MOND / PTQ-screen / mond-screen 的相對位置（若存在）
+    focus_models = ("mond", "ptq-screen", "mond-screen")
+    if df_w is not None and not df_w.empty:
+        present = [m for m in focus_models if m in set(df_w["model"])]
+        if present:
+            order = []
+            for m in present:
+                r = df_w.loc[df_w["model"] == m].iloc[0]
+                order.append(f"{m} (rank {int(r.get('rank', 0) or 0)}, WAIC ≈ {r['waic']:.1f})")
+            lines.append(
+                "- 在 **WAIC** 排名中，關注模型的相對順序為："
+                + "; ".join(order)
+                + "。"
+            )
+    if df_l is not None and not df_l.empty:
+        present_l = [m for m in focus_models if m in set(df_l["model"])]
+        if present_l:
+            order_l = []
+            for m in present_l:
+                r = df_l.loc[df_l["model"] == m].iloc[0]
+                order_l.append(f"{m} (rank {int(r.get('rank', 0) or 0)}, LOOIC ≈ {r['looic']:.1f})")
+            lines.append(
+                "- 在 **LOO** 排名中，關注模型的相對順序為："
+                + "; ".join(order_l)
+                + "。"
+            )
+
+    # 4. pWAIC 的可用性
+    if df_g is not None and not df_g.empty:
+        top_gal = df_g.iloc[0]
+        lines.append(
+            f"- pWAIC 診斷可用；目前顯示 `{top_gal['galaxy']}` 對複雜度懲罰的貢獻最高 "
+            f"(pWAIC ≈ {top_gal['pwaic_contribution']:.1f})。"
+        )
+    else:
+        lines.append("- pWAIC 診斷資料缺失或尚未產出。")
+
     lines.append("")
 
     (paper_root / "paper_results_summary.md").write_text("\n".join(lines), encoding="utf-8")
@@ -432,7 +567,15 @@ def main(argv: list[str] | None = None) -> int:
     out_dir = Path(args.out).resolve() if args.out else (primary_results / "paper_run").resolve()
     _ensure_dir(out_dir)
 
-    results_roots = _candidate_results_roots(args)
+    # 限制 model 掃描範圍：
+    # - 若同時指定 --results-dir 與 --models，僅在 primary_results 下尋找 <model>_gauss，
+    #   避免混入其他 runs 的模型結果。
+    # - 否則維持原本多重 roots 掃描的相容邏輯。
+    if args.models and args.results_dir:
+        results_roots = [primary_results]
+    else:
+        results_roots = _candidate_results_roots(args)
+
     model_pairs = _find_model_dirs(results_roots, args.models)
 
     # 將 YAML 摘要拷貝/建立到 out_dir/<model>_gauss/global_summary.yaml
