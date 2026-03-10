@@ -122,6 +122,13 @@ ptquat exp compare \
 # 5. Closure + closure-scan
 ###############################################################################
 
+# NOTE:
+# - The closure / closure-scan pipeline is defined in terms of epsilon_RC vs epsilon_cos
+#   and is therefore **PTQ-family only** (it relies on `epsilon_median` in global_summary.yaml).
+# - `mond` and `mond-screen` do not have epsilon; they are benchmark models and must
+#   NOT be passed into the current epsilon-based closure code.
+# - We therefore only run closure / closure-scan for `ptq-screen` here.
+
 ptquat exp closure \
   --results "$RUNROOT/ptq-screen_gauss" \
   --omega-lambda 0.69 \
@@ -134,14 +141,6 @@ ptquat exp closure-scan \
   --omega-lambda-max 0.75 \
   --n 11 \
   2>&1 | tee "$RUNROOT/logs/closure_scan_ptqscreen_12000.log"
-
-ptquat exp closure-scan \
-  --results "$RUNROOT/mond-screen_gauss" \
-  --outdir "$RUNROOT/mond-screen_gauss/closure_scan" \
-  --omega-lambda-min 0.65 \
-  --omega-lambda-max 0.75 \
-  --n 11 \
-  2>&1 | tee "$RUNROOT/logs/closure_scan_mondscreen_12000.log"
 
 ###############################################################################
 # 6. Paper artifacts
