@@ -14,9 +14,7 @@ A **κ–h regression** links disk scale-height \(h\) with **epicyclic frequency
 
 Key dictionary:
 \[
-\Omega_\Lambda(\epsilon)=\frac{\epsilon^2}{1+\epsilon^2},
-\qquad
-a_0(\epsilon)=\epsilon\,c\,H_0.
+$\Omega_\Lambda(\epsilon)=\frac{\epsilon^2}{1+\epsilon^2},\qquad a_0(\epsilon)=\epsilon\,c\,H_0.$
 \]
 
 For generalized or interpretive extensions, an effective geometric efficiency factor may be introduced at the analysis level, but it should be read as a **reinterpretation of mismatch**, not as a passed closure claim.
@@ -123,40 +121,40 @@ SHA-256 checksums are written alongside to verify byte-level identity.
 
 - **`baryon`**:  
     [  
-    v=\sqrt{v_{\rm bar}^2}.  
+    $v=\sqrt{v_{\rm bar}^2}.$  
     ]
     
 - **`mond`**:  
-    Standard MOND (`simple-\nu`). If `--a0-si` is not given, (a_0) is sampled with prior `--a0-range`.
+    Standard MOND $(`simple-\nu`)$. If `--a0-si` is not given, $(a_0)$ is sampled with prior `--a0-range`.
     
 - **`mond-screen`**:  
-    Generalized MOND-like screening model with free global (q) and free (a_0). This is primarily used as a **matched-kernel comparison model**.
+    Generalized MOND-like screening model with free global (q) and free $(a_0)$. This is primarily used as a **matched-kernel comparison model**.
     
 - **`nfw1p`**:  
     One halo parameter ((M_{200})) per galaxy; concentration from a c–M power law (`--c0`, `--c-slope`).
     
 - **`ptq` (linear)**:  
     [  
-    v=\sqrt{v_{\rm bar}^2 + (\epsilon cH_0),r}.  
+    $v=\sqrt{v_{\rm bar}^2 + (\epsilon cH_0),r}.$  
     ]  
     **Negative control**.
     
 - **`ptq-nu`**:  
     Reuses the MOND interpolation shape but sets  
     [  
-    a_0=\epsilon cH_0,  
+    $a_0=\epsilon cH_0,$  
     ]  
-    with a **global** (\epsilon).  
+    with a **global** $(\epsilon)$.  
     This is the current **primary RC-level PTQ realization** in the manuscript-facing workflow.
     
 - **`ptq-screen`**:  
     Generalized PTQ-screened realization  
     [  
-    \nu_q(y)=\frac12+\sqrt{\frac14+y^{-q}},  
+    $\nu_q(y)=\frac12+\sqrt{\frac14+y^{-q}},$  
     ]  
     with **global** (q) and  
     [  
-    a_0=\epsilon cH_0.  
+    $a_0=\epsilon cH_0.$  
     ]  
     This is retained as a **comparison / extension model**, not the default hero model.
     
@@ -785,19 +783,19 @@ Important fields include:
 
 Key paths relevant to fitting, comparison, and extensions:
 
-|Path|Purpose|
-|---|---|
-|`src/ptquat/experiments.py`|WAIC/LOO comparison, pWAIC diagnostics, PPC, stress, closure, plateau, κ-gal, κ-profile, z-profile|
-|`src/ptquat/fit_global.py`|MCMC fitting and likelihood evaluation|
-|`src/ptquat/likelihood.py`|Likelihood and covariance construction|
-|`src/ptquat/cli.py`|CLI entry points (`fit`, `exp compare`, `exp loo`, etc.)|
-|`src/ptq/experiments/kappa_h.py`|Thickness regression / κ–h / κ+Σ audit|
-|`scripts/make_paper_artifacts.py`|Collect paper-facing tables, figures, and summaries|
-|`scripts/run_baseline_sixmodels_12000.sh`|Six-model long-chain baseline|
-|`scripts/summarize_baseline_sixmodels.py`|Aggregate baseline outputs|
-|`scripts/run_robustness_core_multiseed12000.sh`|Multi-seed robustness audit|
-|`scripts/summarize_robustness_core_multiseed.py`|Aggregate robustness outputs|
-|`scripts/run_ptqnu_submission_bundle.sh`|Hero-model diagnostics + submission bundle assembly|
+| Path                                             | Purpose                                                                                            |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `src/ptquat/experiments.py`                      | WAIC/LOO comparison, pWAIC diagnostics, PPC, stress, closure, plateau, κ-gal, κ-profile, z-profile |
+| `src/ptquat/fit_global.py`                       | MCMC fitting and likelihood evaluation                                                             |
+| `src/ptquat/likelihood.py`                       | Likelihood and covariance construction                                                             |
+| `src/ptquat/cli.py`                              | CLI entry points (`fit`, `exp compare`, `exp loo`, etc.)                                           |
+| `src/ptq/experiments/kappa_h.py`                 | Thickness regression / κ–h / κ+Σ audit                                                             |
+| `scripts/make_paper_artifacts.py`                | Collect paper-facing tables, figures, and summaries                                                |
+| `scripts/run_baseline_sixmodels_12000.sh`        | Six-model long-chain baseline                                                                      |
+| `scripts/summarize_baseline_sixmodels.py`        | Aggregate baseline outputs                                                                         |
+| `scripts/run_robustness_core_multiseed12000.sh`  | Multi-seed robustness audit                                                                        |
+| `scripts/summarize_robustness_core_multiseed.py` | Aggregate robustness outputs                                                                       |
+| `scripts/run_ptqnu_submission_bundle.sh`         | Hero-model diagnostics + submission bundle assembly                                                |
 
 ---
 
