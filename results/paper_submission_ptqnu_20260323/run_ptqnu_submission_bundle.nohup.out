@@ -1,0 +1,76 @@
+nohup: ignoring input
+[INFO] run_ptqnu_submission_bundle start
+[INFO] BASE=results/revision_baseline_sixmodels_12000
+[INFO] HERO=results/revision_baseline_sixmodels_12000/ptq-nu_gauss
+[INFO] ROB=results/revision_robustness_core_multiseed12000
+[INFO] SUB=results/paper_submission_ptqnu_20260323
+[INFO] git commit: 144691fc3ed09a3d04b7b9724bdecdfbd2a55e20
+Python 3.12.3
+[INFO] Step 0: summarize baseline and robustness
+[summarize_baseline_sixmodels] wrote aggregate artifacts under results/revision_baseline_sixmodels_12000/aggregate
+[summarize_robustness_core_multiseed] wrote aggregate artifacts under results/revision_robustness_core_multiseed12000/aggregate
+[INFO] Step 1: ptq-nu closure
+[INFO] Skip existing: results/revision_baseline_sixmodels_12000/ptq-nu_gauss/closure_test.yaml
+[INFO] Skip existing: results/revision_baseline_sixmodels_12000/ptq-nu_gauss/closure_scan/closure_sensitivity.csv
+[INFO] Step 2: ptq-nu plateau
+[INFO] Skip existing: results/revision_baseline_sixmodels_12000/ptq-nu_gauss/plateau.png
+[INFO] Step 3: ptq-nu kappa-gal (obs)
+[INFO] Skip existing: results/revision_baseline_sixmodels_12000/ptq-nu_gauss/kappa_gal_obsdebiased_cos_f095_summary.json
+[INFO] Step 4: ptq-nu kappa-gal (model-rstar)
+[INFO] Skip existing: results/revision_baseline_sixmodels_12000/ptq-nu_gauss/kappa_gal_obsdebiased_cos_rstar_model_summary.json
+[INFO] Step 5: ptq-nu kappa-profile
+[INFO] Skip existing: results/revision_baseline_sixmodels_12000/ptq-nu_gauss/kappa_profile_cos.png
+[INFO] Running: ptquat exp kappa-fit --results results/revision_baseline_sixmodels_12000/ptq-nu_gauss --prefix kappa_profile_cos --eps-norm cos --bootstrap 2000 --seed 1234
+{
+  "prefix": "kappa_profile_cos",
+  "eps_norm": "cos",
+  "A": -0.0014392973169640663,
+  "B": 0.035857717234323495,
+  "R2": 0.007996094097751927,
+  "N": 13,
+  "epsilon_fit": 0.15514831461431441,
+  "epsilon_cos": 1.47,
+  "scale_fit_to_cos": 1.0,
+  "eta_hat": -0.0014392973169640663,
+  "B_cos": 0.035857717234323495,
+  "binned_csv": "results/revision_baseline_sixmodels_12000/ptq-nu_gauss/kappa_profile_cos_binned.csv"
+}
+{
+  "prefix": "kappa_profile_cos",
+  "eps_norm": "cos",
+  "epsilon_fit": 0.15514831461431441,
+  "epsilon_cos": 1.47,
+  "scale_fit_to_cos": 1.0,
+  "n_boot": 2000,
+  "seed": 1234,
+  "A": {
+    "p16": -0.005288332729539047,
+    "p50": -0.0008848158506771113,
+    "p84": 0.004990648149688293
+  },
+  "B": {
+    "p16": 0.03249231462194329,
+    "p50": 0.034759950992656094,
+    "p84": 0.03755828041189996
+  },
+  "eta_hat": {
+    "p16": -0.005288332729539047,
+    "p50": -0.0008848158506771113,
+    "p84": 0.004990648149688293
+  },
+  "B_cos": {
+    "p16": 0.03249231462194329,
+    "p50": 0.034759950992656094,
+    "p84": 0.03755828041189996
+  },
+  "per_point_csv": "results/revision_baseline_sixmodels_12000/ptq-nu_gauss/kappa_profile_cos_per_point.csv"
+}
+[INFO] Step 6: ptq-nu z-profile
+[INFO] Skip existing: results/revision_baseline_sixmodels_12000/ptq-nu_gauss/z_profile.png
+[INFO] Step 7: ptq-nu kappa_h thickness regression
+[INFO] Skip existing: results/revision_baseline_sixmodels_12000/ptq-nu_gauss/kappa_h_report_ptqnu.json
+[INFO] Step 8: build submission bundle
+[INFO] Submission bundle created:
+[INFO]   results/paper_submission_ptqnu_20260323
+[INFO]   results/paper_submission_ptqnu_20260323.tar.gz
+[INFO] run_ptqnu_submission_bundle finished
