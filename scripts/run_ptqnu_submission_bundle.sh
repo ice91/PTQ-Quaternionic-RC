@@ -364,7 +364,7 @@ Large chain.h5 files and all per-galaxy plot PNGs are intentionally not duplicat
 EOF
 
 # Optional archive
-tar -czf "${SUB}.tar.gz" "$(basename "$SUB")" -C "$(dirname "$SUB")"
+tar -czf "${SUB}.tar.gz" -C "$(dirname "$SUB")" "$(basename "$SUB")"
 
 echo "[INFO] Submission bundle created:"
 echo "[INFO]   $SUB"
