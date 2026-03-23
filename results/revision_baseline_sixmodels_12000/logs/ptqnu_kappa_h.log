@@ -1,0 +1,23 @@
+[kappa] computed from rotation curves: valid points = 1782
+[Σ] per-radius columns missing; using galaxy-level Σ fallback at R★ (single-point per galaxy).
+Sample size (used in fit): 19
+Pearson r (log–log): -0.200
+Spearman ρ (log–log): -0.295
+Weighted OLS (log10 h = a + b log10 κ):
+  a = 0.489 ± 0.829
+  b = -0.644 ± 0.506
+  R^2 = 0.087
+[log h ~ log κ + log Σ_tot] N=19, p=3
+  beta: 4.679±0.648, -2.559±0.334, 1.118±0.140
+  R^2 = 0.818, AICc = -48.35
+  AICc (κ-only/Σ-only/κ+Σ) = -25.98 / -28.93 / -48.35
+  ΔAICc = {'kappa_only': 22.36345402254613, 'sigma_only': 19.415767031387475, 'kappa_sigma': 0.0}
+  LOO mean: [np.float64(4.683320577098691), np.float64(-2.560544322003879), np.float64(1.120061360248439)]
+  LOO std : [np.float64(0.20291551308727726), np.float64(0.10821898087759407), np.float64(0.040367629123941956)]
+  Bootstrap medians: [np.float64(4.746932822224215), np.float64(-2.577260629499521), np.float64(1.1319410061755706)]
+  16–84 percentiles: low=[np.float64(4.007279018630905), np.float64(-2.94911080149408), np.float64(0.9910366990583617)]  high=[np.float64(5.435103673580799), np.float64(-2.1877153298405045), np.float64(1.2819862679290581)]
+Saved -> results/revision_baseline_sixmodels_12000/ptq-nu_gauss/kappa_h_used_ptqnu.csv (rows=19)
+Saved plot -> results/revision_baseline_sixmodels_12000/ptq-nu_gauss/kappa_h_scatter.png
+Saved plot -> results/revision_baseline_sixmodels_12000/ptq-nu_gauss/kappa_h_scatter_sigma.png
+[DIST-INV] log(h/D) = 0.181 + -0.512 log(κD) + 0.409 log Σ ; R^2=0.217
+Saved report -> results/revision_baseline_sixmodels_12000/ptq-nu_gauss/kappa_h_report_ptqnu.json

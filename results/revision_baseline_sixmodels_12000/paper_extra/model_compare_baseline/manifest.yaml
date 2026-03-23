@@ -1,0 +1,16 @@
+git_hash: f561db54363f6d0e5f3c064d3a3876babcef4bfc
+command: ptquat exp compare --models ptq-screen mond ptq-nu nfw1p ptq baryon --data
+  dataset/sparc_tidy.csv --fit-root results/revision_baseline_sixmodels_12000 --outdir
+  results/revision_baseline_sixmodels_12000/paper_extra/model_compare_baseline --seed
+  0
+n_samples: 153600
+seed: 0
+models:
+- ptq-screen
+- mond
+- ptq-nu
+- nfw1p
+- ptq
+- baryon
+pwaic_diagnostics_model: ptq-nu
+pwaic_diagnostics_cov_mode: diag

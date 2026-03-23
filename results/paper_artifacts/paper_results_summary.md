@@ -10,7 +10,12 @@
 
 ## pWAIC diagnostics
 
-- （尚未找到 pWAIC by-galaxy 診斷輸出）
+- 最高 pWAIC 貢獻的前幾個星系：
+  - `ESO563-G021`: pWAIC ≈ 263.8, N ≈ 30, mean Var(loglik) ≈ 8.795
+  - `NGC2841`: pWAIC ≈ 255.5, N ≈ 50, mean Var(loglik) ≈ 5.110
+  - `IC4202`: pWAIC ≈ 213.3, N ≈ 32, mean Var(loglik) ≈ 6.665
+  - `NGC7814`: pWAIC ≈ 166.6, N ≈ 18, mean Var(loglik) ≈ 9.253
+  - `NGC4217`: pWAIC ≈ 123.5, N ≈ 19, mean Var(loglik) ≈ 6.502
 
 ## Key conclusions
 

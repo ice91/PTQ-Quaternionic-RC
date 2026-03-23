@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/home/rocky/PTQ-Quaternionic-RC/.venv/bin/ptquat", line 8, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/rocky/PTQ-Quaternionic-RC/src/ptquat/cli.py", line 438, in main
+    out = EXP.loo_compare_models(
+          ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rocky/PTQ-Quaternionic-RC/src/ptquat/experiments.py", line 2018, in loo_compare_models
+    idata = az.from_dict(log_likelihood={"y": log_lik_mat[None, :, :]})
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: from_dict() got an unexpected keyword argument 'log_likelihood'

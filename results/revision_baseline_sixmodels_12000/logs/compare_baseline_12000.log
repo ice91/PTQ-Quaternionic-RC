@@ -1,0 +1,21 @@
+[compare] ptq-screen: log_lik shape=(153600, 1782), mean log_lik per-point=-4.163, mean p_waic per-point=0.174
+[compare] mond: log_lik shape=(153600, 1782), mean log_lik per-point=-4.176, mean p_waic per-point=0.158
+[compare] ptq-nu: log_lik shape=(153600, 1782), mean log_lik per-point=-4.167, mean p_waic per-point=0.151
+[compare] nfw1p: log_lik shape=(307200, 1782), mean log_lik per-point=-5.775, mean p_waic per-point=5.177
+[compare] ptq: log_lik shape=(153600, 1782), mean log_lik per-point=-4.443, mean p_waic per-point=0.106
+[compare] baryon: log_lik shape=(153600, 1782), mean log_lik per-point=-5.470, mean p_waic per-point=0.061
+[compare] ΔWAIC decomposition (diag+per_point vs best WAIC model):
+  ptq-screen: Δlppd=21.608, ΔpWAIC=40.769, ΔWAIC=38.321, -2[(Δlppd)-(ΔpWAIC)]=38.321
+  mond: Δlppd=-11.888, ΔpWAIC=13.752, ΔWAIC=51.280, -2[(Δlppd)-(ΔpWAIC)]=51.280
+  ptq: Δlppd=-523.754, ΔpWAIC=-79.426, ΔWAIC=888.656, -2[(Δlppd)-(ΔpWAIC)]=888.656
+  baryon: Δlppd=-2389.798, ΔpWAIC=-160.435, ΔWAIC=4458.727, -2[(Δlppd)-(ΔpWAIC)]=4458.727
+  nfw1p: Δlppd=-1456.343, ΔpWAIC=8956.787, ΔWAIC=20826.261, -2[(Δlppd)-(ΔpWAIC)]=20826.261
+[compare] pWAIC diagnostics written to results/revision_baseline_sixmodels_12000/paper_extra/model_compare_baseline/pwaic_diagnostics
+Saved: results/revision_baseline_sixmodels_12000/paper_extra/model_compare_baseline/compare_table.csv
+     model         lppd         waic      p_waic  n_params  n_data  mean_loglik_per_point  mean_lppd_per_point   delta_waic  rank
+    ptq-nu -7309.703527 15156.626239  268.609592        93    1782              -4.167180            -4.101966     0.000000     1
+ptq-screen -7288.095250 15194.947267  309.378383        94    1782              -4.163183            -4.089840    38.321028     2
+      mond -7321.591123 15207.906379  282.362067        93    1782              -4.176134            -4.108637    51.280140     3
+       ptq -7833.457502 16045.282709  189.183853        93    1782              -4.442664            -4.395880   888.656470     4
+    baryon -9699.501686 19615.353269  108.174949        92    1782              -5.470117            -5.443042  4458.727031     5
+     nfw1p -8766.046705 35982.887422 9225.397006       183    1782              -5.775392            -4.919218 20826.261183     6

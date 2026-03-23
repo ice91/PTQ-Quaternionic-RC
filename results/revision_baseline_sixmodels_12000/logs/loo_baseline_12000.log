@@ -1,0 +1,24 @@
+/home/rocky/PTQ-Quaternionic-RC/.venv/lib/python3.12/site-packages/arviz_stats/loo/helper_loo.py:1143: UserWarning: Estimated shape parameter of Pareto distribution is greater than 0.70 for one or more samples. You should consider using a more robust model, this is because importance sampling is less likely to work well if the marginal posterior and LOO posterior are very different. This is more likely to happen with a non-robust model and highly influential observations.
+  warnings.warn(
+/home/rocky/PTQ-Quaternionic-RC/.venv/lib/python3.12/site-packages/arviz_stats/loo/helper_loo.py:1143: UserWarning: Estimated shape parameter of Pareto distribution is greater than 0.70 for one or more samples. You should consider using a more robust model, this is because importance sampling is less likely to work well if the marginal posterior and LOO posterior are very different. This is more likely to happen with a non-robust model and highly influential observations.
+  warnings.warn(
+/home/rocky/PTQ-Quaternionic-RC/.venv/lib/python3.12/site-packages/arviz_stats/loo/helper_loo.py:1143: UserWarning: Estimated shape parameter of Pareto distribution is greater than 0.70 for one or more samples. You should consider using a more robust model, this is because importance sampling is less likely to work well if the marginal posterior and LOO posterior are very different. This is more likely to happen with a non-robust model and highly influential observations.
+  warnings.warn(
+/home/rocky/PTQ-Quaternionic-RC/.venv/lib/python3.12/site-packages/arviz_stats/loo/helper_loo.py:1143: UserWarning: Estimated shape parameter of Pareto distribution is greater than 0.70 for one or more samples. You should consider using a more robust model, this is because importance sampling is less likely to work well if the marginal posterior and LOO posterior are very different. This is more likely to happen with a non-robust model and highly influential observations.
+  warnings.warn(
+/home/rocky/PTQ-Quaternionic-RC/.venv/lib/python3.12/site-packages/arviz_stats/loo/helper_loo.py:1143: UserWarning: Estimated shape parameter of Pareto distribution is greater than 0.70 for one or more samples. You should consider using a more robust model, this is because importance sampling is less likely to work well if the marginal posterior and LOO posterior are very different. This is more likely to happen with a non-robust model and highly influential observations.
+  warnings.warn(
+[loo] ptq-screen: pareto_k<0.7 fraction = 0.994
+[loo] mond: pareto_k<0.7 fraction = 0.997
+[loo] ptq-nu: pareto_k<0.7 fraction = 0.996
+[loo] nfw1p: pareto_k<0.7 fraction = 0.726
+[loo] ptq: pareto_k<0.7 fraction = 0.996
+[loo] baryon: pareto_k<0.7 fraction = 1.000
+Saved: results/revision_baseline_sixmodels_12000/paper_extra/loo_compare_baseline/loo_table.csv
+     model      elpd_loo       p_loo        looic  n_data  delta_looic  rank   delta_elpd
+    ptq-nu  -7586.090940  276.387413 15172.181881    1782     0.000000     1     0.000000
+ptq-screen  -7606.837330  318.742079 15213.674659    1782    41.492779     2   -20.746389
+      mond  -7610.250340  288.659217 15220.500681    1782    48.318800     3   -24.159400
+       ptq  -8027.749043  194.291541 16055.498085    1782   883.316204     4  -441.658102
+    baryon  -9808.575943  109.074257 19617.151886    1782  4444.970005     5 -2222.485003
+     nfw1p -15639.524690 6873.477985 31279.049379    1782 16106.867499     6 -8053.433749

@@ -1,0 +1,12 @@
+git_hash: 217dfb3dea5a7a4c7db9cff56658090ea6f78a31
+command: ptquat exp compare --models ptq-screen mond-screen mond --data dataset/sparc_tidy.csv
+  --fit-root results/revision_prod_20260306_core3000 --outdir results/revision_prod_20260306_core3000/paper_extra/model_compare_core
+  --seed 0
+n_samples: 38400
+seed: 0
+models:
+- ptq-screen
+- mond-screen
+- mond
+pwaic_diagnostics_model: mond
+pwaic_diagnostics_cov_mode: diag

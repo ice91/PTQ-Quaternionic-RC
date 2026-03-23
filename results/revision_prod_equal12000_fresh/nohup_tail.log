@@ -1,0 +1,20 @@
+nohup: ignoring input
+[INFO] run_core_equal12000_fresh_tail start
+[INFO] RUNROOT=results/revision_prod_equal12000_fresh
+[INFO] git commit: e7a3c48f1064df22fb361461998bbf605c8b7042
+[INFO] ptq-screen closure-scan already present at results/revision_prod_equal12000_fresh/ptq-screen_gauss/closure_scan/closure_sensitivity.csv
+Traceback (most recent call last):
+  File "/home/rocky/PTQ-Quaternionic-RC/scripts/make_paper_artifacts.py", line 515, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/home/rocky/PTQ-Quaternionic-RC/scripts/make_paper_artifacts.py", line 498, in main
+    _build_summary_markdown(paper_root, primary_results)
+  File "/home/rocky/PTQ-Quaternionic-RC/scripts/make_paper_artifacts.py", line 393, in _build_summary_markdown
+    (paper_root / "paper_results_summary.md").write_text("\n".join(lines), encoding="utf-8")
+  File "/usr/lib/python3.12/pathlib.py", line 1049, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/pathlib.py", line 1015, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/home/rocky/PTQ-Quaternionic-RC/results/revision_prod_equal12000_fresh/paper_artifacts/paper_results_summary.md'

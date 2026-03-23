@@ -1,0 +1,14 @@
+/home/rocky/PTQ-Quaternionic-RC/.venv/lib/python3.12/site-packages/arviz_stats/loo/helper_loo.py:1143: UserWarning: Estimated shape parameter of Pareto distribution is greater than 0.70 for one or more samples. You should consider using a more robust model, this is because importance sampling is less likely to work well if the marginal posterior and LOO posterior are very different. This is more likely to happen with a non-robust model and highly influential observations.
+  warnings.warn(
+/home/rocky/PTQ-Quaternionic-RC/.venv/lib/python3.12/site-packages/arviz_stats/loo/helper_loo.py:1143: UserWarning: Estimated shape parameter of Pareto distribution is greater than 0.70 for one or more samples. You should consider using a more robust model, this is because importance sampling is less likely to work well if the marginal posterior and LOO posterior are very different. This is more likely to happen with a non-robust model and highly influential observations.
+  warnings.warn(
+/home/rocky/PTQ-Quaternionic-RC/.venv/lib/python3.12/site-packages/arviz_stats/loo/helper_loo.py:1143: UserWarning: Estimated shape parameter of Pareto distribution is greater than 0.70 for one or more samples. You should consider using a more robust model, this is because importance sampling is less likely to work well if the marginal posterior and LOO posterior are very different. This is more likely to happen with a non-robust model and highly influential observations.
+  warnings.warn(
+[loo] ptq-screen: pareto_k<0.7 fraction = 0.987
+[loo] mond-screen: pareto_k<0.7 fraction = 0.971
+[loo] mond: pareto_k<0.7 fraction = 0.985
+Saved: results/revision_prod_20260306_core3000/paper_extra/loo_compare_core_after12000/loo_table.csv
+      model     elpd_loo      p_loo        looic  n_data  delta_looic  rank  delta_elpd
+ ptq-screen -7662.457808 346.438394 15324.915617    1782     0.000000     1    0.000000
+       mond -7822.115847 403.002835 15644.231694    1782   319.316077     2 -159.658038
+mond-screen -8066.446898 526.810007 16132.893796    1782   807.978180     3 -403.989090

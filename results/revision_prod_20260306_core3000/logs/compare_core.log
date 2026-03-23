@@ -1,0 +1,12 @@
+[compare] ptq-screen: log_lik shape=(38400, 1782), mean log_lik per-point=-4.431, mean p_waic per-point=0.359
+[compare] mond-screen: log_lik shape=(38400, 1782), mean log_lik per-point=-4.344, mean p_waic per-point=0.282
+[compare] mond: log_lik shape=(38400, 1782), mean log_lik per-point=-4.254, mean p_waic per-point=0.221
+[compare] ΔWAIC decomposition (diag+per_point vs best WAIC model):
+  mond-screen: Δlppd=-120.524, ΔpWAIC=109.060, ΔWAIC=459.169, -2[(Δlppd)-(ΔpWAIC)]=459.169
+  ptq-screen: Δlppd=-226.333, ΔpWAIC=246.116, ΔWAIC=944.898, -2[(Δlppd)-(ΔpWAIC)]=944.898
+[compare] pWAIC diagnostics written to results/revision_prod_20260306_core3000/paper_extra/model_compare_core/pwaic_diagnostics
+Saved: results/revision_prod_20260306_core3000/paper_extra/model_compare_core/compare_table.csv
+      model         lppd         waic     p_waic  n_params  n_data  mean_loglik_per_point  mean_lppd_per_point  delta_waic  rank
+       mond -7419.113012 15626.522556 394.148266        93    1782              -4.254289            -4.163363    0.000000     1
+mond-screen -7539.636891 16085.691236 503.208727        94    1782              -4.344323            -4.230997  459.168680     2
+ ptq-screen -7645.446207 16571.420272 640.263928        94    1782              -4.430582            -4.290374  944.897715     3

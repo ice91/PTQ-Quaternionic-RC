@@ -1,0 +1,18 @@
+/home/rocky/PTQ-Quaternionic-RC/.venv/lib/python3.12/site-packages/arviz_stats/loo/helper_loo.py:1143: UserWarning: Estimated shape parameter of Pareto distribution is greater than 0.70 for one or more samples. You should consider using a more robust model, this is because importance sampling is less likely to work well if the marginal posterior and LOO posterior are very different. This is more likely to happen with a non-robust model and highly influential observations.
+  warnings.warn(
+/home/rocky/PTQ-Quaternionic-RC/.venv/lib/python3.12/site-packages/arviz_stats/loo/helper_loo.py:1143: UserWarning: Estimated shape parameter of Pareto distribution is greater than 0.70 for one or more samples. You should consider using a more robust model, this is because importance sampling is less likely to work well if the marginal posterior and LOO posterior are very different. This is more likely to happen with a non-robust model and highly influential observations.
+  warnings.warn(
+/home/rocky/PTQ-Quaternionic-RC/.venv/lib/python3.12/site-packages/arviz_stats/loo/helper_loo.py:1143: UserWarning: Estimated shape parameter of Pareto distribution is greater than 0.70 for one or more samples. You should consider using a more robust model, this is because importance sampling is less likely to work well if the marginal posterior and LOO posterior are very different. This is more likely to happen with a non-robust model and highly influential observations.
+  warnings.warn(
+/home/rocky/PTQ-Quaternionic-RC/.venv/lib/python3.12/site-packages/arviz_stats/loo/helper_loo.py:1143: UserWarning: Estimated shape parameter of Pareto distribution is greater than 0.70 for one or more samples. You should consider using a more robust model, this is because importance sampling is less likely to work well if the marginal posterior and LOO posterior are very different. This is more likely to happen with a non-robust model and highly influential observations.
+  warnings.warn(
+[loo] ptq-nu: pareto_k<0.7 fraction = 0.991
+[loo] ptq-screen: pareto_k<0.7 fraction = 0.992
+[loo] mond: pareto_k<0.7 fraction = 0.980
+[loo] mond-screen: pareto_k<0.7 fraction = 0.993
+Saved: results/revision_robustness_core_multiseed12000/seed_13/paper_extra/loo_compare_core/loo_table.csv
+      model     elpd_loo      p_loo        looic  n_data  delta_looic  rank  delta_elpd
+     ptq-nu -7553.151003 272.378092 15106.302006    1782     0.000000     1    0.000000
+mond-screen -7586.888281 286.968462 15173.776562    1782    67.474556     2  -33.737278
+ ptq-screen -7594.663037 301.533351 15189.326073    1782    83.024067     3  -41.512034
+       mond -7610.167228 305.337169 15220.334456    1782   114.032450     4  -57.016225

@@ -1,0 +1,14 @@
+/home/rocky/PTQ-Quaternionic-RC/.venv/lib/python3.12/site-packages/arviz_stats/loo/helper_loo.py:1143: UserWarning: Estimated shape parameter of Pareto distribution is greater than 0.70 for one or more samples. You should consider using a more robust model, this is because importance sampling is less likely to work well if the marginal posterior and LOO posterior are very different. This is more likely to happen with a non-robust model and highly influential observations.
+  warnings.warn(
+/home/rocky/PTQ-Quaternionic-RC/.venv/lib/python3.12/site-packages/arviz_stats/loo/helper_loo.py:1143: UserWarning: Estimated shape parameter of Pareto distribution is greater than 0.70 for one or more samples. You should consider using a more robust model, this is because importance sampling is less likely to work well if the marginal posterior and LOO posterior are very different. This is more likely to happen with a non-robust model and highly influential observations.
+  warnings.warn(
+/home/rocky/PTQ-Quaternionic-RC/.venv/lib/python3.12/site-packages/arviz_stats/loo/helper_loo.py:1143: UserWarning: Estimated shape parameter of Pareto distribution is greater than 0.70 for one or more samples. You should consider using a more robust model, this is because importance sampling is less likely to work well if the marginal posterior and LOO posterior are very different. This is more likely to happen with a non-robust model and highly influential observations.
+  warnings.warn(
+[loo] ptq-screen: pareto_k<0.7 fraction = 0.988
+[loo] mond: pareto_k<0.7 fraction = 0.998
+[loo] mond-screen: pareto_k<0.7 fraction = 0.994
+Saved: results/revision_prod_equal12000_fresh/paper_extra/loo_compare_core/loo_table.csv
+      model     elpd_loo      p_loo        looic  n_data  delta_looic  rank  delta_elpd
+       mond -7607.529668 282.137680 15215.059336    1782     0.000000     1    0.000000
+mond-screen -7640.173435 310.308742 15280.346871    1782    65.287535     2  -32.643768
+ ptq-screen -7651.415105 331.577425 15302.830210    1782    87.770874     3  -43.885437
