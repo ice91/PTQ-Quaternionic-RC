@@ -1,16 +1,25 @@
 # PTQ-Quaternionic-RC — SPARC Rotation-Curve Pipeline
 
 **TL;DR.**  
-This repo reproduces the experiments in our paper where **PTQ is positioned as the physical origin of MOND**.  
-We compare **Baryon-only**, **NFW-1p**, **MOND(ν)**, **PTQ (linear)**, **PTQ-ν**, and **PTQ-screen**, report **full-likelihood AIC/BIC**, and run a robustness/closure suite including **PPC**, **error stress (×2)**, **inner-masking**, **H₀ scan**, and **κ-checks** (cross-scale tests).  
-We also include **Bayesian model comparison** via **WAIC** and **PSIS-LOO** (`ptquat exp compare`, `ptquat exp loo`), **pWAIC diagnostics** (per-galaxy / per-radius), and **paper-artifact aggregation** (tables, figures, summary) via `scripts/make_paper_artifacts.py`.  
-A **κ–h regression** links disk scale-height (h) with **epicyclic frequency** (κ) and **surface density** (Σ).
+This repository reproduces the experiments for our PTQ weak-field rotation-curve program on **SPARC**.  
+The codebase compares **Baryon-only**, **NFW-1p**, **MOND**, **MOND-screen**, **PTQ (linear)**, **PTQ-ν**, and **PTQ-screen**, reports **full-likelihood AIC/BIC**, and supports **Bayesian model comparison** via **WAIC** and **PSIS-LOO** (`ptquat exp compare`, `ptquat exp loo`) together with **pWAIC diagnostics** (per-galaxy / per-radius).  
 
-Key dictionary:  
-$$[  
-\Omega_\Lambda(\epsilon)=\frac{\epsilon^2}{1+\epsilon^2},\qquad  
-a_0(\epsilon)=\epsilon,c,H_0 \quad (\text{optionally } a_0=\kappa,\epsilon,c,H_0).  
-]$$
+**Current manuscript-facing stance of this repo:**
+- **`ptq-nu`** is the current **primary RC-level PTQ realization** for paper-facing analyses.
+- **`ptq-screen`** is retained as a **generalized comparison model** with a global response-kernel parameter.
+- **Strict cosmology–galaxy closure is treated as a diagnostic test, not a claimed success condition.**
+- The repo includes **geometry audits** such as **κ diagnostics**, **residual-acceleration plateau**, **z-profile**, and **κ–h / κ+Σ thickness regression**.
+
+A **κ–h regression** links disk scale-height \(h\) with **epicyclic frequency** \(\kappa\) and **surface density** \(\Sigma\), serving as an external geometry audit rather than a by-construction fit improvement.
+
+Key dictionary:
+\[
+\Omega_\Lambda(\epsilon)=\frac{\epsilon^2}{1+\epsilon^2},
+\qquad
+a_0(\epsilon)=\epsilon\,c\,H_0.
+\]
+
+For generalized or interpretive extensions, an effective geometric efficiency factor may be introduced at the analysis level, but it should be read as a **reinterpretation of mismatch**, not as a passed closure claim.
 
 ---
 
@@ -38,7 +47,12 @@ pytest -q
 ptquat fetch --out dataset/raw
 ```
 
-This produces `dataset/raw/vizier_table1.csv` and `dataset/raw/vizier_table2.csv`.
+This produces:
+
+- `dataset/raw/vizier_table1.csv`
+    
+- `dataset/raw/vizier_table2.csv`
+    
 
 ### 1.2 Build tidy CSV with quality cuts
 
@@ -49,12 +63,34 @@ ptquat preprocess \
   --i-min 30.0 --reldmax 0.20 --qual-max 2
 ```
 
-Columns in the tidy CSV include:  
-`galaxy, r_kpc, v_obs_kms, v_err_kms, v_disk_kms, v_bulge_kms, v_gas_kms, D_Mpc, D_err_Mpc, i_deg, i_err_deg`.
+Columns in the tidy CSV include:
+
+- `galaxy`
+    
+- `r_kpc`
+    
+- `v_obs_kms`
+    
+- `v_err_kms`
+    
+- `v_disk_kms`
+    
+- `v_bulge_kms`
+    
+- `v_gas_kms`
+    
+- `D_Mpc`
+    
+- `D_err_Mpc`
+    
+- `i_deg`
+    
+- `i_err_deg`
+    
 
 ### 1.3 S4G disk scale-heights (h) & merge into SPARC
 
-This step builds the **S4G** disk thickness scale (h) catalog and merges it with **SPARC** for the **κ–h** experiment.
+This step builds the **S4G** disk thickness catalog and merges it with **SPARC** for the **κ–h / κ+Σ** experiments.
 
 **Option A — ptquat CLI (recommended):**
 
@@ -70,229 +106,411 @@ bash scripts/vizier_s4g_query.sh
 python scripts/etl_s4g_h.py --sparc dataset/sparc_tidy.csv
 ```
 
-Outputs: `dataset/geometry/h_catalog.csv`, `dataset/geometry/sparc_with_h.csv`. SHA-256 checksums are written alongside to verify byte-level identity.
+Outputs:
+
+- `dataset/geometry/h_catalog.csv`
+    
+- `dataset/geometry/sparc_with_h.csv`
+    
+
+SHA-256 checksums are written alongside to verify byte-level identity.
 
 ---
 
 ## 2. Models
 
-- `baryon`: (v=\sqrt{v_{\rm bar}^2}).
+### Main model family
+
+- **`baryon`**:  
+    [  
+    v=\sqrt{v_{\rm bar}^2}.  
+    ]
     
-- `mond`: MOND (simple-ν). If `--a0-si` not given, (a_0) is sampled with prior `--a0-range`.
+- **`mond`**:  
+    Standard MOND (`simple-\nu`). If `--a0-si` is not given, (a_0) is sampled with prior `--a0-range`.
     
-- `nfw1p`: one halo parameter ((M_{200})) per galaxy; concentration from a c–M power law (`--c0`, `--c-slope`).
+- **`mond-screen`**:  
+    Generalized MOND-like screening model with free global (q) and free (a_0). This is primarily used as a **matched-kernel comparison model**.
     
-- `ptq` (linear): (v=\sqrt{v_{\rm bar}^2 + (\epsilon cH_0),r}). **Negative control**.
+- **`nfw1p`**:  
+    One halo parameter ((M_{200})) per galaxy; concentration from a c–M power law (`--c0`, `--c-slope`).
     
-- `ptq-nu`: reuse MOND shape but set (a_0=\epsilon cH_0) (ε global).
+- **`ptq` (linear)**:  
+    [  
+    v=\sqrt{v_{\rm bar}^2 + (\epsilon cH_0),r}.  
+    ]  
+    **Negative control**.
     
-- `ptq-screen`: generalized MOND-like (\nu_q(y)=0.5+\sqrt{0.25+y^{-q}}) with **global** (q) and (a_0=\epsilon cH_0).
+- **`ptq-nu`**:  
+    Reuses the MOND interpolation shape but sets  
+    [  
+    a_0=\epsilon cH_0,  
+    ]  
+    with a **global** (\epsilon).  
+    This is the current **primary RC-level PTQ realization** in the manuscript-facing workflow.
+    
+- **`ptq-screen`**:  
+    Generalized PTQ-screened realization  
+    [  
+    \nu_q(y)=\frac12+\sqrt{\frac14+y^{-q}},  
+    ]  
+    with **global** (q) and  
+    [  
+    a_0=\epsilon cH_0.  
+    ]  
+    This is retained as a **comparison / extension model**, not the default hero model.
     
 
-**Priors** (`--prior`):
+### Priors (`--prior`)
 
-- `galaxies-only` (flat ε on (0,4)).
+- `galaxies-only`: flat (\epsilon) prior on ((0,4))
     
-- `planck-anchored` (Gaussian ε prior around 1.47±0.05).
+- `planck-anchored`: Gaussian (\epsilon) prior around (1.47\pm0.05)
     
 
-**Likelihood:** `--likelihood gauss|t` (default: gauss). Student-t (ν>2) improves outlier robustness.
+### Likelihood
+
+```text
+--likelihood gauss|t
+```
+
+Default: `gauss`
+
+Student-t likelihood (`--likelihood t --t-dof 8`) may improve robustness to outliers.
 
 ---
 
-## 3. Reproduce the main table (AIC/BIC)
+## 3. Reproduce the six-model baseline (AIC/BIC)
 
-Run the six models with default settings (SPARC90 / N≈1734 points):
+The recommended paper-facing baseline is the **six-model long-chain baseline**:
+
+- `ptq-screen`
+    
+- `mond`
+    
+- `ptq-nu`
+    
+- `nfw1p`
+    
+- `ptq`
+    
+- `baryon`
+    
+
+### 3.1 Recommended production script
 
 ```bash
-# PTQ-screen (main model)
-ptquat fit --model ptq-screen --data dataset/sparc_tidy.csv --outdir results/ptq_screen
+bash scripts/run_baseline_sixmodels_12000.sh
+```
 
-# MOND baseline
-ptquat fit --model mond --data dataset/sparc_tidy.csv --outdir results/ejpc_mond
+This runs fresh long-chain fits and then computes:
 
-# PTQ-ν
-ptquat fit --model ptq-nu --data dataset/sparc_tidy.csv --outdir results/ptq_nu
+- six-model WAIC comparison
+    
+- six-model PSIS-LOO comparison
+    
+- baseline artifact summaries
+    
 
-# NFW-1p
-ptquat fit --model nfw1p --data dataset/sparc_tidy.csv --outdir results/ejpc_nfw1p
+### 3.2 Aggregate the baseline outputs
 
-# PTQ (linear) — negative control
-ptquat fit --model ptq --data dataset/sparc_tidy.csv --outdir results/ejpc_main
+```bash
+python scripts/summarize_baseline_sixmodels.py
+```
 
-# Baryon-only — negative control
-ptquat fit --model baryon --data dataset/sparc_tidy.csv --outdir results/ejpc_baryon
+Expected outputs include:
+
+- `results/revision_baseline_sixmodels_12000/aggregate/baseline_sixmodels_fit_metrics.csv`
+    
+- `results/revision_baseline_sixmodels_12000/aggregate/baseline_sixmodels_compare_metrics.csv`
+    
+- `results/revision_baseline_sixmodels_12000/aggregate/baseline_sixmodels_summary.md`
+    
+- `results/revision_baseline_sixmodels_12000/aggregate/baseline_sixmodels_table.tex`
+    
+
+### 3.3 Manual per-model fit example
+
+If you want to run one model manually:
+
+```bash
+ptquat fit \
+  --model ptq-nu \
+  --data dataset/sparc_tidy.csv \
+  --outdir results/ptq_nu_gauss \
+  --nwalkers 192 \
+  --steps 12000 \
+  --seed 0 \
+  --backend-hdf5 results/ptq_nu_gauss/chain.h5 \
+  --thin-by 1
 ```
 
 Each run writes:
 
-- `global_summary.yaml` (includes `chi2_total`, **`AIC_full/BIC_full`**, `k_parameters`, `N_total`, median posteriors `epsilon_median/q_median/a0_median`, etc.)
+- `global_summary.yaml`
     
 - `per_galaxy_summary.csv`
     
 - `plot_*.png` for each galaxy
     
 
-**Compile a comparison CSV:**
+`global_summary.yaml` includes fields such as:
+
+- `chi2_total`
+    
+- `AIC_full`, `BIC_full`
+    
+- `k_parameters`
+    
+- `N_total`
+    
+- median posteriors such as `epsilon_median`, `q_median`, `a0_median`
+    
+
+---
+
+## 4. Bayesian model comparison
+
+### 4.1 WAIC model comparison (`ptquat exp compare`)
+
+Compute **WAIC** from posterior samples.
+
+Example for a paper-facing baseline:
 
 ```bash
-python - <<'PY'
-import yaml, pandas as pd
-from pathlib import Path
-import math
-
-def read_summary(yml_path: str) -> dict:
-    p = Path(yml_path)
-    s = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
-
-    # 取得/回推 k
-    k = s.get("k_parameters")
-    logL = s.get("logL_total_full")
-    N = s.get("N_total") or s.get("N")
-    AIC_full = s.get("AIC_full")
-    BIC_full = s.get("BIC_full")
-
-    # 若缺 k 但有 AIC_full、logL → 由 AIC = 2k - 2 logL 回推
-    if k is None and AIC_full is not None and logL is not None:
-        k = 0.5 * (AIC_full + 2.0*logL)
-        # 四捨五入為整數參數數目
-        k = int(round(k))
-
-    # 若缺 AIC_full 可由 k、logL 回推
-    if AIC_full is None and (k is not None) and (logL is not None):
-        AIC_full = 2*k - 2*logL
-
-    # 若缺 BIC_full 可由 k、N、logL 回推
-    if BIC_full is None and (k is not None) and (N is not None) and (logL is not None):
-        BIC_full = k*math.log(N) - 2*logL
-
-    row = dict(
-        k = k,
-        chi2 = s.get("chi2_total"),
-        AIC_full = AIC_full,
-        BIC_full = BIC_full,
-        AIC_quad = s.get("AIC_quad"),
-        BIC_quad = s.get("BIC_quad"),
-        sigma_sys_med = s.get("sigma_sys_median"),
-        epsilon_med = s.get("epsilon_median"),
-        a0_med = s.get("a0_median"),
-        N = N,
-    )
-    return row
-
-runs = {
-  "PTQ-screen": "results/full_20251014_084358/ptq-screen_gauss/global_summary.yaml",
-  "PTQ-v":      "results/full_20251014_084358/ptq-nu_gauss/global_summary.yaml",
-  "PTQ":        "results/full_20251014_084358/ptq_gauss/global_summary.yaml",
-  "Baryon":     "results/full_20251014_084358/baryon_gauss/global_summary.yaml",
-  "NFW-1p":     "results/full_20251014_084358/nfw1p_gauss/global_summary.yaml",
-  "MOND":       "results/full_20251014_084358/mond_gauss/global_summary.yaml",
-}
-
-rows=[]
-for name, yml in runs.items():
-    try:
-        row = read_summary(yml)
-        row["model"] = name
-        rows.append(row)
-    except FileNotFoundError:
-        rows.append(dict(model=name))  # 故障時保留占位
-        print(f"[WARN] missing file: {yml}")
-    except Exception as e:
-        rows.append(dict(model=name))
-        print(f"[WARN] {name}: {e}")
-
-df = pd.DataFrame(rows).set_index("model")
-# 僅在 BIC_full 存在時排序，否則跳過排序避免錯誤
-df = df.sort_values("BIC_full", na_position="last") if "BIC_full" in df.columns else df
-df.to_csv("results/all_model_compare.csv")
-print(df[["k","chi2","AIC_full","BIC_full","AIC_quad","BIC_quad","sigma_sys_med","epsilon_med","a0_med"]])
-print("Saved results/all_model_compare.csv")
-PY
-```
-
-### 3.1 WAIC model comparison (`ptquat exp compare`)
-
-From posterior samples, compute **WAIC** (Watanabe–Akaike Information Criterion) for model comparison. Outputs go to a chosen `--outdir` (e.g. `results/paper_extra/model_compare/`).
-
-```bash
-ptquat exp compare --models ptq-screen mond nfw1p baryon \
+ptquat exp compare \
+  --models ptq-screen mond ptq-nu nfw1p ptq baryon \
   --data dataset/sparc_tidy.csv \
-  --fit-root results \
-  --outdir results/paper_extra/model_compare \
+  --fit-root results/revision_baseline_sixmodels_12000 \
+  --outdir results/revision_baseline_sixmodels_12000/paper_extra/model_compare_baseline \
   --seed 0
 ```
 
-- **Outputs:** `compare_table.csv`, `compare_table.tex`, `rank_plot.png` / `rank_plot.pdf`, `manifest.yaml`, and optionally `breakdown.csv`, `compare_table_covfull_pergal.csv`, `compare_table_all_modes.csv`.  
-- **pWAIC diagnostics** (when run): `pwaic_diagnostics/var_loglik_points.csv`, `pwaic_by_galaxy.csv`, `top20_galaxies_pwaic.csv`, and plots (`pwaic_by_galaxy_bar.png`, `radius_vs_varloglik.png`).
-- **Options:** `--run-fits` to run short MCMC fits if `chain.h5` or `global_summary.yaml` are missing; `--burn-frac`, `--thin` for chain post-processing.
+Typical outputs:
 
-`compare_table.csv` columns: `model`, `waic`, `delta_waic`, `p_waic`, `n_params`, `n_data`, `rank`, and optionally `lppd`, `mean_lppd_per_point`, `mean_loglik_per_point`.
+- `compare_table.csv`
+    
+- `compare_table.tex`
+    
+- `breakdown.csv`
+    
+- `rank_plot.png`
+    
+- `rank_plot.pdf`
+    
+- `manifest.yaml`
+    
 
-### 3.2 PSIS-LOO (`ptquat exp loo`)
+When enabled, pWAIC diagnostics may also write:
 
-Compare models via **Pareto-smoothed importance sampling LOO** (requires `arviz`).
+- `pwaic_diagnostics/var_loglik_points.csv`
+    
+- `pwaic_diagnostics/pwaic_by_galaxy.csv`
+    
+- `pwaic_diagnostics/top20_galaxies_pwaic.csv`
+    
+- `pwaic_diagnostics/pwaic_by_radius.csv`
+    
+
+### 4.2 PSIS-LOO (`ptquat exp loo`)
+
+Compute **PSIS-LOO** via `arviz`.
+
+Example:
 
 ```bash
-ptquat exp loo --models ptq-screen mond nfw1p baryon \
-  --data dataset/sparc_tidy.csv --fit-root results \
-  --outdir results/paper_extra/loo_compare --seed 0
+ptquat exp loo \
+  --models ptq-screen mond ptq-nu nfw1p ptq baryon \
+  --data dataset/sparc_tidy.csv \
+  --fit-root results/revision_baseline_sixmodels_12000 \
+  --outdir results/revision_baseline_sixmodels_12000/paper_extra/loo_compare_baseline \
+  --seed 0
 ```
 
-- **Outputs:** `loo_table.csv` (model, elpd_loo, p_loo, looic, delta_looic, rank), `pareto_k.csv`, `pareto_k_hist.png`, `elpd_difference_plot.png`.
-- Use `--run-fits` if chains are missing. Prefer `pareto k < 0.7` for most points when interpreting LOO.
+Typical outputs:
+
+- `loo_table.csv`
+    
+- `pareto_k.csv`
+    
+- `pareto_k_hist.png`
+    
+- `elpd_difference_plot.png`
+    
+
+Interpretation note:
+
+- Prefer `pareto_k < 0.7` for most points when reading PSIS-LOO.
+    
+- If influential observations exist, treat LOO as a diagnostic rather than a sole decision criterion.
+    
 
 ---
 
-## 4. Robustness suite (as in the paper)
+## 5. Multi-seed robustness audit
 
-### S1. Posterior-(like) Predictive Coverage (PPC)
+The recommended robustness layer is a **multi-seed audit** over the main PTQ-family and MOND-family models.
 
-```bash
-ptquat exp ppc --results results/ptq_screen --data dataset/sparc_tidy.csv
-```
-
-Outputs `{results}/ppc_coverage.json` with 68/95% coverage.
-
-### S2. Error stress test (×2 on i_err & D_err)
+### 5.1 Recommended production script
 
 ```bash
-ptquat exp stress --model ptq-screen --data dataset/sparc_tidy.csv \
-  --scale-i 2 --scale-D 2 --outroot results/stress --prior galaxies-only
+bash scripts/run_robustness_core_multiseed12000.sh
 ```
 
-Re-fits on a perturbed CSV and writes a fresh `global_summary.yaml`.
+This runs fresh long-chain fits for multiple seeds and then computes per-seed:
+
+- WAIC compare
+    
+- PSIS-LOO compare
+    
+
+### 5.2 Aggregate the robustness outputs
+
+```bash
+python scripts/summarize_robustness_core_multiseed.py
+```
+
+Expected outputs include:
+
+- `results/revision_robustness_core_multiseed12000/aggregate/multiseed_fit_metrics_long.csv`
+    
+- `results/revision_robustness_core_multiseed12000/aggregate/multiseed_compare_metrics_long.csv`
+    
+- `results/revision_robustness_core_multiseed12000/aggregate/multiseed_model_summary.csv`
+    
+- `results/revision_robustness_core_multiseed12000/aggregate/multiseed_rank_stability.csv`
+    
+- `results/revision_robustness_core_multiseed12000/aggregate/multiseed_robustness_table.tex`
+    
+- `results/revision_robustness_core_multiseed12000/aggregate/multiseed_summary.md`
+    
+
+This robustness layer is intended to assess:
+
+- seed sensitivity
+    
+- chain-path sensitivity
+    
+- ranking stability among the main candidate models
+    
 
 ---
 
-## 5. Cross-scale tests
+## 6. Diagnostic and geometry-audit experiments
 
-### 5.1 Closure test: (\epsilon_{\rm cos}) vs (\epsilon_{\rm RC})
+These experiments are designed as **post-fit diagnostics** and **external geometry audits**. They should not be interpreted as by-construction improvements to the RC fit.
 
-```bash
-# using ΩΛ=0.69  → ε_cos = sqrt(ΩΛ/(1-ΩΛ))
-ptquat exp closure --results results/ptq_screen --omega-lambda 0.69
-# or explicitly:
-ptquat exp closure --results results/ptq_screen --epsilon-cos 1.47
-```
-
-Writes `{results}/closure_test.yaml` with `epsilon_RC`, `epsilon_cos`, `sigma_RC`, and `pass_within_3sigma`.
-
----
-
-## 6. Residual-acceleration plateau (main figure)
+### 6.1 Posterior-(like) Predictive Coverage (PPC)
 
 ```bash
-ptquat exp plateau --results results/ptq_screen --data dataset/sparc_tidy.csv
+ptquat exp ppc --results results/ptq_nu_gauss --data dataset/sparc_tidy.csv
 ```
 
-Produces `{results}/plateau_per_point.csv`, `{results}/plateau_binned.csv`, and a PNG.
+Outputs:
 
----
+- `ppc_coverage.json`
+    
 
-## 7. Thickness–κ–Σ regression at ( R_\star ) (per galaxy)
+### 6.2 Error stress test
 
-### Main command (WLS, LOO-CV, bootstrap)
+```bash
+ptquat exp stress \
+  --model ptq-nu \
+  --data dataset/sparc_tidy.csv \
+  --scale-i 2 --scale-D 2 \
+  --outroot results/stress_ptqnu \
+  --prior galaxies-only
+```
+
+### 6.3 Residual-acceleration plateau
+
+```bash
+ptquat exp plateau \
+  --results results/ptq_nu_gauss \
+  --data dataset/sparc_tidy.csv
+```
+
+Outputs:
+
+- `plateau_per_point.csv`
+    
+- `plateau_binned.csv`
+    
+- `plateau.png`
+    
+
+### 6.4 Per-galaxy κ diagnostic
+
+Example (obs-based (r_\star), obs-debiased):
+
+```bash
+ptquat exp kappa-gal \
+  --results results/ptq_nu_gauss \
+  --data dataset/sparc_tidy.csv \
+  --y-source obs-debias \
+  --eps-norm cos \
+  --rstar-from obs \
+  --frac-vmax 0.95 \
+  --regression deming \
+  --deming-lambda 1.0 \
+  --prefix kappa_gal_obsdebiased_cos_f095
+```
+
+Example negative/control variant:
+
+```bash
+ptquat exp kappa-gal \
+  --results results/ptq_nu_gauss \
+  --data dataset/sparc_tidy.csv \
+  --y-source obs-debias \
+  --eps-norm cos \
+  --rstar-from model \
+  --frac-vmax 0.90 \
+  --regression deming \
+  --deming-lambda 1.0 \
+  --prefix kappa_gal_obsdebiased_cos_rstar_model
+```
+
+### 6.5 Radius-resolved κ profile
+
+```bash
+ptquat exp kappa-prof \
+  --results results/ptq_nu_gauss \
+  --data dataset/sparc_tidy.csv \
+  --eta 0.15 \
+  --nbins 24 \
+  --min-per-bin 20 \
+  --x-kind r_over_Rd \
+  --eps-norm cos \
+  --prefix kappa_profile_cos
+```
+
+Fit the stacked profile:
+
+```bash
+ptquat exp kappa-fit \
+  --results results/ptq_nu_gauss \
+  --prefix kappa_profile_cos \
+  --eps-norm cos \
+  --bootstrap 2000 \
+  --seed 1234
+```
+
+### 6.6 z-profile
+
+```bash
+ptquat exp zprof \
+  --results results/ptq_nu_gauss \
+  --data dataset/sparc_tidy.csv \
+  --nbins 24 \
+  --min-per-bin 20 \
+  --eps-norm cos \
+  --prefix z_profile
+```
+
+### 6.7 Thickness–κ–Σ regression at (R_\star)
+
+Main command (WLS, LOO-CV, bootstrap):
 
 ```bash
 python -m ptq.experiments.kappa_h \
@@ -302,97 +520,347 @@ python -m ptq.experiments.kappa_h \
   --loo --bootstrap 5000 --cv-by-galaxy \
   --out-csv dataset/geometry/kappa_h_used.csv \
   --report-json dataset/geometry/kappa_h_report.json \
-  --plot-out ${RESULTS}/ptq-screen_gauss
+  --plot-out results/ptq_nu_gauss
 ```
 
 Key outputs:
 
-- `kappa_h_scatter.png`, `kappa_h_scatter_sigma.png` (in the family dir)
+- `kappa_h_scatter.png`
     
-- `kappa_h_report.json` (AICc, $\Delta$AICc among ${\kappa{\rm\text{-only}},\Sigma{\rm\text{-only}},\kappa{+}\Sigma}$, $R^2$, LOO, bootstrap)
+- `kappa_h_scatter_sigma.png`
+    
+- `kappa_h_report.json`
     
 - `kappa_h_used.csv`
     
 
-### Distance-invariant sanity check (optional)
+Interpretation note:
+
+- This is a **geometry audit** and **external consistency test**.
+    
+- In current manuscript-facing usage, it should be described as supporting evidence rather than as the primary fit criterion.
+    
+
+---
+
+## 7. Cross-scale tests
+
+### 7.1 Strict closure test
+
+The strict closure test compares the fitted galactic (\epsilon_{\rm RC}) against a cosmology-implied (\epsilon_{\rm cos}).
 
 ```bash
-python -m ptq.experiments.kappa_h \
-  --sparc-with-h dataset/geometry/sparc_with_h.csv \
-  --per-galaxy --rstar vdisk-peak --wls --dist-inv \
-  --ml36 0.5 --rgas-mult 1.7 --gas-helium 1.33 \
-  --out-csv dataset/geometry/kappa_h_used_distinv.csv \
-  --report-json dataset/geometry/kappa_h_report_distinv.json \
-  --plot-out ${RESULTS}/ptq-screen_gauss
+ptquat exp closure \
+  --results results/ptq_nu_gauss \
+  --omega-lambda 0.69
 ```
 
----
-
-## 8. Paper artifacts (tables & figures for the paper)
-
-The script `scripts/make_paper_artifacts.py` aggregates comparison results and writes LaTeX tables, PDF figures, and a short summary into `results/paper_artifacts/`. Run after `ptquat exp compare` and `ptquat exp loo` so that WAIC/LOO/pWAIC outputs exist under `results/paper_extra/`.
+or explicitly:
 
 ```bash
-python scripts/make_paper_artifacts.py --data dataset/sparc_tidy.csv --out results/paper_run
+ptquat exp closure \
+  --results results/ptq_nu_gauss \
+  --epsilon-cos 1.47
 ```
 
-- **Tables (`.tex`):** `waic_compare_table.tex`, `loo_compare_table.tex`, `pwaic_top_galaxies_table.tex` (when corresponding compare/diagnostic outputs exist).
-- **Figures (`.pdf`):** `model_compare_waic.pdf`, `model_compare_loo.pdf`, `pwaic_by_galaxy_bar.pdf`.
-- **Summary:** `paper_results_summary.md` — WAIC comparison, LOO comparison, pWAIC diagnostics, and key conclusions.
+Output:
 
-The script infers `results/` from `--out` or `--data`; it also writes `ejpc_model_compare.csv` and optional `--figdir` figure copies. It automatically populates `results/paper_artifacts/` under the chosen results root whenever the corresponding WAIC/LOO/pWAIC outputs exist (e.g. under `results/paper_extra/model_compare/` and `results/paper_extra/loo_compare/`). Use `--results-dir` to point at a specific results root.
+- `closure_test.yaml`
+    
+
+### 7.2 Closure scan
+
+```bash
+ptquat exp closure-scan \
+  --results results/ptq_nu_gauss \
+  --outdir results/ptq_nu_gauss/closure_scan \
+  --omega-lambda-min 0.65 \
+  --omega-lambda-max 0.75 \
+  --n 11
+```
+
+Outputs:
+
+- `closure_sensitivity.csv`
+    
+- `closure_sensitivity_plot.png`
+    
+- `closure_sensitivity.yaml`
+    
+- `manifest.yaml`
+    
+
+**Important interpretation note:**  
+Strict closure is treated as a **diagnostic test**.  
+A failed closure scan does **not** invalidate the RC-level utility of `ptq-nu`, but it does mean that the repo does **not** claim a completed cosmology–galaxy closure.
+
+A derived effective geometric efficiency may still be discussed at the paper-analysis level as a **reinterpretation of mismatch**, not as a passed closure criterion.
 
 ---
 
-## 9. Reproducibility
+## 8. Paper artifacts
 
-- Fix seeds via `--seed`; enable HDF5 backends via `--backend-hdf5 results/<run>/chain.h5 --resume`.
+The script `scripts/make_paper_artifacts.py` aggregates comparison results and writes LaTeX tables, figures, and summary markdown into a paper-facing output directory.
+
+### Example
+
+```bash
+python scripts/make_paper_artifacts.py \
+  --data dataset/sparc_tidy.csv \
+  --results-dir results/revision_baseline_sixmodels_12000 \
+  --out results/revision_baseline_sixmodels_12000/paper_run \
+  --models ptq-screen mond ptq-nu nfw1p ptq baryon
+```
+
+Typical outputs include:
+
+- `ejpc_model_compare.csv`
     
-- Record environment (Python version, `requirements.txt`) and include produced `global_summary.yaml` and CSVs.
+- `paper_artifacts/waic_compare_table.tex`
+    
+- `paper_artifacts/loo_compare_table.tex`
+    
+- `paper_artifacts/pwaic_top_galaxies_table.tex`
+    
+- `paper_artifacts/model_compare_waic.pdf`
+    
+- `paper_artifacts/model_compare_loo.pdf`
+    
+- `paper_artifacts/paper_results_summary.md`
+    
+
+The script now serves as a paper-facing collector and should be interpreted relative to the chosen `--results-dir`.
+
+---
+
+## 9. Submission-bundle workflow
+
+The current recommended manuscript-facing packaging script is:
+
+```bash
+bash scripts/run_ptqnu_submission_bundle.sh
+```
+
+This script is intended to:
+
+1. refresh baseline and robustness aggregate tables
+    
+2. run the additional `ptq-nu` hero-model diagnostics
+    
+3. assemble a clean submission bundle directory
+    
+
+Typical output target:
+
+```text
+results/paper_submission_ptqnu_YYYYMMDD/
+```
+
+This bundle is designed for:
+
+- manuscript drafting
+    
+- supplement preparation
+    
+- archiving / sharing with collaborators
+    
+- final journal submission support
     
 
 ---
 
-## 10. Field glossary (what the YAML/JSON fields mean)
+## 10. Reproducibility
 
-**Fit YAML (`global_summary.yaml`)**
+Recommended practices:
 
-- `AIC_full, BIC_full`: from the **chosen likelihood** (`gauss` or `t`); **use these in the paper**.
+- Fix seeds via `--seed`
+    
+- Use HDF5 backends via:
+    
+    ```bash
+    --backend-hdf5 results/<run>/chain.h5
+    ```
+    
+- Resume chains when needed with:
+    
+    ```bash
+    --resume
+    ```
+    
+
+Please record:
+
+- Python version
+    
+- `requirements.txt`
+    
+- git commit hash
+    
+- `global_summary.yaml`
+    
+- comparison CSVs
+    
+- robustness aggregate CSVs
     
 
 ---
 
-## 11. Optional ablations & knobs
+## 11. Field glossary
 
-- **Student-t likelihood** (`--likelihood t --t-dof 8`) for RC fits.
+### `global_summary.yaml`
+
+Important fields include:
+
+- `AIC_full`, `BIC_full`:  
+    from the chosen likelihood (`gauss` or `t`); use these for paper-facing full-likelihood comparison.
     
-- **Planck-anchored prior** (`--prior planck-anchored`) vs `galaxies-only`.
+- `chi2_total`
+    
+- `k_parameters`
+    
+- `N_total`
+    
+- `epsilon_median`, `q_median`, `a0_median`
+    
+- `sigma_sys_median`
+    
+
+### Compare tables
+
+`compare_table.csv` typically contains:
+
+- `model`
+    
+- `waic`
+    
+- `delta_waic`
+    
+- `p_waic`
+    
+- `n_params`
+    
+- `n_data`
+    
+- `rank`
+    
+
+`loo_table.csv` typically contains:
+
+- `model`
+    
+- `elpd_loo`
+    
+- `p_loo`
+    
+- `looic`
+    
+- `delta_looic`
+    
+- `rank`
     
 
 ---
 
-## 12. Project layout & extending with new experiments
+## 12. Optional knobs and ablations
 
-Directory layout relevant to **statistical analysis and new experiments**:
-
-| Path | Purpose |
-|------|--------|
-| `src/ptquat/experiments.py` | WAIC/LOO comparison (`compare_models_waic`, `loo_compare_models`), pWAIC diagnostics, PPC, stress, closure, plateau, κ–gal |
-| `src/ptquat/fit_global.py` | MCMC fitting; `log_likelihood_per_galaxy` (per-point, diag cov for WAIC), `log_likelihood_full_per_galaxy` (per-galaxy, full cov) |
-| `src/ptquat/likelihood.py` | Likelihood and covariance construction |
-| `src/ptquat/cli.py` | CLI: `exp compare`, `exp loo`, `fit`, `geom`, etc. |
-| `scripts/make_paper_artifacts.py` | Aggregates WAIC/LOO/pWAIC outputs → `results/paper_artifacts/` (tables, figures, summary) |
-
-**Adding a new statistical or comparison experiment:**
-
-1. **New metric (e.g. another information criterion):** Implement the computation in `experiments.py` (e.g. from posterior samples or `log_lik` matrices). Use the same `fit_root` / `global_summary.yaml` + `chain.h5` layout as WAIC/LOO.
-2. **New CLI subcommand:** In `cli.py`, add a subparser under `exp` and call the new function in `experiments.py`; keep outputs under `results/<run_id>/<experiment_name>/` with a small `manifest.yaml` (git hash, command, seed).
-3. **Log-likelihood shape:** WAIC/LOO expect `log_lik` of shape `(n_samples, n_data)` (per-point) or `(n_samples, n_galaxies)` for per-galaxy; ensure your new metric is consistent with the same convention.
-4. **Paper artifacts:** If the new experiment produces tables or figures, extend `make_paper_artifacts.py` with a `_try_build_<name>_artifacts(results_root, paper_root)` and call it from `main()` so `results/paper_artifacts/` stays the single entry point for the paper.
+- Student-t likelihood:
+    
+    ```bash
+    --likelihood t --t-dof 8
+    ```
+    
+- Planck-anchored prior:
+    
+    ```bash
+    --prior planck-anchored
+    ```
+    
+- Distance-invariant thickness sanity check:  
+    available in the `kappa_h` workflow where supported.
+    
 
 ---
 
-## 13. Citation
+## 13. Project layout
 
-If you use this code or reproduce our results, please cite the accompanying paper (TBD) and this repository.
+Key paths relevant to fitting, comparison, and extensions:
 
+|Path|Purpose|
+|---|---|
+|`src/ptquat/experiments.py`|WAIC/LOO comparison, pWAIC diagnostics, PPC, stress, closure, plateau, κ-gal, κ-profile, z-profile|
+|`src/ptquat/fit_global.py`|MCMC fitting and likelihood evaluation|
+|`src/ptquat/likelihood.py`|Likelihood and covariance construction|
+|`src/ptquat/cli.py`|CLI entry points (`fit`, `exp compare`, `exp loo`, etc.)|
+|`src/ptq/experiments/kappa_h.py`|Thickness regression / κ–h / κ+Σ audit|
+|`scripts/make_paper_artifacts.py`|Collect paper-facing tables, figures, and summaries|
+|`scripts/run_baseline_sixmodels_12000.sh`|Six-model long-chain baseline|
+|`scripts/summarize_baseline_sixmodels.py`|Aggregate baseline outputs|
+|`scripts/run_robustness_core_multiseed12000.sh`|Multi-seed robustness audit|
+|`scripts/summarize_robustness_core_multiseed.py`|Aggregate robustness outputs|
+|`scripts/run_ptqnu_submission_bundle.sh`|Hero-model diagnostics + submission bundle assembly|
+
+---
+
+## 14. Extending with new experiments
+
+When adding a new diagnostic or comparison experiment:
+
+1. Implement the computation in `experiments.py` (or the relevant module).
+    
+2. Keep the output layout consistent with:
+    
+    - `global_summary.yaml`
+        
+    - `chain.h5`
+        
+    - `results/<run>/<experiment_name>/...`
+        
+3. For information-criterion methods, ensure `log_lik` shape is consistent:
+    
+    - per-point: `(n_samples, n_data)`
+        
+    - per-galaxy: `(n_samples, n_galaxies)`
+        
+4. If the experiment is paper-facing, add a corresponding collector hook in `scripts/make_paper_artifacts.py`.
+    
+
+---
+
+## 15. Interpretation policy for this repo
+
+This repository is designed to support **auditable PTQ-family phenomenology**.
+
+That means:
+
+- strong RC-level performance may identify a useful PTQ realization
+    
+- geometry audits may provide supporting structure
+    
+- failed strict closure tests should be reported transparently
+    
+- comparison models (`mond-screen`, `ptq-screen`) should remain available even when not selected as the manuscript-facing hero model
+    
+
+The repo therefore prioritizes:
+
+- reproducibility
+    
+- model comparability
+    
+- diagnostic transparency
+    
+- explicit separation between **fit success**, **geometry audit**, and **closure claims**
+    
+
+---
+
+## 16. Citation
+
+If you use this code or reproduce results from this repository, please cite:
+
+1. the accompanying paper(s)
+    
+2. this repository / archived artifact bundle when available
+    
+
+A formal citation block can be added once the manuscript and archive DOI are finalized.
