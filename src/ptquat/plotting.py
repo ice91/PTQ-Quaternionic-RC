@@ -60,7 +60,7 @@ def plot_residual_plateau(df_points, df_binned, outpath: Path):
     ax.set_xlabel("r  [kpc]")
     ax.set_ylabel(r"$\Delta a = v^2/r - a_{\rm bar}(r)$  [m s$^{-2}$]")
     ax.legend(loc="best", frameon=False)
-    ax.set_title("Stacked residual-acceleration plateau")
+    ax.set_title("Residual-acceleration profile")
     fig.tight_layout()
     fig.savefig(outpath, dpi=160)
     plt.close(fig)

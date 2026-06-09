@@ -5,12 +5,15 @@
 
 ## Rank stability (WAIC / LOO)
 
+- `ptq-nu`: WAIC rank mean ≈ 1.3333333333333333, std ≈ 0.4714045207910317; LOO rank mean ≈ 1.3333333333333333, std ≈ 0.4714045207910317 (n_seeds = 3).
 - `ptq-screen`: WAIC rank mean ≈ 3.6666666666666665, std ≈ 0.4714045207910317; LOO rank mean ≈ 3.6666666666666665, std ≈ 0.4714045207910317 (n_seeds = 3).
 - `mond`: WAIC rank mean ≈ 2.3333333333333335, std ≈ 1.247219128924647; LOO rank mean ≈ 2.3333333333333335, std ≈ 1.247219128924647 (n_seeds = 3).
 - `mond-screen`: WAIC rank mean ≈ 2.6666666666666665, std ≈ 0.4714045207910317; LOO rank mean ≈ 2.6666666666666665, std ≈ 0.4714045207910317 (n_seeds = 3).
 
 ## Seed sensitivity for key models
 
+- `ptq-nu` WAIC across seeds: min ≈ 15057.4, max ≈ 15102.8, spread ≈ 45.4.
+  LOOIC across seeds: min ≈ 15075.0, max ≈ 15132.2, spread ≈ 57.2.
 - `ptq-screen` WAIC across seeds: min ≈ 15175.2, max ≈ 15323.3, spread ≈ 148.1.
   LOOIC across seeds: min ≈ 15189.3, max ≈ 15352.6, spread ≈ 163.3.
 - `mond` WAIC across seeds: min ≈ 15081.3, max ≈ 15195.0, spread ≈ 113.7.
