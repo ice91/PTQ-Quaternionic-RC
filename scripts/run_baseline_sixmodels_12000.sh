@@ -15,7 +15,9 @@ set -euo pipefail
 # - Only run compare / loo / artifact aggregation after confirming that all
 #   six model outputs exist.
 
-cd ~/PTQ-Quaternionic-RC
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$REPO_ROOT"
 source .venv/bin/activate
 
 export RUNROOT=results/revision_baseline_sixmodels_12000

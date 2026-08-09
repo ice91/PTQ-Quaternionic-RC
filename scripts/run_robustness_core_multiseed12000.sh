@@ -10,7 +10,9 @@ set -euo pipefail
 # - This is a robustness layer, NOT a replacement for the six-model baseline
 #   landscape in Layer A.
 
-cd ~/PTQ-Quaternionic-RC
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$REPO_ROOT"
 source .venv/bin/activate
 
 export RUNROOT=results/revision_robustness_core_multiseed12000

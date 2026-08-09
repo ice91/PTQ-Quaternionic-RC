@@ -1,0 +1,656 @@
+{
+  "model": "mond-screen",
+  "k": 94,
+  "N_data": 1782,
+  "N_gal": 91,
+  "optimizer": "block-coordinate ascent on logL (globals + per-galaxy; no priors)",
+  "converged": true,
+  "domain": "matched",
+  "H0_si": 2.1842852410855023e-18,
+  "max_loglike": -6663.002102974754,
+  "AIC": 13514.004205949508,
+  "BIC_NPOINTS": 14029.6404171044,
+  "parameter_vector": {
+    "eps": null,
+    "log10a0": -9.969680525473189,
+    "a0": 1.0723078233458524e-10,
+    "q": 0.9838406546744416,
+    "sigma_sys": 6.88495776970395,
+    "Upsilon_mean": 0.5394451655016868,
+    "log10_M200_mean": null
+  },
+  "best_start": "shared_family_refine_from_map_m_to_p",
+  "termination_status": "shared nu_q family MLE; abs(delta mapped)=4.547e-12",
+  "cross_start_delta_logL": 0.020678974992733856,
+  "boundary": {
+    "n_near_boundary": 15,
+    "near_boundary": [
+      {
+        "index": 2,
+        "value": 0.05000044528626005,
+        "lo": 0.05,
+        "hi": 1.5
+      },
+      {
+        "index": 3,
+        "value": 0.05000044528626005,
+        "lo": 0.05,
+        "hi": 1.5
+      },
+      {
+        "index": 4,
+        "value": 0.05000044528626005,
+        "lo": 0.05,
+        "hi": 1.5
+      },
+      {
+        "index": 5,
+        "value": 0.05000044528626005,
+        "lo": 0.05,
+        "hi": 1.5
+      },
+      {
+        "index": 6,
+        "value": 0.05000044528626005,
+        "lo": 0.05,
+        "hi": 1.5
+      },
+      {
+        "index": 10,
+        "value": 1.499999331310089,
+        "lo": 0.05,
+        "hi": 1.5
+      },
+      {
+        "index": 15,
+        "value": 0.05000044528626005,
+        "lo": 0.05,
+        "hi": 1.5
+      },
+      {
+        "index": 42,
+        "value": 0.05000044528626005,
+        "lo": 0.05,
+        "hi": 1.5
+      },
+      {
+        "index": 56,
+        "value": 1.4999995762206926,
+        "lo": 0.05,
+        "hi": 1.5
+      },
+      {
+        "index": 60,
+        "value": 1.4999995407393178,
+        "lo": 0.05,
+        "hi": 1.5
+      },
+      {
+        "index": 66,
+        "value": 0.05000044528626005,
+        "lo": 0.05,
+        "hi": 1.5
+      },
+      {
+        "index": 71,
+        "value": 1.4999995762206926,
+        "lo": 0.05,
+        "hi": 1.5
+      },
+      {
+        "index": 81,
+        "value": 0.05000044528626005,
+        "lo": 0.05,
+        "hi": 1.5
+      },
+      {
+        "index": 82,
+        "value": 0.05000044528626005,
+        "lo": 0.05,
+        "hi": 1.5
+      },
+      {
+        "index": 86,
+        "value": 0.05000044528626005,
+        "lo": 0.05,
+        "hi": 1.5
+      }
+    ]
+  },
+  "starts": [
+    {
+      "start_id": "historical_posterior_median",
+      "initial_logL": -6806.09772618694,
+      "final_logL": -6663.056159405447,
+      "success": true,
+      "message": "block_coordinate_ascent outer_converged ll0=-6806.097726 ll=-6663.056159",
+      "nit": 12,
+      "nfev": 18099,
+      "boundary": {
+        "n_near_boundary": 15,
+        "near_boundary": [
+          {
+            "index": 2,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 3,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 4,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 5,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 6,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 10,
+            "value": 1.4999993297841785,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 15,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 42,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 56,
+            "value": 1.4999995762206926,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 60,
+            "value": 1.4999995379767201,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 66,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 71,
+            "value": 1.4999995762206926,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 81,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 82,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 86,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          }
+        ]
+      }
+    },
+    {
+      "start_id": "perturb_0",
+      "initial_logL": -6868.635787721799,
+      "final_logL": -6663.035475715099,
+      "success": true,
+      "message": "block_coordinate_ascent outer_converged ll0=-6868.635788 ll=-6663.035476",
+      "nit": 12,
+      "nfev": 17807,
+      "boundary": {
+        "n_near_boundary": 15,
+        "near_boundary": [
+          {
+            "index": 2,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 3,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 4,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 5,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 6,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 10,
+            "value": 1.499999331310089,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 15,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 42,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 56,
+            "value": 1.4999995762206926,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 60,
+            "value": 1.4999995407393178,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 66,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 71,
+            "value": 1.4999995762206926,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 81,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 82,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 86,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          }
+        ]
+      }
+    },
+    {
+      "start_id": "perturb_1",
+      "initial_logL": -7051.521368990675,
+      "final_logL": -6663.095293979767,
+      "success": true,
+      "message": "block_coordinate_ascent outer_converged ll0=-7051.521369 ll=-6663.095294",
+      "nit": 12,
+      "nfev": 18242,
+      "boundary": {
+        "n_near_boundary": 15,
+        "near_boundary": [
+          {
+            "index": 2,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 3,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 4,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 5,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 6,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 10,
+            "value": 1.499999327556513,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 15,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 42,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 56,
+            "value": 1.4999995762206926,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 60,
+            "value": 1.4999995339371601,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 66,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 71,
+            "value": 1.4999995762206926,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 81,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 82,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 86,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          }
+        ]
+      }
+    },
+    {
+      "start_id": "mid_log10a0",
+      "initial_logL": -6879.910587662853,
+      "final_logL": -6663.056154690092,
+      "success": true,
+      "message": "block_coordinate_ascent outer_converged ll0=-6879.910588 ll=-6663.056155",
+      "nit": 12,
+      "nfev": 17868,
+      "boundary": {
+        "n_near_boundary": 15,
+        "near_boundary": [
+          {
+            "index": 2,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 3,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 4,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 5,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 6,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 10,
+            "value": 1.4999993297845267,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 15,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 42,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 56,
+            "value": 1.4999995762206926,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 60,
+            "value": 1.4999995379774138,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 66,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 71,
+            "value": 1.4999995762206926,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 81,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 82,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 86,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          }
+        ]
+      }
+    },
+    {
+      "start_id": "mapped_from_ptqscreen_median",
+      "initial_logL": -6795.888922471719,
+      "final_logL": -6663.07588663169,
+      "success": true,
+      "message": "block_coordinate_ascent outer_converged ll0=-6795.888922 ll=-6663.075887",
+      "nit": 12,
+      "nfev": 18107,
+      "boundary": {
+        "n_near_boundary": 15,
+        "near_boundary": [
+          {
+            "index": 2,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 3,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 4,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 5,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 6,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 10,
+            "value": 1.4999993285861388,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 15,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 42,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 56,
+            "value": 1.4999995762206926,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 60,
+            "value": 1.499999535805212,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 66,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 71,
+            "value": 1.4999995762206926,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 81,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 82,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          },
+          {
+            "index": 86,
+            "value": 0.05000044528626005,
+            "lo": 0.05,
+            "hi": 1.5
+          }
+        ]
+      }
+    }
+  ],
+  "shared_family_note": "PTQ-screen and MOND-screen share likelihood; reported max_logL is shared-family MLE after mapped refinement",
+  "historical": {
+    "source_dir": "results/revision_prod_equal12000_fresh/mond-screen_gauss",
+    "historical_logL_total_full": -6806.097726186945,
+    "historical_AIC_full": 13800.19545237389,
+    "historical_BIC_full": 14315.831663528781,
+    "historical_k": 94,
+    "epsilon_median": null,
+    "a0_median": 1.2873126535335075e-10,
+    "q_median": 0.9246667900054859,
+    "sigma_sys_median": 7.848712575651386
+  },
+  "delta_logL_vs_historical_median": 143.09562321219073,
+  "delta_AIC_vs_historical_median": -286.19124642438146
+}

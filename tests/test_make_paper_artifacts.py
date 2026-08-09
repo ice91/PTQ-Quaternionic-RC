@@ -53,9 +53,12 @@ def test_end2end_make_artifacts(tmp_path: Path):
     _sh(sys.executable, "-m", "ptquat.cli", "exp", "kappa-prof", "--results", str(out2), "--data", str(tidy), "--eta","0.15","--nbins","6")
 
     # 4) make_paper_artifacts.py (fast)
+    # Pin --results-dir to the temporary results tree so historical
+    # IMPL_ROOT/results/paper_artifacts is never rewritten (FATAL-GATE-10).
     script = ROOT/"scripts/make_paper_artifacts.py"
     _sh(sys.executable, str(script),
         "--data", str(tidy),
+        "--results-dir", str(tmp_path/"results"),
         "--out", str(tmp_path/"ejpc_run"),
         "--figdir", str(tmp_path/"figs"),
         "--models", "baryon", "ptq-screen",
