@@ -1,0 +1,247 @@
+"""ENGINEERING_SMOKE_ONLY — NOT CORRECTED MLE.
+New jac=True driver; original R1 likelihood and dependency engine remain unchanged.
+"""
+from pathlib import Path
+import os,json,time,hashlib,traceback,signal
+from collections import Counter
+import numpy as np
+from scipy.optimize import minimize
+from .data import load_tidy_sparc
+from .fit_global import _layout,_unpack
+from .mle import theta_bounds
+from .evaluation_contract import validate_native
+from .dependency_gradient import DependencyGradient,step_stencil,source_hashes
+from .marginal_likelihood import PRIMARY_B0,galaxy_log_marginal
+from .warning_telemetry import WarningCollector,collect_warnings
+LABEL='ENGINEERING_SMOKE_ONLY — NOT CORRECTED MLE'
+class BudgetLimit(RuntimeError):pass
+class PrecisionFailure(RuntimeError):pass
+class SourceFailure(RuntimeError):pass
+
+def theta_hash(t):return hashlib.sha256(np.asarray(t,dtype='<f8').tobytes()).hexdigest()
+def serial(v):
+    if isinstance(v,np.ndarray):return v.tolist()
+    if isinstance(v,np.generic):return v.item()
+    raise TypeError(type(v).__name__)
+def save(path,record):
+    path=Path(path);tmp=path.with_name(path.name+'.tmp')
+    with tmp.open('w') as f:
+        json.dump(dict(label=LABEL,**record),f,indent=2,allow_nan=False,default=serial);f.write('\n');f.flush()
+    os.replace(tmp,path)
+
+def load_inputs(bundle):
+    B=Path(bundle);I=B.parents[2];gd=load_tidy_sparc(str(I/'dataset/sparc_tidy.csv'));gs=[gd[k] for k in sorted(gd)]
+    if len(gs)!=91 or sum(len(g.v_obs) for g in gs)!=1782:raise SourceFailure('Sample mismatch')
+    vectors={m:np.load(I/'results/frontiers_revision_2026_10/mle_recovery/original_recovered/01_mle'/m.replace('-','_')/'theta_mle.npy') for m in ['ptq-screen','nfw1p']}
+    return gs,vectors
+
+def decode_record(t,gs,model):
+    t,L=validate_native(t,gs,model,likelihood_version=PRIMARY_B0,hard_bounds=True)
+    p=_unpack(t,L);bounds=np.asarray(theta_bounds(model,len(gs)),float)
+    return dict(theta=t.tolist(),theta_sha256=theta_hash(t),decoded={k:(v.tolist() if isinstance(v,np.ndarray) else v) for k,v in p.items()},bounds=bounds.tolist(),exact_bound_contacts=np.flatnonzero((t==bounds[:,0])|(t==bounds[:,1])).tolist(),likelihood_version=PRIMARY_B0,parameter_count=L['k'])
+
+class Telemetry(WarningCollector):
+    def __init__(self):super().__init__();self.active_native_hash=None
+    def capture(self,*args,**kwargs):
+        super().capture(*args,**kwargs)
+        for r in self.records.values():
+            if 'representative_native_theta_hash' not in r:r['representative_native_theta_hash']=self.active_native_hash
+
+class WorkLedger:
+    """Charge before actual calls; checkpoint prior completion+warnings each galaxy.
+    A failed final marginal is conservatively charged; completion is not invented.
+    """
+    def __init__(self,B,out,protocol,collector):
+        self.B=B;self.out=out;self.protocol=protocol;self.collector=collector;self.weights=json.loads((B/'GALAXY_WORK_WEIGHTS.json').read_text());self.start=time.monotonic()
+        self.actual=0;self.completed=0;self.equivalent=0.;self.nodes=0;self.completed_nodes=0;self.pending=None;self.requests=[];self.request=None;self.optimizer_batches=Counter();self.objective_requests=0;self.gradient_requests=0;self.model_counts=Counter();self.phase_counts=Counter();self.last_verified=None;self.last_numerically_completed=None
+        self.stream=(out/'galaxy_work_ledger.jsonl').open('a');self.checkpoint()
+    def guard(self):
+        if time.monotonic()-self.start>=self.protocol['budget']['max_aggregate_seconds']:raise BudgetLimit('aggregate wall cap')
+    def checkpoint(self):
+        save(self.out/'CURRENT_BUDGET.json',self.summary())
+        save(self.out/'CURRENT_WARNINGS.json',self.collector.as_dict())
+    def summary(self):
+        return dict(actual_galaxy_calls=self.actual,completed_galaxy_calls=self.completed,charged_arithmetic_proxy_equivalents=self.equivalent,charged_density_nodes=self.nodes,completed_density_nodes=self.completed_nodes,elapsed_wall_seconds=time.monotonic()-self.start,objective_requests=self.objective_requests,gradient_requests=self.gradient_requests,optimizer_batches=dict(self.optimizer_batches),model_galaxy_calls=dict(self.model_counts),phase_galaxy_calls=dict(self.phase_counts),last_pending=self.pending,last_verified_native_input=self.last_verified,last_numerically_completed_theta=self.last_numerically_completed,limit_definitions=self.protocol['budget'],completion_policy='prior marginal completed when next charge reached; last confirmed on successful request; failed lastcall remains unknown, conservative charged')
+    def begin(self,model,theta,phase,kind,order):
+        self.guard()
+        if self.pending is not None:raise RuntimeError('Unfinished prior marginal before new request')
+        if phase=='optimizer':
+            if self.optimizer_batches[model]>=self.protocol['optimizer']['max_gradient_batches_per_model']:raise BudgetLimit('permodel21 optimizer gradient cap')
+            self.optimizer_batches[model]+=1
+        self.objective_requests+=1
+        if kind=='gradient':self.gradient_requests+=1
+        self.request=dict(id=len(self.requests)+1,model=model,phase=phase,kind=kind,order=order,theta_sha256=theta_hash(theta),theta=np.asarray(theta).tolist(),likelihood_version=PRIMARY_B0,start_elapsed=time.monotonic()-self.start,start_actual=self.actual,start_equivalent=self.equivalent,status='STARTED')
+        self.requests.append(self.request);self.last_verified=dict(model=model,theta_hash=theta_hash(theta),theta=np.asarray(theta).tolist(),phase=phase)
+        save(self.out/'CURRENT_REQUEST.json',self.request);self.checkpoint()
+        return self.request
+    def charge(self,model,gi,order,native_hash):
+        if self.pending is not None:
+            self.completed+=1;self.completed_nodes+=self.pending['density_nodes'];self.pending=None
+        self.guard();w=self.weights[model][str(order)][gi]
+        if self.actual+1>self.protocol['budget']['max_actual_galaxy_calls']:raise BudgetLimit('60000 actualgal cap')
+        if self.equivalent+w['fullsample_equivalent']>self.protocol['budget']['max_fullsample_equivalents']:raise BudgetLimit('600 arithmetic-proxy cap')
+        self.actual+=1;self.equivalent+=w['fullsample_equivalent'];nodes=w['nD']*w['ni'];self.nodes+=nodes;self.model_counts[model]+=1;self.phase_counts[self.request['phase']]+=1;self.collector.active_native_hash=native_hash
+        event=dict(label=LABEL,id=self.actual,request_id=self.request['id'],model=model,gi=gi,galaxy=w['galaxy'],order=order,native_theta_hash=native_hash,equivalent=w['fullsample_equivalent'],density_nodes=nodes,status='CALL_STARTED',elapsed=time.monotonic()-self.start)
+        self.pending=event;self.stream.write(json.dumps(event,allow_nan=False)+'\n');self.stream.flush();self.checkpoint()
+    def finish(self,result=None,error=None):
+        if error is None and self.pending is not None:self.completed+=1;self.completed_nodes+=self.pending['density_nodes'];self.pending=None
+        self.request.update(status='COMPLETE' if error is None else 'FAILED',end_elapsed=time.monotonic()-self.start,actual_galaxy_calls=self.actual-self.request['start_actual'],equivalent_work=self.equivalent-self.request['start_equivalent'])
+        if error is not None:self.request['error']=repr(error)
+        if result is not None:
+            self.request['objective']=result['objective'];self.last_numerically_completed=dict(model=self.request['model'],theta_sha256=self.request['theta_sha256'],theta=self.request['theta'],objective=result['objective'])
+        save(self.out/'CURRENT_REQUEST.json',self.request);save(self.out/'REQUESTS.json',dict(records=self.requests));self.checkpoint()
+    def close(self):self.checkpoint();self.stream.flush();os.fsync(self.stream.fileno());self.stream.close()
+
+class Runtime:
+    def __init__(self,B,out,protocol,gs,collector):
+        self.B=B;self.out=out;self.protocol=protocol;self.gs=gs;self.collector=collector;self.ledger=WorkLedger(B,out,protocol,collector);self.engines={m:DependencyGradient(gs,m,B/'VERIFIED_DEPENDENCIES.json') for m in protocol['models']};self.gradient_records={};self.results=[];self.point_vectors={};self.precision_records=[]
+    def gradient(self,theta,model,phase,order=192):
+        x,_=validate_native(np.asarray(theta,float).copy(),self.gs,model,likelihood_version=PRIMARY_B0,hard_bounds=True);engine=self.engines[model];req=self.ledger.begin(model,x,phase,'gradient',order)
+        def plan():
+            yield from ((gi,x) for gi in range(91))
+            for row in engine.rows:
+                j=row['index'];st,_=step_stencil(x[j],row['bounds'],1e-4)
+                for name,value in st:
+                    if name=='base':continue
+                    y=x.copy();y[j]=value
+                    for gi in row['affected_indices']:yield gi,y
+        planned=iter(plan())
+        def tick(m,gi,o):
+            expected_gi,y=next(planned)
+            if m!=model or gi!=expected_gi or o!=order:raise SourceFailure('Unexpected dependency evaluation path')
+            h=theta_hash(y);self.point_vectors.setdefault(h,y.tolist());self.ledger.charge(m,gi,o,h)
+        try:
+            r=engine.evaluate(x,relative_step=1e-4,scheme='auto',order=order,work_callback=tick)
+            if next(planned,None) is not None:raise SourceFailure('Incomplete dependency evaluation path')
+            g=np.asarray(r['gradient_native'],float)
+            if g.shape!=x.shape or not np.isfinite(g).all() or not np.isfinite(r['objective']) or r['requested_indices']!=list(range(len(x))):raise PrecisionFailure('Invalid native objective/gradient shape/order/value')
+            r.update(input_theta=x.tolist(),phase=phase,request_id=req['id'],native_theta_hash=theta_hash(x))
+            self.ledger.finish(r);save(self.out/f'gradient_{req["id"]:04d}_{model.replace("-","_")}.json',r);self.gradient_records[(model,theta_hash(x))]=r
+            save(self.out/'FINITE_DIFFERENCE_POINTS.json',dict(vectors=self.point_vectors))
+            self.ledger.guard()
+            return r
+        except BaseException as exc:self.ledger.finish(error=exc);raise
+    def pure(self,theta,model,phase,order):
+        x,L=validate_native(np.asarray(theta,float).copy(),self.gs,model,likelihood_version=PRIMARY_B0,hard_bounds=True);req=self.ledger.begin(model,x,phase,'objective',order);p=_unpack(x,L);values=[]
+        try:
+            for gi,g in enumerate(self.gs):
+                self.ledger.charge(model,gi,order,theta_hash(x));r=galaxy_log_marginal(g,p,gi,model,likelihood_version=PRIMARY_B0,order=order);values.append(r['log_marginal'])
+            a=np.asarray(values,float)
+            if a.shape!=(91,) or not np.isfinite(a).all():raise PrecisionFailure('Invalid full objective decomposition')
+            r=dict(objective=-float(a.sum()),galaxy_log_marginals=values,theta=x.tolist(),theta_sha256=theta_hash(x),likelihood_version=PRIMARY_B0,order=order,request_id=req['id'])
+            self.ledger.finish(r);save(self.out/f'objective_{req["id"]:04d}_{model.replace("-","_")}.json',r);self.ledger.guard();return r
+        except BaseException as exc:self.ledger.finish(error=exc);raise
+    def audit(self,theta,model,phase,candidate):
+        x=np.asarray(theta,float);ct=self.protocol['directions'];fine=self.pure(x,model,phase+'_fine',192);coarse=self.pure(x,model,phase+'_coarse',96);repeat=self.pure(x,model,phase+'_repeat',192)
+        a=np.array(fine['galaxy_log_marginals']);b=np.array(coarse['galaxy_log_marginals']);delta=a-b;rep=float(np.max(abs(a-repeat['galaxy_log_marginals'])))
+        objective_claim_error=abs(fine['objective']-candidate['objective']);p=self.protocol['precision'];precision=dict(max_pergal_refinement=float(abs(delta).max()),sumabs_refinement=float(abs(delta).sum()),repeat_max=rep,claimed_objective_error=objective_claim_error,decomposition_error=abs(fine['objective']+float(a.sum())))
+        save(self.out/(model.replace('-','_')+'_'+phase+'_OBJECTIVE_PRECISION.json'),dict(metrics=precision,fine_request=fine['request_id'],coarse_request=coarse['request_id'],repeat_request=repeat['request_id'],theta_sha256=theta_hash(x)))
+        if precision['max_pergal_refinement']>p['pergal_finecoarse_abs'] or precision['sumabs_refinement']>p['sample_sumabs'] or rep>ct['repeat_pergal_abs'] or objective_claim_error>p['claimed_objective_abs']:raise PrecisionFailure('Independent objective/refinement/repeat check failed')
+        indices=[d['index'] for d in ct['coordinates'] if d['model']==model];engine=self.engines[model];directions=[];base={192:fine,96:coarse};stencilcache={}
+        for j in indices:
+            row=engine.rows[j];span=row['bounds'][1]-row['bounds'][0];records={}
+            for h in ct['steps']:
+                st,kind=step_stencil(x[j],row['bounds'],h)
+                for order in [192,96]:
+                    f=[];affected=[]
+                    for name,value in st:
+                        if name=='base':r=base[order]
+                        else:
+                            key=(j,value,order)
+                            if key not in stencilcache:
+                                y=x.copy();y[j]=value;stencilcache[key]=self.pure(y,model,phase+'_direction',order)
+                            r=stencilcache[key]
+                        f.append(r['objective']);affected.append(-float(np.sum(np.array(r['galaxy_log_marginals'])[row['affected_indices']])))
+                    denom=st[1][1]-st[0][1];g=(f[1]-f[0])/denom;localg=(affected[1]-affected[0])/denom
+                    record=dict(index=j,name=row['name'],h_scaled=h,order=order,scheme=kind,native_step=abs(denom)/(2 if kind=='central' else 1),native_gradient=g,scaled_gradient=g*span,affected_scaled_gradient=localg*span,stencil_full_objectives=f,stencil_affected_objectives=affected,denominator=denom)
+                    records[(h,order)]=record
+            c=float(candidate['gradient_native'][j])*span;ind=records[(1e-4,192)]['scaled_gradient'];lim=ct['candidate_vs_independent_scaled_abs']+ct['candidate_vs_independent_relative']*max(abs(c),abs(ind));candidate_ok=abs(c-ind)<=lim;checks=[]
+            for h in ct['steps']:
+                r1=records[(h,192)];r2=records[(h,96)];v1=r1['affected_scaled_gradient'];v2=r2['affected_scaled_gradient'];lim2=ct['refinement_scaled_abs']+ct['refinement_relative']*max(abs(v1),abs(v2));noise=sum(abs(np.array(r1['stencil_affected_objectives'])-r2['stencil_affected_objectives']));numerator=abs(r1['stencil_affected_objectives'][1]-r1['stencil_affected_objectives'][0]);ratio=noise/max(numerator,np.finfo(float).tiny)
+                checks.append(dict(kind='fine_coarse',h=h,difference=abs(v1-v2),limit=lim2,noise_ratio=ratio,pass_test=bool(abs(v1-v2)<=lim2 and ratio<ct['noise_unresolved_ratio'])))
+            for order in [192,96]:
+                v1=records[(ct['steps'][0],order)]['affected_scaled_gradient'];v2=records[(ct['steps'][1],order)]['affected_scaled_gradient'];lim2=ct['refinement_scaled_abs']+ct['refinement_relative']*max(abs(v1),abs(v2));checks.append(dict(kind='two_steps',order=order,difference=abs(v1-v2),limit=lim2,pass_test=bool(abs(v1-v2)<=lim2)))
+            directions.append(dict(index=j,name=row['name'],candidate_scaled_gradient=c,independent_scaled_gradient=ind,candidate_difference=abs(c-ind),candidate_limit=lim,candidate_pass=bool(candidate_ok),records=list(records.values()),checks=checks,pass_direction=bool(candidate_ok and all(z['pass_test'] for z in checks))))
+        result=dict(model=model,phase=phase,theta_sha256=theta_hash(x),fine=fine,coarse=coarse,repeat=repeat,objective_precision=precision,directions=directions,status='PASS' if all(d['pass_direction'] for d in directions) else 'FAIL',native_decode=decode_record(x,self.gs,model))
+        self.precision_records.append(result);save(self.out/(model.replace('-','_')+'_'+phase+'_AUDIT.json'),result)
+        if result['status']!='PASS':raise PrecisionFailure('Fixed-direction gradient refinement ornoise failed')
+        print('AUDIT PASS',model,phase,'eq',round(self.ledger.equivalent,3),'wall',round(time.monotonic()-self.ledger.start,2),flush=True)
+        self.ledger.guard()
+        return result
+
+    def optimize_once(self,t0,model,initial_audit):
+        start=time.monotonic();t0=np.array(t0,float,copy=True);accepted=[];trials=[];result=None;failure=None;terminal=t0.copy();status='NOT_STARTED'
+        save(self.out/(model.replace('-','_')+'_INITIAL.json'),decode_record(t0,self.gs,model))
+        def fun(theta):
+            attempt=dict(theta=np.array(theta).tolist(),theta_sha256=theta_hash(theta),status='REQUESTED',elapsed=time.monotonic()-self.ledger.start)
+            trials.append(attempt);save(self.out/(model.replace('-','_')+'_TRIALS.json'),dict(records=trials))
+            try:r=self.gradient(theta,model,'optimizer',192)
+            except BaseException as exc:
+                attempt.update(status='FAILED',error=repr(exc));save(self.out/(model.replace('-','_')+'_TRIALS.json'),dict(records=trials));raise
+            attempt.update(request_id=r['request_id'],objective=r['objective'],gradient=r['gradient_native'],status='COMPLETE_NOT_YET_ACCEPTED')
+            save(self.out/(model.replace('-','_')+'_TRIALS.json'),dict(records=trials));print('OPTIMIZER G',model,len(trials),'eq',round(self.ledger.equivalent,3),'wall',round(time.monotonic()-self.ledger.start,2),flush=True)
+            return r['objective'],np.array(r['gradient_native'],float)
+        def callback(xk):
+            if len(accepted)>=1:raise RuntimeError('More than one accepted optimizer iteration')
+            x=np.array(xk,float,copy=True);record=self.gradient_records.get((model,theta_hash(x)))
+            if record is None or record['phase']!='optimizer':raise SourceFailure('Acceptedcallback has no exact optimizer request')
+            accepted.append(dict(theta=x.tolist(),theta_sha256=theta_hash(x),request_id=record['request_id'],objective=record['objective'],advanced=bool(np.any(x!=t0)),elapsed=time.monotonic()-self.ledger.start))
+            save(self.out/(model.replace('-','_')+'_ACCEPTED_CALLBACKS.json'),dict(records=accepted));print('ACCEPTED CALLBACK',model,'advanced',accepted[-1]['advanced'],flush=True)
+        opts=self.protocol['optimizer'];kwargs={k:opts[k] for k in ['maxiter','maxls','maxcor','ftol','gtol']}
+        try:
+            result=minimize(fun,t0,method='L-BFGS-B',jac=True,bounds=theta_bounds(model,91),callback=callback,options=kwargs)
+            terminal=np.array(result.x,float,copy=True);optimizer_wall=time.monotonic()-start
+            record=self.gradient_records.get((model,theta_hash(terminal)))
+            if record is None:raise SourceFailure('Returned terminal notexact completedoptimizer point')
+            if accepted and theta_hash(terminal)!=accepted[-1]['theta_sha256']:raise SourceFailure('Returned terminal differs acceptedcallback; no silent omission')
+            terminal_audit=self.audit(terminal,model,'terminal',record)
+            improvement=initial_audit['fine']['objective']-terminal_audit['fine']['objective'];noise=initial_audit['objective_precision']['sumabs_refinement']+terminal_audit['objective_precision']['sumabs_refinement']+16*np.finfo(float).eps*(sum(abs(np.array(initial_audit['fine']['galaxy_log_marginals'])))+sum(abs(np.array(terminal_audit['fine']['galaxy_log_marginals']))));threshold=self.protocol['precision']['improvement_safety_factor']*noise
+            claim_error=abs(float(result.fun)-terminal_audit['fine']['objective'])
+            if claim_error>self.protocol['precision']['claimed_objective_abs']:raise PrecisionFailure('SciPy claimed fun mismatch')
+            moved=bool(accepted and accepted[-1]['advanced'])
+            status=('ACCEPTED_AND_NUMERICALLY_VALIDATED' if improvement>threshold else 'NUMERICALLY_AMBIGUOUS') if moved else 'NON_BUDGET_FAILURE'
+            if moved and improvement < -threshold:status='NON_BUDGET_FAILURE'
+            g=np.array(result.jac,float);bounds=np.array(theta_bounds(model,91));pg=g.copy();pg[(terminal<=bounds[:,0])&(g>0)]=0.;pg[(terminal>=bounds[:,1])&(g<0)]=0.
+            summary=dict(model=model,status=status,accepted_callbacks=accepted,trials=trials,terminal=decode_record(terminal,self.gs,model),scipy=dict(success=bool(result.success),status=int(result.status),message=str(result.message),nit=int(result.nit),nfev=int(result.nfev),njev=int(result.njev),fun=float(result.fun),projected_gradient_inf_norm=float(np.max(abs(pg))),stationarity_established=False),optimizer_wall_seconds=optimizer_wall,terminal_precision_wall_seconds=time.monotonic()-start-optimizer_wall,objective_improvement=improvement,numerical_error_estimate=noise,improvement_threshold=threshold,claimed_fun_error=claim_error,initial_audit_file=model.replace('-','_')+'_initial_AUDIT.json',terminal_audit_file=model.replace('-','_')+'_terminal_AUDIT.json')
+            self.ledger.guard()
+        except BaseException as exc:
+            failure=dict(type=type(exc).__name__,error=repr(exc),traceback=traceback.format_exc());status='BUDGET_LIMITED' if isinstance(exc,BudgetLimit) else ('BLOCKED' if isinstance(exc,(SourceFailure,PrecisionFailure,FloatingPointError,ValueError,InterruptedError)) else 'NON_BUDGET_FAILURE')
+            if accepted:terminal=np.array(accepted[-1]['theta'],float)
+            summary=dict(model=model,status=status,accepted_callbacks=accepted,trials=trials,terminal=decode_record(terminal,self.gs,model),failure=failure,wall_seconds=time.monotonic()-start,terminal_precision_validated=False,scipy_returned=result is not None,scipy=(dict(success=bool(result.success),status=int(result.status),message=str(result.message),nit=int(result.nit),nfev=int(result.nfev),njev=int(result.njev),fun=float(result.fun)) if result is not None else None))
+        finally:
+            for t in trials:t['acceptance']='ACCEPTED_CALLBACK' if any(t['theta_sha256']==a['theta_sha256'] for a in accepted) else ('INITIAL_REQUEST' if t['theta_sha256']==theta_hash(t0) else 'NOT_ACCEPTED_LINESEARCH_TRIAL')
+            save(self.out/(model.replace('-','_')+'_TRIALS.json'),dict(records=trials));self.ledger.checkpoint()
+        self.results.append(summary);save(self.out/(model.replace('-','_')+'_RESULT.json'),summary);print('RUN RESULT',model,status,flush=True);return summary
+
+def run(bundle):
+    B=Path(bundle).resolve();protocol=json.loads((B/'SMOKE_PROTOCOL.json').read_text());out=B/'execution_v1';out.mkdir(exist_ok=False);gs,vectors=load_inputs(B);collector=Telemetry();runtime=None;preflight={};exception=None
+    old_handlers={}
+    def interrupted(signum,frame):raise InterruptedError('Signal '+str(signum))
+    for sig in [signal.SIGTERM,signal.SIGINT]:old_handlers[sig]=signal.signal(sig,interrupted)
+    try:
+        with collect_warnings(collector):
+            runtime=Runtime(B,out,protocol,gs,collector)
+            # Allactual startingvector checks arecharged againsttheaggregate smoke budget.
+            for model in protocol['models']:
+                begin=time.monotonic();r=runtime.gradient(vectors[model],model,'preflight',192);audit=runtime.audit(vectors[model],model,'initial',r)
+                # Independent P1E/R1 reference already accepted at exact originaltheta.
+                import csv
+                E=B.parent/'uniform_target_gate/acceptance_v1/full_sample_all1274.csv'
+                with E.open() as f:reference={z['galaxy']:float(z['explicit_logL']) for z in csv.DictReader(f) if z['model']==model and z['floor']=='B0'}
+                actual=np.array(r['baseline_log_marginals']);expect=np.array([reference[g.name] for g in gs]);err=float(np.max(abs(actual-expect)))
+                if err>1e-8:raise PrecisionFailure('Preflight frozenreference parity')
+                preflight[model]=dict(status='PASS',source_hashes=source_hashes(),reference_pergal_max=err,gradient_shape=len(r['gradient_native']),native_requested_indices=r['requested_indices'],numerical_checks_in_smoke_budget=True,wall_seconds=time.monotonic()-begin,audit_file=model.replace('-','_')+'_initial_AUDIT.json')
+                save(out/'PREFLIGHT_GATE.json',dict(status='IN_PROGRESS',models=preflight))
+            save(out/'PREFLIGHT_GATE.json',dict(status='PASS',models=preflight))
+            for model in protocol['models']:
+                audit=next(r for r in runtime.precision_records if r['phase']=='initial' and r['model']==model)
+                r=runtime.optimize_once(vectors[model],model,audit)
+                if r['status'] in ['BUDGET_LIMITED','BLOCKED']:break
+    except BaseException as exc:
+        exception=dict(type=type(exc).__name__,error=repr(exc),traceback=traceback.format_exc());save(out/'TERMINAL_FAILURE.json',exception)
+    finally:
+        if runtime is not None:
+            runtime.ledger.close();save(out/'RUN_SUMMARY.json',dict(results=runtime.results,preflight=preflight,exception=exception,budget=runtime.ledger.summary(),warnings=collector.as_dict(),scientific_fitting=False))
+        else:save(out/'BOOTSTRAP_FAILURE.json',dict(exception=exception,warnings=collector.as_dict()))
+        for sig,handler in old_handlers.items():signal.signal(sig,handler)
+    return runtime.results if runtime is not None else []

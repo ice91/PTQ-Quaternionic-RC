@@ -1,0 +1,134 @@
+{
+  "model": "ptq-nu",
+  "phase": "terminal",
+  "theta_sha256": "7abded50306ec11a32380f1ae85c555faef1d2d9318f39c673b691ae974473b2",
+  "directions": [
+    {
+      "index": 0,
+      "name": "epsilon",
+      "candidate_scaled_gradient": 0.2174487235607676,
+      "independent_scaled_gradient": 0.2174487235607676,
+      "candidate_difference": 0.0,
+      "candidate_limit": 2.021744872356077e-05,
+      "candidate_pass": true,
+      "checks": [
+        {
+          "kind": "fine_coarse",
+          "h": 0.0001,
+          "difference": 0.00633327999821931,
+          "limit": 0.001223782003558987,
+          "noise_ratio": 0.957160247675118,
+          "pass_test": false
+        },
+        {
+          "kind": "fine_coarse",
+          "h": 5e-05,
+          "difference": 0.006333184501267963,
+          "limit": 0.0012238020806542573,
+          "noise_ratio": 1.9143568818949035,
+          "pass_test": false
+        },
+        {
+          "kind": "two_steps",
+          "order": 192,
+          "difference": 2.0172592221812113e-05,
+          "limit": 0.0012174688961529895,
+          "pass_test": true
+        },
+        {
+          "kind": "two_steps",
+          "order": 96,
+          "difference": 2.0077095270465417e-05,
+          "limit": 0.0012238020806542573,
+          "pass_test": true
+        }
+      ],
+      "pass_direction": false
+    },
+    {
+      "index": 10,
+      "name": "Upsilon_F574-1",
+      "candidate_scaled_gradient": 0.0506150688650736,
+      "independent_scaled_gradient": 0.050615071813825956,
+      "candidate_difference": 2.9487523534044158e-09,
+      "candidate_limit": 2.0050615071813827e-05,
+      "candidate_pass": true,
+      "checks": [
+        {
+          "kind": "fine_coarse",
+          "h": 0.0001,
+          "difference": 0.0,
+          "limit": 0.0010506150688650736,
+          "noise_ratio": 5.671419039503872e-07,
+          "pass_test": true
+        },
+        {
+          "kind": "fine_coarse",
+          "h": 5e-05,
+          "difference": 2.842170943040401e-10,
+          "limit": 0.001050615192250781,
+          "noise_ratio": 1.1258581638017303e-06,
+          "pass_test": true
+        },
+        {
+          "kind": "two_steps",
+          "order": 192,
+          "difference": 1.2338570731101894e-07,
+          "limit": 0.001050615192250781,
+          "pass_test": true
+        },
+        {
+          "kind": "two_steps",
+          "order": 96,
+          "difference": 1.231014902167149e-07,
+          "limit": 0.001050615191966564,
+          "pass_test": true
+        }
+      ],
+      "pass_direction": true
+    },
+    {
+      "index": 92,
+      "name": "ln_sigma_sys",
+      "candidate_scaled_gradient": -5.474301347021228,
+      "independent_scaled_gradient": -5.474301347021228,
+      "candidate_difference": 0.0,
+      "candidate_limit": 2.547430134702123e-05,
+      "candidate_pass": true,
+      "checks": [
+        {
+          "kind": "fine_coarse",
+          "h": 0.0001,
+          "difference": 0.012085274647687605,
+          "limit": 0.006474301347021229,
+          "noise_ratio": 0.038033471445282976,
+          "pass_test": false
+        },
+        {
+          "kind": "fine_coarse",
+          "h": 5e-05,
+          "difference": 0.01208520188811324,
+          "limit": 0.006475268999362702,
+          "noise_ratio": 0.07604192162931823,
+          "pass_test": false
+        },
+        {
+          "kind": "two_steps",
+          "order": 192,
+          "difference": 0.0009676523414734461,
+          "limit": 0.006475268999362702,
+          "pass_test": true
+        },
+        {
+          "kind": "two_steps",
+          "order": 96,
+          "difference": 0.0009677251010478116,
+          "limit": 0.006463183797474589,
+          "pass_test": true
+        }
+      ],
+      "pass_direction": false
+    }
+  ],
+  "status": "FAIL"
+}

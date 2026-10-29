@@ -1,0 +1,290 @@
+{
+  "id": "REV26-P1G-A",
+  "target": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+  "sensitivity_target": "REV26-P1E-UNIFORM-EXPLICIT-B1-PHYSICAL-v1",
+  "impl_root": "/home/rocky/PTQ-Quaternionic-RC",
+  "candidate_src": "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_pilot_a/candidate/src",
+  "requested_macos_impl_root": "/Users/rocky/PTQ-Quaternionic-RC",
+  "host_resolution": "This host has no /Users/rocky. Git remotes identify the same repositories under /home/rocky.",
+  "execution_order": [
+    "baryon",
+    "mond",
+    "ptq",
+    "ptq-nu",
+    "ptq-screen",
+    "mond-screen",
+    "nfw1p"
+  ],
+  "starts": {
+    "baryon": {
+      "path": "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_recovery/original_recovered/01_mle/baryon/theta_mle.npy",
+      "sha256": "917eed6f038a8a3a2b1e28469838945ce998a5adb059f81aef78aa3b2c2ec8ab",
+      "theta_sha256": "fb2a56b8371a28f0549c5027ced51588c4e3379b11ebc3134ecda12154730ec1",
+      "k": 92,
+      "origin": "P1A original_recovered theta_mle.npy"
+    },
+    "mond": {
+      "path": "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_recovery/original_recovered/01_mle/mond/theta_mle.npy",
+      "sha256": "dfe3ee0d68c95267bc03a1407a18fa2da14d730f32090fc455b7d30fbc266d0b",
+      "theta_sha256": "3dc9f836b371eaa2a2c3c6c25391e5e123b5ebbd12a1f255c871e79151b09827",
+      "k": 93,
+      "origin": "P1A original_recovered theta_mle.npy"
+    },
+    "ptq": {
+      "path": "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_recovery/original_recovered/01_mle/ptq/theta_mle.npy",
+      "sha256": "f04c4768914d47837d3625ec249997001d2b965d153e46a15a1fe6e09adc0551",
+      "theta_sha256": "2a2e253a75f14503475a82ee5ce82c5ae71048577eb5418a714ab92dfe3aa22b",
+      "k": 93,
+      "origin": "P1A original_recovered theta_mle.npy"
+    },
+    "ptq-nu": {
+      "path": "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_recovery/original_recovered/01_mle/ptq_nu/theta_mle.npy",
+      "sha256": "7501b3ccccdd4766d13b6f71a46dd04e6bdda4ef8109ef1b8c42bbec8bbc472d",
+      "theta_sha256": "871a51272c6e429bcacc2883d83efbc3db18081bd525d8d860f63f49fa1c8758",
+      "k": 93,
+      "origin": "P1A original_recovered theta_mle.npy"
+    },
+    "ptq-screen": {
+      "path": "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_recovery/original_recovered/01_mle/ptq_screen/theta_mle.npy",
+      "sha256": "a00384038a7775e61338bf2d4572580ecc4efb4af53d99fb51cefc2ce4c5d9d6",
+      "theta_sha256": "24ac4c51e4f319a2fd6d3eb2119356d58649770e35f3f5b80c3af6f1b948f928",
+      "k": 94,
+      "origin": "P1A original_recovered theta_mle.npy"
+    },
+    "mond-screen": {
+      "path": "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_recovery/original_recovered/01_mle/mond_screen/theta_mle.npy",
+      "sha256": "970d9d73a76e8d8ffbf97b1062e9cb39f05bf296bf344aa0e116da37900a0689",
+      "theta_sha256": "3ba12730fdab1ffa7f12972b5119b27435b0ebf175e8c6ca9675daf6b135073a",
+      "k": 94,
+      "origin": "P1A original_recovered theta_mle.npy"
+    },
+    "nfw1p": {
+      "path": "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_recovery/original_recovered/01_mle/nfw1p/theta_mle.npy",
+      "sha256": "26fd41a5f8bd80ea54ce7665fce8e314bce13525dafa7378f953ea5008b93dc9",
+      "theta_sha256": "5c4ad3c07e46f3fa3df746c3cb5a1eeb42fc8577fbd5ec316dcd1c12ae617d7e",
+      "k": 183,
+      "origin": "P1A original_recovered theta_mle.npy"
+    }
+  },
+  "start_policy": "Exactly one P1A original recovered vector per native model. R2 smoke terminals are not starts. No replacement after failure.",
+  "optimizer": {
+    "method": "L-BFGS-B",
+    "jac": true,
+    "maxls": 20,
+    "maxcor": 10,
+    "ftol": 1e-12,
+    "gtol": 1e-06
+  },
+  "gradient": {
+    "evaluator": "P1F-R1 dependency-aware",
+    "relative_step": 0.0001,
+    "scheme": "auto central or inward",
+    "order": 192
+  },
+  "per_model": {
+    "baryon": {
+      "k": 92,
+      "max_gradient_batches": 400,
+      "max_accepted_iterations": 350,
+      "max_optimizer_wall_seconds": 7200
+    },
+    "mond": {
+      "k": 93,
+      "max_gradient_batches": 400,
+      "max_accepted_iterations": 350,
+      "max_optimizer_wall_seconds": 7200
+    },
+    "ptq": {
+      "k": 93,
+      "max_gradient_batches": 400,
+      "max_accepted_iterations": 350,
+      "max_optimizer_wall_seconds": 7200
+    },
+    "ptq-nu": {
+      "k": 93,
+      "max_gradient_batches": 400,
+      "max_accepted_iterations": 350,
+      "max_optimizer_wall_seconds": 7200
+    },
+    "ptq-screen": {
+      "k": 94,
+      "max_gradient_batches": 400,
+      "max_accepted_iterations": 350,
+      "max_optimizer_wall_seconds": 7200
+    },
+    "mond-screen": {
+      "k": 94,
+      "max_gradient_batches": 400,
+      "max_accepted_iterations": 350,
+      "max_optimizer_wall_seconds": 7200
+    },
+    "nfw1p": {
+      "k": 183,
+      "max_gradient_batches": 600,
+      "max_accepted_iterations": 500,
+      "max_optimizer_wall_seconds": 10800
+    }
+  },
+  "budget": {
+    "max_fullsample_equivalents": 25000,
+    "max_actual_galaxy_calls": 3000000,
+    "max_aggregate_seconds": 43200
+  },
+  "budget_policy": "Per-model batch, accepted-iteration and wall caps bind the optimizer loop. Preflight, terminal validation and B1 fixed-point evaluations count against the aggregate caps and are not extra optimizer starts. No retry and no budget increase.",
+  "precision": {
+    "pergal_finecoarse_abs": 0.0001,
+    "sample_sumabs": 0.01,
+    "claimed_objective_abs": 1e-08,
+    "repeat_pergal_abs": 1e-12,
+    "source": "R2 SMOKE_PROTOCOL precision and directions.repeat_pergal_abs; no relaxation"
+  },
+  "directions": {
+    "steps": [
+      0.0001,
+      5e-05
+    ],
+    "candidate_vs_independent_scaled_abs": 2e-05,
+    "candidate_vs_independent_relative": 1e-06,
+    "refinement_scaled_abs": 0.001,
+    "refinement_relative": 0.001,
+    "noise_unresolved_ratio": 0.1,
+    "coordinates": [
+      {
+        "model": "baryon",
+        "index": 0,
+        "role": "first stellar Upsilon, CamB"
+      },
+      {
+        "model": "baryon",
+        "index": 9,
+        "role": "F574-1 stellar Upsilon"
+      },
+      {
+        "model": "baryon",
+        "index": 91,
+        "role": "ln sigma_sys"
+      },
+      {
+        "model": "mond",
+        "index": 0,
+        "role": "log10 a0"
+      },
+      {
+        "model": "mond",
+        "index": 10,
+        "role": "F574-1 stellar Upsilon"
+      },
+      {
+        "model": "mond",
+        "index": 92,
+        "role": "ln sigma_sys"
+      },
+      {
+        "model": "ptq",
+        "index": 0,
+        "role": "epsilon"
+      },
+      {
+        "model": "ptq",
+        "index": 10,
+        "role": "F574-1 stellar Upsilon"
+      },
+      {
+        "model": "ptq",
+        "index": 92,
+        "role": "ln sigma_sys"
+      },
+      {
+        "model": "ptq-nu",
+        "index": 0,
+        "role": "epsilon"
+      },
+      {
+        "model": "ptq-nu",
+        "index": 10,
+        "role": "F574-1 stellar Upsilon"
+      },
+      {
+        "model": "ptq-nu",
+        "index": 92,
+        "role": "ln sigma_sys"
+      },
+      {
+        "model": "ptq-screen",
+        "index": 0,
+        "role": "epsilon; R2 frozen index"
+      },
+      {
+        "model": "ptq-screen",
+        "index": 1,
+        "role": "ln q; R2 frozen index"
+      },
+      {
+        "model": "ptq-screen",
+        "index": 11,
+        "role": "F574-1 stellar Upsilon; R2 frozen index"
+      },
+      {
+        "model": "ptq-screen",
+        "index": 93,
+        "role": "ln sigma_sys; R2 frozen index"
+      },
+      {
+        "model": "mond-screen",
+        "index": 0,
+        "role": "log10 a0"
+      },
+      {
+        "model": "mond-screen",
+        "index": 1,
+        "role": "ln q"
+      },
+      {
+        "model": "mond-screen",
+        "index": 11,
+        "role": "F574-1 stellar Upsilon"
+      },
+      {
+        "model": "mond-screen",
+        "index": 93,
+        "role": "ln sigma_sys"
+      },
+      {
+        "model": "nfw1p",
+        "index": 0,
+        "role": "first stellar Upsilon; R2 frozen index"
+      },
+      {
+        "model": "nfw1p",
+        "index": 91,
+        "role": "first halo log10 M200; R2 frozen index"
+      },
+      {
+        "model": "nfw1p",
+        "index": 182,
+        "role": "ln sigma_sys; R2 frozen index"
+      }
+    ],
+    "selection": "Structural roles and the R2 index set. Not selected from gradient magnitude or fit outcome."
+  },
+  "stationarity": {
+    "native_projected_gradient_inf_max": 1e-06,
+    "scipy_success_is_not_sufficient": true,
+    "single_start_is_not_global_mle": true,
+    "nfw_multistart_still_required": true
+  },
+  "family_identity": {
+    "max_per_galaxy_abs": 1e-08,
+    "pairs": [
+      "ptq-nu~mond",
+      "ptq-screen~mond-screen"
+    ]
+  },
+  "b1_policy": "After all B0 endpoints are recorded, evaluate every finite in-bound native terminal under B1. Identification B1_AT_B0_TERMINAL_FIXED_POINT. Do not optimize B1. Do not drop a model because its B0 objective is worse. Do not publish a ranking.",
+  "p1e_b0_reference": "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/uniform_target_gate/acceptance_v1/full_sample_all1274.csv",
+  "p1e_b0_reference_sha256": "1a6bc040215bb953bf124ffb557307a0638c8b786ff83000a57801fca878f047",
+  "driver_sha256": "2c5f146a84888f63e9710616932f50a4d60debab95b2a4d2db3413a86789d58a",
+  "verified_dependencies_sha256": "e249c9a4c78f68b6637f84cb1fb34c2d1569fecb99c7d5d9362f998c9fb74560",
+  "work_weights_sha256": "6da10aa68e6b6d2c9296b64e73282b893ccff58b1d9f449a65bc0f97e4f43f15",
+  "dataset_sha256": "3ab1c3c2b110c1e48680ebae77c1ceefaa4f778f81119dcf04881b630b274cbb"
+}

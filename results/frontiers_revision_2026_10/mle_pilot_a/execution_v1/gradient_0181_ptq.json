@@ -1,0 +1,2072 @@
+{
+  "objective": 7159.137358631574,
+  "baseline_log_marginals": [
+    -36.948638119618664,
+    -24.88955984713431,
+    -57.924394340757146,
+    -44.158933582469196,
+    -33.930921110486885,
+    -24.529200602109654,
+    -175.5689648579527,
+    -68.7677670066613,
+    -63.06704352277531,
+    -50.415159200146825,
+    -125.14894403145392,
+    -202.62207575867706,
+    -104.6220040441377,
+    -73.6586687803103,
+    -90.57163579969873,
+    -89.41465887632069,
+    -55.98065577568487,
+    -104.57227666715261,
+    -256.4882367415235,
+    -45.21926466509008,
+    -208.1303898138506,
+    -121.98619439046823,
+    -103.59272053983364,
+    -92.25855301776527,
+    -55.01198596094484,
+    -84.52109212108397,
+    -167.71829066289465,
+    -44.61736153819944,
+    -75.59899123994826,
+    -54.6600745686783,
+    -59.691135558131755,
+    -43.024611579922585,
+    -60.604601460070754,
+    -27.341884078263224,
+    -29.38299329679285,
+    -36.03049850033997,
+    -32.97261779783796,
+    -44.93576859272108,
+    -127.60931327925061,
+    -26.921518893185794,
+    -20.836745006929778,
+    -29.574547982976767,
+    -43.81232178605715,
+    -89.72965562018106,
+    -29.751808487625752,
+    -63.18155195897101,
+    -85.11713246416589,
+    -106.80174772146206,
+    -77.70850778874978,
+    -113.87607215321049,
+    -72.54321536333379,
+    -88.42253922057776,
+    -116.53920396272444,
+    -55.73702652243421,
+    -15.491634226833039,
+    -145.12202544606023,
+    -166.76906446709333,
+    -119.25527172196277,
+    -105.65419379804018,
+    -86.77597359398654,
+    -71.62802987564802,
+    -76.00822661702789,
+    -204.28684492676408,
+    -190.4196774641273,
+    -26.89815938672706,
+    -43.653668007850364,
+    -43.24037851160111,
+    -31.203950542923742,
+    -53.48319030628168,
+    -32.162819761556875,
+    -28.209336345829065,
+    -38.2903241845905,
+    -21.279427526651773,
+    -37.17322864885608,
+    -62.066326839654565,
+    -41.41926978075114,
+    -37.02205237679167,
+    -13.69534748184514,
+    -107.0651432966716,
+    -25.445307733917115,
+    -37.90929052945586,
+    -24.42885234950225,
+    -58.44428593055452,
+    -105.97688468948589,
+    -30.475094020575725,
+    -84.0166516107642,
+    -338.9860247616394,
+    -150.63582399205424,
+    -134.1849205836551,
+    -27.386074699458256,
+    -124.23290633464025
+  ],
+  "components": [
+    {
+      "index": 0,
+      "name": "epsilon",
+      "native_gradient": -52.150905087744235,
+      "scaled_gradient": -208.5514172949841,
+      "scheme": "central",
+      "native_step": 0.0003998999000000003,
+      "stencil_values": [
+        7159.4313904429855,
+        7159.3896801595265
+      ],
+      "denominator": 0.0007997998000000006,
+      "affected_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90
+      ]
+    },
+    {
+      "index": 1,
+      "name": "Upsilon_CamB",
+      "native_gradient": 3.0162046004597074,
+      "scaled_gradient": 4.373496670666576,
+      "scheme": "forward_inward",
+      "native_step": 0.0001449999999999993,
+      "stencil_values": [
+        36.948638119618664,
+        36.94907546928573
+      ],
+      "denominator": 0.0001449999999999993,
+      "affected_indices": [
+        0
+      ]
+    },
+    {
+      "index": 2,
+      "name": "Upsilon_D564-8",
+      "native_gradient": 0.4806833178973075,
+      "scaled_gradient": 0.6969908109510958,
+      "scheme": "forward_inward",
+      "native_step": 0.0001449999999999993,
+      "stencil_values": [
+        24.88955984713431,
+        24.889629546215406
+      ],
+      "denominator": 0.0001449999999999993,
+      "affected_indices": [
+        1
+      ]
+    },
+    {
+      "index": 3,
+      "name": "Upsilon_D631-7",
+      "native_gradient": 2.436759054336935,
+      "scaled_gradient": 3.5333006287885556,
+      "scheme": "forward_inward",
+      "native_step": 0.0001449999999999993,
+      "stencil_values": [
+        57.924394340757146,
+        57.924747670820025
+      ],
+      "denominator": 0.0001449999999999993,
+      "affected_indices": [
+        2
+      ]
+    },
+    {
+      "index": 4,
+      "name": "Upsilon_DDO154",
+      "native_gradient": 0.6892314067092012,
+      "scaled_gradient": 0.9993855397283418,
+      "scheme": "forward_inward",
+      "native_step": 0.0001449999999999993,
+      "stencil_values": [
+        44.158933582469196,
+        44.15903352102317
+      ],
+      "denominator": 0.0001449999999999993,
+      "affected_indices": [
+        3
+      ]
+    },
+    {
+      "index": 5,
+      "name": "Upsilon_DDO168",
+      "native_gradient": 0.35216660165815655,
+      "scaled_gradient": 0.510641572404327,
+      "scheme": "forward_inward",
+      "native_step": 0.0001449999999999993,
+      "stencil_values": [
+        33.930921110486885,
+        33.930972174644126
+      ],
+      "denominator": 0.0001449999999999993,
+      "affected_indices": [
+        4
+      ]
+    },
+    {
+      "index": 6,
+      "name": "Upsilon_ESO444-G084",
+      "native_gradient": -0.1814332659099093,
+      "scaled_gradient": -0.2630782355693685,
+      "scheme": "backward_inward",
+      "native_step": 0.00014500000000006175,
+      "stencil_values": [
+        24.52922690993321,
+        24.529200602109654
+      ],
+      "denominator": 0.00014500000000006175,
+      "affected_indices": [
+        5
+      ]
+    },
+    {
+      "index": 7,
+      "name": "Upsilon_ESO563-G021",
+      "native_gradient": 34.32178121012971,
+      "scaled_gradient": 49.76658275468807,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        175.56398921044658,
+        175.5739425269975
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        6
+      ]
+    },
+    {
+      "index": 8,
+      "name": "Upsilon_F568-3",
+      "native_gradient": -0.12028224475587342,
+      "scaled_gradient": -0.17440925489601644,
+      "scheme": "backward_inward",
+      "native_step": 0.00014500000000006175,
+      "stencil_values": [
+        68.76778444758679,
+        68.7677670066613
+      ],
+      "denominator": 0.00014500000000006175,
+      "affected_indices": [
+        7
+      ]
+    },
+    {
+      "index": 9,
+      "name": "Upsilon_F568-V1",
+      "native_gradient": -3.1025069944711747,
+      "scaled_gradient": -4.498635141983203,
+      "scheme": "backward_inward",
+      "native_step": 0.00014500000000006175,
+      "stencil_values": [
+        63.067493386289506,
+        63.06704352277531
+      ],
+      "denominator": 0.00014500000000006175,
+      "affected_indices": [
+        8
+      ]
+    },
+    {
+      "index": 10,
+      "name": "Upsilon_F574-1",
+      "native_gradient": -0.11033080727032757,
+      "scaled_gradient": -0.15997967054197498,
+      "scheme": "backward_inward",
+      "native_step": 0.00014500000000006175,
+      "stencil_values": [
+        50.41517519811388,
+        50.415159200146825
+      ],
+      "denominator": 0.00014500000000006175,
+      "affected_indices": [
+        9
+      ]
+    },
+    {
+      "index": 11,
+      "name": "Upsilon_IC2574",
+      "native_gradient": 3.027270472185167,
+      "scaled_gradient": 4.3895421846684926,
+      "scheme": "forward_inward",
+      "native_step": 0.0001449999999999993,
+      "stencil_values": [
+        125.14894403145392,
+        125.14938298567239
+      ],
+      "denominator": 0.0001449999999999993,
+      "affected_indices": [
+        10
+      ]
+    },
+    {
+      "index": 12,
+      "name": "Upsilon_IC4202",
+      "native_gradient": 13.055711579278615,
+      "scaled_gradient": 18.93078178995399,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        202.6201850132552,
+        202.62397116961318
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        11
+      ]
+    },
+    {
+      "index": 13,
+      "name": "Upsilon_NGC0024",
+      "native_gradient": -10.228310334570406,
+      "scaled_gradient": -14.831049985127088,
+      "scheme": "backward_inward",
+      "native_step": 0.00014500000000006175,
+      "stencil_values": [
+        104.62348714913621,
+        104.6220040441377
+      ],
+      "denominator": 0.00014500000000006175,
+      "affected_indices": [
+        12
+      ]
+    },
+    {
+      "index": 14,
+      "name": "Upsilon_NGC0055",
+      "native_gradient": 4.429068169899678,
+      "scaled_gradient": 6.422148846354533,
+      "scheme": "forward_inward",
+      "native_step": 0.0001449999999999993,
+      "stencil_values": [
+        73.6586687803103,
+        73.65931099519493
+      ],
+      "denominator": 0.0001449999999999993,
+      "affected_indices": [
+        13
+      ]
+    },
+    {
+      "index": 15,
+      "name": "Upsilon_NGC0247",
+      "native_gradient": 0.43039439747949515,
+      "scaled_gradient": 0.624071876345268,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        90.5715735767029,
+        90.57169839107817
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        14
+      ]
+    },
+    {
+      "index": 16,
+      "name": "Upsilon_NGC0300",
+      "native_gradient": 0.016413233279772208,
+      "scaled_gradient": 0.0237991882556697,
+      "scheme": "central",
+      "native_step": 0.00014500000000006175,
+      "stencil_values": [
+        89.41465655278665,
+        89.4146613126243
+      ],
+      "denominator": 0.0002900000000001235,
+      "affected_indices": [
+        15
+      ]
+    },
+    {
+      "index": 17,
+      "name": "Upsilon_NGC0801",
+      "native_gradient": -7.5100247454601865,
+      "scaled_gradient": -10.88953588091727,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        55.98174669379053,
+        55.979568786614344
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        16
+      ]
+    },
+    {
+      "index": 18,
+      "name": "Upsilon_NGC0891",
+      "native_gradient": -7.407686574465432,
+      "scaled_gradient": -10.741145532974876,
+      "scheme": "central",
+      "native_step": 0.00014500000000000624,
+      "stencil_values": [
+        104.5733636861205,
+        104.5712154570139
+      ],
+      "denominator": 0.00029000000000001247,
+      "affected_indices": [
+        17
+      ]
+    },
+    {
+      "index": 19,
+      "name": "Upsilon_NGC2403",
+      "native_gradient": -4.358626702094476,
+      "scaled_gradient": -6.32000871803699,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        256.48887327131877,
+        256.48760926957516
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        18
+      ]
+    },
+    {
+      "index": 20,
+      "name": "Upsilon_NGC2683",
+      "native_gradient": 2.9226290454074,
+      "scaled_gradient": 4.23781211584073,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        45.21884239589184,
+        45.21968995831501
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        19
+      ]
+    },
+    {
+      "index": 21,
+      "name": "Upsilon_NGC2841",
+      "native_gradient": -23.257275133985473,
+      "scaled_gradient": -33.723048944278936,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        208.1337744829497,
+        208.12702987316084
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        20
+      ]
+    },
+    {
+      "index": 22,
+      "name": "Upsilon_NGC2915",
+      "native_gradient": 0.06079940116731572,
+      "scaled_gradient": 0.08815913169260779,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        121.98618566431209,
+        121.98620329613843
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        21
+      ]
+    },
+    {
+      "index": 23,
+      "name": "Upsilon_NGC2955",
+      "native_gradient": -4.51459201704411,
+      "scaled_gradient": -6.546158424713958,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        103.59337772073957,
+        103.59206848905463
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        22
+      ]
+    },
+    {
+      "index": 24,
+      "name": "Upsilon_NGC2976",
+      "native_gradient": -0.360003398102244,
+      "scaled_gradient": -0.5220049272482539,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        92.25860557571235,
+        92.2585011747269
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        23
+      ]
+    },
+    {
+      "index": 25,
+      "name": "Upsilon_NGC2998",
+      "native_gradient": -2.181619556395002,
+      "scaled_gradient": -3.1633483567727527,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        55.01230283752878,
+        55.011670167857424
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        24
+      ]
+    },
+    {
+      "index": 26,
+      "name": "Upsilon_NGC3109",
+      "native_gradient": 0.46752749849945296,
+      "scaled_gradient": 0.6779148728242068,
+      "scheme": "forward_inward",
+      "native_step": 0.0001449999999999993,
+      "stencil_values": [
+        84.52109212108397,
+        84.52115991257125
+      ],
+      "denominator": 0.0001449999999999993,
+      "affected_indices": [
+        25
+      ]
+    },
+    {
+      "index": 27,
+      "name": "Upsilon_NGC3198",
+      "native_gradient": -20.87651587178844,
+      "scaled_gradient": -30.270948014093236,
+      "scheme": "central",
+      "native_step": 0.00014500000000006175,
+      "stencil_values": [
+        167.72131927506973,
+        167.7152650854669
+      ],
+      "denominator": 0.0002900000000001235,
+      "affected_indices": [
+        26
+      ]
+    },
+    {
+      "index": 28,
+      "name": "Upsilon_NGC3726",
+      "native_gradient": 5.175041269910114,
+      "scaled_gradient": 7.503809841369665,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        44.616612052945456,
+        44.61811281491373
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        27
+      ]
+    },
+    {
+      "index": 29,
+      "name": "Upsilon_NGC3741",
+      "native_gradient": 0.18027174907478397,
+      "scaled_gradient": 0.26139403615843676,
+      "scheme": "forward_inward",
+      "native_step": 0.0001449999999999993,
+      "stencil_values": [
+        75.59899123994826,
+        75.59901737935188
+      ],
+      "denominator": 0.0001449999999999993,
+      "affected_indices": [
+        28
+      ]
+    },
+    {
+      "index": 30,
+      "name": "Upsilon_NGC3769",
+      "native_gradient": -6.320083554813765,
+      "scaled_gradient": -9.16412115447996,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        54.660991455570716,
+        54.65915863133982
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        29
+      ]
+    },
+    {
+      "index": 31,
+      "name": "Upsilon_NGC3877",
+      "native_gradient": -2.081769163846104,
+      "scaled_gradient": -3.018565287576851,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        59.69143848525888,
+        59.69083477220136
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        30
+      ]
+    },
+    {
+      "index": 32,
+      "name": "Upsilon_NGC3893",
+      "native_gradient": 5.484822630737087,
+      "scaled_gradient": 7.952992814568776,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        43.023817251438494,
+        43.02540785000141
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        31
+      ]
+    },
+    {
+      "index": 33,
+      "name": "Upsilon_NGC3917",
+      "native_gradient": 0.12232773830215704,
+      "scaled_gradient": 0.1773752205381277,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        60.604583935730346,
+        60.604619410774454
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        32
+      ]
+    },
+    {
+      "index": 34,
+      "name": "Upsilon_NGC3949",
+      "native_gradient": -1.1019994502339634,
+      "scaled_gradient": -1.597899202839247,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        27.34204500033,
+        27.341725420489432
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        33
+      ]
+    },
+    {
+      "index": 35,
+      "name": "Upsilon_NGC3953",
+      "native_gradient": -0.17131317255514775,
+      "scaled_gradient": -0.24840410020496423,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        29.38301885928399,
+        29.38296917846395
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        34
+      ]
+    },
+    {
+      "index": 36,
+      "name": "Upsilon_NGC3972",
+      "native_gradient": -0.44156205300626944,
+      "scaled_gradient": -0.6402649768590907,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        36.03056277020604,
+        36.03043471721067
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        35
+      ]
+    },
+    {
+      "index": 37,
+      "name": "Upsilon_NGC3992",
+      "native_gradient": 1.2074674604296247,
+      "scaled_gradient": 1.7508278176229557,
+      "scheme": "central",
+      "native_step": 0.00014500000000006175,
+      "stencil_values": [
+        32.972443246670096,
+        32.97279341223362
+      ],
+      "denominator": 0.0002900000000001235,
+      "affected_indices": [
+        36
+      ]
+    },
+    {
+      "index": 38,
+      "name": "Upsilon_NGC4010",
+      "native_gradient": 1.1065050383878752,
+      "scaled_gradient": 1.604432305662419,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        44.93560851846898,
+        44.935929404930114
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        37
+      ]
+    },
+    {
+      "index": 39,
+      "name": "Upsilon_NGC4013",
+      "native_gradient": -0.7030642950277609,
+      "scaled_gradient": -1.0194432277902532,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        127.60941874520744,
+        127.60921485656188
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        38
+      ]
+    },
+    {
+      "index": 40,
+      "name": "Upsilon_NGC4051",
+      "native_gradient": 1.1875883310748778,
+      "scaled_gradient": 1.7220030800585728,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        26.9213472576648,
+        26.92169165828081
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        39
+      ]
+    },
+    {
+      "index": 41,
+      "name": "Upsilon_NGC4068",
+      "native_gradient": 1.1539904333262612,
+      "scaled_gradient": 1.6732861283230787,
+      "scheme": "forward_inward",
+      "native_step": 0.0001449999999999993,
+      "stencil_values": [
+        20.836745006929778,
+        20.83691233554261
+      ],
+      "denominator": 0.0001449999999999993,
+      "affected_indices": [
+        40
+      ]
+    },
+    {
+      "index": 42,
+      "name": "Upsilon_NGC4085",
+      "native_gradient": -0.3271510099144868,
+      "scaled_gradient": -0.47436896437600584,
+      "scheme": "central",
+      "native_step": 0.00014500000000000624,
+      "stencil_values": [
+        29.57459665821066,
+        29.574501784417784
+      ],
+      "denominator": 0.00029000000000001247,
+      "affected_indices": [
+        41
+      ]
+    },
+    {
+      "index": 43,
+      "name": "Upsilon_NGC4088",
+      "native_gradient": -1.032241107878873,
+      "scaled_gradient": -1.4967496064243657,
+      "scheme": "central",
+      "native_step": 0.00014500000000000624,
+      "stencil_values": [
+        43.81247408991073,
+        43.812174739989445
+      ],
+      "denominator": 0.00029000000000001247,
+      "affected_indices": [
+        42
+      ]
+    },
+    {
+      "index": 44,
+      "name": "Upsilon_NGC4100",
+      "native_gradient": -3.05269529278601,
+      "scaled_gradient": -4.426408174539715,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        89.7300992020135,
+        89.7292139203786
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        43
+      ]
+    },
+    {
+      "index": 45,
+      "name": "Upsilon_NGC4138",
+      "native_gradient": -1.3930530449950318,
+      "scaled_gradient": -2.019926915242796,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        29.752011001815745,
+        29.751607016432697
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        44
+      ]
+    },
+    {
+      "index": 46,
+      "name": "Upsilon_NGC4157",
+      "native_gradient": 2.652693333701371,
+      "scaled_gradient": 3.846405333866988,
+      "scheme": "central",
+      "native_step": 0.00014500000000000624,
+      "stencil_values": [
+        63.18116998949023,
+        63.181939270557
+      ],
+      "denominator": 0.00029000000000001247,
+      "affected_indices": [
+        45
+      ]
+    },
+    {
+      "index": 47,
+      "name": "Upsilon_NGC4183",
+      "native_gradient": -4.831997794018689,
+      "scaled_gradient": -7.006396801327099,
+      "scheme": "central",
+      "native_step": 0.00014500000000006175,
+      "stencil_values": [
+        85.11783324399357,
+        85.1164319646333
+      ],
+      "denominator": 0.0002900000000001235,
+      "affected_indices": [
+        46
+      ]
+    },
+    {
+      "index": 48,
+      "name": "Upsilon_NGC4217",
+      "native_gradient": -12.37380334270524,
+      "scaled_gradient": -17.9420148469226,
+      "scheme": "central",
+      "native_step": 0.00014500000000000624,
+      "stencil_values": [
+        106.80355689989614,
+        106.79996849692675
+      ],
+      "denominator": 0.00029000000000001247,
+      "affected_indices": [
+        47
+      ]
+    },
+    {
+      "index": 49,
+      "name": "Upsilon_NGC5005",
+      "native_gradient": -4.206622828036638,
+      "scaled_gradient": -6.099603100653124,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        77.70912044410028,
+        77.70790052348015
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        48
+      ]
+    },
+    {
+      "index": 50,
+      "name": "Upsilon_NGC5055",
+      "native_gradient": 7.598145631864172,
+      "scaled_gradient": 11.017311166203049,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        113.87497539128566,
+        113.8771788535189
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        49
+      ]
+    },
+    {
+      "index": 51,
+      "name": "Upsilon_NGC5907",
+      "native_gradient": -3.625982521160504,
+      "scaled_gradient": -5.257674655682731,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        72.54374315883815,
+        72.54269162390702
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        50
+      ]
+    },
+    {
+      "index": 52,
+      "name": "Upsilon_NGC6195",
+      "native_gradient": 6.096136413914683,
+      "scaled_gradient": 8.839397800176291,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        88.4216567058654,
+        88.42342458542544
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        51
+      ]
+    },
+    {
+      "index": 53,
+      "name": "Upsilon_NGC6503",
+      "native_gradient": 0.4758255203370891,
+      "scaled_gradient": 0.6899470044887791,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        116.53913642224639,
+        116.53927441164728
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        52
+      ]
+    },
+    {
+      "index": 54,
+      "name": "Upsilon_NGC6674",
+      "native_gradient": -7.334393965282396,
+      "scaled_gradient": -10.634871249659474,
+      "scheme": "central",
+      "native_step": 0.00014500000000006175,
+      "stencil_values": [
+        55.73809062761187,
+        55.735963653361935
+      ],
+      "denominator": 0.0002900000000001235,
+      "affected_indices": [
+        53
+      ]
+    },
+    {
+      "index": 55,
+      "name": "Upsilon_NGC6789",
+      "native_gradient": -1.232652928142498,
+      "scaled_gradient": -1.7873467458066221,
+      "scheme": "backward_inward",
+      "native_step": 0.00014500000000006175,
+      "stencil_values": [
+        15.49181296150762,
+        15.491634226833039
+      ],
+      "denominator": 0.00014500000000006175,
+      "affected_indices": [
+        54
+      ]
+    },
+    {
+      "index": 56,
+      "name": "Upsilon_NGC7331",
+      "native_gradient": 17.916755835706475,
+      "scaled_gradient": 25.979295961774387,
+      "scheme": "central",
+      "native_step": 0.00014500000000000624,
+      "stencil_values": [
+        145.11945674503514,
+        145.1246526042275
+      ],
+      "denominator": 0.00029000000000001247,
+      "affected_indices": [
+        55
+      ]
+    },
+    {
+      "index": 57,
+      "name": "Upsilon_NGC7793",
+      "native_gradient": -1.0347315502450112,
+      "scaled_gradient": -1.500360747855266,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        166.7692150076177,
+        166.76891493546813
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        56
+      ]
+    },
+    {
+      "index": 58,
+      "name": "Upsilon_NGC7814",
+      "native_gradient": -0.26346415854192307,
+      "scaled_gradient": -0.38202302988578846,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        119.255314199734,
+        119.25523779512802
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        57
+      ]
+    },
+    {
+      "index": 59,
+      "name": "Upsilon_UGC00128",
+      "native_gradient": -13.371799481909795,
+      "scaled_gradient": -19.389109248769202,
+      "scheme": "backward_inward",
+      "native_step": 0.00014500000000006175,
+      "stencil_values": [
+        105.65613270896506,
+        105.65419379804018
+      ],
+      "denominator": 0.00014500000000006175,
+      "affected_indices": [
+        58
+      ]
+    },
+    {
+      "index": 60,
+      "name": "Upsilon_UGC01281",
+      "native_gradient": 1.190637818945896,
+      "scaled_gradient": 1.726424837471549,
+      "scheme": "forward_inward",
+      "native_step": 0.0001449999999999993,
+      "stencil_values": [
+        86.77597359398654,
+        86.77614623647028
+      ],
+      "denominator": 0.0001449999999999993,
+      "affected_indices": [
+        59
+      ]
+    },
+    {
+      "index": 61,
+      "name": "Upsilon_UGC02487",
+      "native_gradient": -2.8114209855859267,
+      "scaled_gradient": -4.076560429099594,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        71.62843935236859,
+        71.62762404028277
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        60
+      ]
+    },
+    {
+      "index": 62,
+      "name": "Upsilon_UGC02885",
+      "native_gradient": -1.9963529554501145,
+      "scaled_gradient": -2.894711785402666,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        76.00851821432201,
+        76.00793927196493
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        61
+      ]
+    },
+    {
+      "index": 63,
+      "name": "Upsilon_UGC02916",
+      "native_gradient": -2.066247804445284,
+      "scaled_gradient": -2.9960593164456615,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        204.28714941542205,
+        204.28655020355876
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        62
+      ]
+    },
+    {
+      "index": 64,
+      "name": "Upsilon_UGC03205",
+      "native_gradient": 4.818683928946836,
+      "scaled_gradient": 6.987091696972912,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        190.41898132893087,
+        190.42037874727026
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        63
+      ]
+    },
+    {
+      "index": 65,
+      "name": "Upsilon_UGC04483",
+      "native_gradient": 0.3305307190554043,
+      "scaled_gradient": 0.4792695426303363,
+      "scheme": "forward_inward",
+      "native_step": 0.0001449999999999993,
+      "stencil_values": [
+        26.89815938672706,
+        26.898207313681322
+      ],
+      "denominator": 0.0001449999999999993,
+      "affected_indices": [
+        64
+      ]
+    },
+    {
+      "index": 66,
+      "name": "Upsilon_UGC05005",
+      "native_gradient": -0.11356565495208842,
+      "scaled_gradient": -0.1646701996805282,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        43.65368448553635,
+        43.65365155149642
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        65
+      ]
+    },
+    {
+      "index": 67,
+      "name": "Upsilon_UGC05750",
+      "native_gradient": -0.10722293367358088,
+      "scaled_gradient": -0.15547325382669228,
+      "scheme": "central",
+      "native_step": 0.00014500000000000624,
+      "stencil_values": [
+        43.2403940642985,
+        43.240362969647734
+      ],
+      "denominator": 0.00029000000000001247,
+      "affected_indices": [
+        66
+      ]
+    },
+    {
+      "index": 68,
+      "name": "Upsilon_UGC06399",
+      "native_gradient": 0.13985966149495327,
+      "scaled_gradient": 0.20279650916768224,
+      "scheme": "central",
+      "native_step": 0.00014500000000006175,
+      "stencil_values": [
+        31.20393029835019,
+        31.203970857652024
+      ],
+      "denominator": 0.0002900000000001235,
+      "affected_indices": [
+        67
+      ]
+    },
+    {
+      "index": 69,
+      "name": "Upsilon_UGC06614",
+      "native_gradient": -0.523153433646592,
+      "scaled_gradient": -0.7585724787875583,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        53.483267033238235,
+        53.48311531874248
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        68
+      ]
+    },
+    {
+      "index": 70,
+      "name": "Upsilon_UGC06667",
+      "native_gradient": -0.7291338227070904,
+      "scaled_gradient": -1.057244042925281,
+      "scheme": "backward_inward",
+      "native_step": 0.00014500000000006175,
+      "stencil_values": [
+        32.16292548596117,
+        32.162819761556875
+      ],
+      "denominator": 0.00014500000000006175,
+      "affected_indices": [
+        69
+      ]
+    },
+    {
+      "index": 71,
+      "name": "Upsilon_UGC06818",
+      "native_gradient": 1.9777552363942554,
+      "scaled_gradient": 2.86774509277167,
+      "scheme": "forward_inward",
+      "native_step": 0.0001449999999999993,
+      "stencil_values": [
+        28.209336345829065,
+        28.209623120338343
+      ],
+      "denominator": 0.0001449999999999993,
+      "affected_indices": [
+        70
+      ]
+    },
+    {
+      "index": 72,
+      "name": "Upsilon_UGC06917",
+      "native_gradient": 0.1282379254616588,
+      "scaled_gradient": 0.18594499191940525,
+      "scheme": "central",
+      "native_step": 0.00014500000000006175,
+      "stencil_values": [
+        38.29030569227259,
+        38.29034288127097
+      ],
+      "denominator": 0.0002900000000001235,
+      "affected_indices": [
+        71
+      ]
+    },
+    {
+      "index": 73,
+      "name": "Upsilon_UGC06923",
+      "native_gradient": 0.08333285716958888,
+      "scaled_gradient": 0.12083264289590387,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        21.27941556976422,
+        21.2794397362928
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        72
+      ]
+    },
+    {
+      "index": 74,
+      "name": "Upsilon_UGC06930",
+      "native_gradient": -0.22590423905753856,
+      "scaled_gradient": -0.3275611466334309,
+      "scheme": "backward_inward",
+      "native_step": 0.00014500000000006175,
+      "stencil_values": [
+        37.173261404970745,
+        37.17322864885608
+      ],
+      "denominator": 0.00014500000000006175,
+      "affected_indices": [
+        73
+      ]
+    },
+    {
+      "index": 75,
+      "name": "Upsilon_UGC06983",
+      "native_gradient": -0.5898294815382586,
+      "scaled_gradient": -0.855252748230475,
+      "scheme": "central",
+      "native_step": 0.00014500000000006175,
+      "stencil_values": [
+        62.06641244413516,
+        62.066241393585514
+      ],
+      "denominator": 0.0002900000000001235,
+      "affected_indices": [
+        74
+      ]
+    },
+    {
+      "index": 76,
+      "name": "Upsilon_UGC07089",
+      "native_gradient": 0.8209257465072691,
+      "scaled_gradient": 1.1903423324355402,
+      "scheme": "forward_inward",
+      "native_step": 0.0001449999999999993,
+      "stencil_values": [
+        41.41926978075114,
+        41.41938881498438
+      ],
+      "denominator": 0.0001449999999999993,
+      "affected_indices": [
+        75
+      ]
+    },
+    {
+      "index": 77,
+      "name": "Upsilon_UGC07151",
+      "native_gradient": 0.23612911857550048,
+      "scaled_gradient": 0.3423872219344757,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        37.02201835603162,
+        37.02208683347601
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        76
+      ]
+    },
+    {
+      "index": 78,
+      "name": "Upsilon_UGC07232",
+      "native_gradient": -0.003962599952383257,
+      "scaled_gradient": -0.005745769930955723,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "stencil_values": [
+        13.69534807961587,
+        13.695346930461884
+      ],
+      "denominator": 0.00028999999999990145,
+      "affected_indices": [
+        77
+      ]
+    },
+    {
+      "index": 79,
+      "name": "Upsilon_UGC07524",
+      "native_gradient": 0.014306438982139624,
+      "scaled_gradient": 0.020744336524102455,
+      "scheme": "central",
+      "native_step": 0.00014500000000000624,
+      "stencil_values": [
+        107.06514126314063,
+        107.06514541200794
+      ],
+      "denominator": 0.00029000000000001247,
+      "affected_indices": [
+        78
+      ]
+    },
+    {
+      "index": 80,
+      "name": "Upsilon_UGC07559",
+      "native_gradient": 1.653813156380097,
+      "scaled_gradient": 2.3980290767511407,
+      "scheme": "forward_inward",
+      "native_step": 0.0001449999999999993,
+      "stencil_values": [
+        25.445307733917115,
+        25.44554753682479
+      ],
+      "denominator": 0.0001449999999999993,
+      "affected_indices": [
+        79
+      ]
+    },
+    {
+      "index": 81,
+      "name": "Upsilon_UGC07577",
+      "native_gradient": 2.1566592165762573,
+      "scaled_gradient": 3.127155864035573,
+      "scheme": "forward_inward",
+      "native_step": 0.0001449999999999993,
+      "stencil_values": [
+        37.90929052945586,
+        37.90960324504226
+      ],
+      "denominator": 0.0001449999999999993,
+      "affected_indices": [
+        80
+      ]
+    },
+    {
+      "index": 82,
+      "name": "Upsilon_UGC07866",
+      "native_gradient": 0.7919510468776393,
+      "scaled_gradient": 1.148329017972577,
+      "scheme": "forward_inward",
+      "native_step": 0.0001449999999999993,
+      "stencil_values": [
+        24.42885234950225,
+        24.428967182404048
+      ],
+      "denominator": 0.0001449999999999993,
+      "affected_indices": [
+        81
+      ]
+    },
+    {
+      "index": 83,
+      "name": "Upsilon_UGC08286",
+      "native_gradient": -5.38304056152942,
+      "scaled_gradient": -7.8054088142176585,
+      "scheme": "backward_inward",
+      "native_step": 0.00014500000000006175,
+      "stencil_values": [
+        58.44506647143594,
+        58.44428593055452
+      ],
+      "denominator": 0.00014500000000006175,
+      "affected_indices": [
+        82
+      ]
+    },
+    {
+      "index": 84,
+      "name": "Upsilon_UGC08490",
+      "native_gradient": -5.295201012341094,
+      "scaled_gradient": -7.678041467894586,
+      "scheme": "backward_inward",
+      "native_step": 0.00014500000000006175,
+      "stencil_values": [
+        105.97765249363268,
+        105.97688468948589
+      ],
+      "denominator": 0.00014500000000006175,
+      "affected_indices": [
+        83
+      ]
+    },
+    {
+      "index": 85,
+      "name": "Upsilon_UGC08837",
+      "native_gradient": 3.9680004323960714,
+      "scaled_gradient": 5.753600626974303,
+      "scheme": "forward_inward",
+      "native_step": 0.0001449999999999993,
+      "stencil_values": [
+        30.475094020575725,
+        30.475669380638422
+      ],
+      "denominator": 0.0001449999999999993,
+      "affected_indices": [
+        84
+      ]
+    },
+    {
+      "index": 86,
+      "name": "Upsilon_UGC09037",
+      "native_gradient": -1.4428479903079536,
+      "scaled_gradient": -2.0921295859465325,
+      "scheme": "central",
+      "native_step": 0.00014500000000000624,
+      "stencil_values": [
+        84.01686370967089,
+        84.0164452837537
+      ],
+      "denominator": 0.00029000000000001247,
+      "affected_indices": [
+        85
+      ]
+    },
+    {
+      "index": 87,
+      "name": "Upsilon_UGC09133",
+      "native_gradient": 24.456579949155575,
+      "scaled_gradient": 35.462040926275584,
+      "scheme": "central",
+      "native_step": 0.00014500000000006175,
+      "stencil_values": [
+        338.98248604580147,
+        338.9895784539867
+      ],
+      "denominator": 0.0002900000000001235,
+      "affected_indices": [
+        86
+      ]
+    },
+    {
+      "index": 88,
+      "name": "Upsilon_UGC11455",
+      "native_gradient": 8.801026771524509,
+      "scaled_gradient": 12.761488818710538,
+      "scheme": "central",
+      "native_step": 0.00014500000000000624,
+      "stencil_values": [
+        150.63455353728304,
+        150.63710583504678
+      ],
+      "denominator": 0.00029000000000001247,
+      "affected_indices": [
+        87
+      ]
+    },
+    {
+      "index": 89,
+      "name": "Upsilon_UGC12506",
+      "native_gradient": -13.669042645705725,
+      "scaled_gradient": -19.8201118362733,
+      "scheme": "backward_inward",
+      "native_step": 0.00014500000000006175,
+      "stencil_values": [
+        134.18690259483873,
+        134.1849205836551
+      ],
+      "denominator": 0.00014500000000006175,
+      "affected_indices": [
+        88
+      ]
+    },
+    {
+      "index": 90,
+      "name": "Upsilon_UGCA442",
+      "native_gradient": 0.18363784950918696,
+      "scaled_gradient": 0.2662748817883211,
+      "scheme": "forward_inward",
+      "native_step": 0.0001449999999999993,
+      "stencil_values": [
+        27.386074699458256,
+        27.386101326946434
+      ],
+      "denominator": 0.0001449999999999993,
+      "affected_indices": [
+        89
+      ]
+    },
+    {
+      "index": 91,
+      "name": "Upsilon_UGCA444",
+      "native_gradient": 0.40626756111609846,
+      "scaled_gradient": 0.5890879636183427,
+      "scheme": "forward_inward",
+      "native_step": 0.0001449999999999993,
+      "stencil_values": [
+        124.23290633464025,
+        124.23296524343661
+      ],
+      "denominator": 0.0001449999999999993,
+      "affected_indices": [
+        90
+      ]
+    },
+    {
+      "index": 92,
+      "name": "ln_sigma_sys",
+      "native_gradient": 0.515967187489962,
+      "scaled_gradient": 6.2979329732123634,
+      "scheme": "central",
+      "native_step": 0.0012206072645528643,
+      "stencil_values": [
+        7159.138204331533,
+        7159.139463918128
+      ],
+      "denominator": 0.0024412145291057286,
+      "affected_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90
+      ]
+    }
+  ],
+  "gradient_native": [
+    -52.150905087744235,
+    3.0162046004597074,
+    0.4806833178973075,
+    2.436759054336935,
+    0.6892314067092012,
+    0.35216660165815655,
+    -0.1814332659099093,
+    34.32178121012971,
+    -0.12028224475587342,
+    -3.1025069944711747,
+    -0.11033080727032757,
+    3.027270472185167,
+    13.055711579278615,
+    -10.228310334570406,
+    4.429068169899678,
+    0.43039439747949515,
+    0.016413233279772208,
+    -7.5100247454601865,
+    -7.407686574465432,
+    -4.358626702094476,
+    2.9226290454074,
+    -23.257275133985473,
+    0.06079940116731572,
+    -4.51459201704411,
+    -0.360003398102244,
+    -2.181619556395002,
+    0.46752749849945296,
+    -20.87651587178844,
+    5.175041269910114,
+    0.18027174907478397,
+    -6.320083554813765,
+    -2.081769163846104,
+    5.484822630737087,
+    0.12232773830215704,
+    -1.1019994502339634,
+    -0.17131317255514775,
+    -0.44156205300626944,
+    1.2074674604296247,
+    1.1065050383878752,
+    -0.7030642950277609,
+    1.1875883310748778,
+    1.1539904333262612,
+    -0.3271510099144868,
+    -1.032241107878873,
+    -3.05269529278601,
+    -1.3930530449950318,
+    2.652693333701371,
+    -4.831997794018689,
+    -12.37380334270524,
+    -4.206622828036638,
+    7.598145631864172,
+    -3.625982521160504,
+    6.096136413914683,
+    0.4758255203370891,
+    -7.334393965282396,
+    -1.232652928142498,
+    17.916755835706475,
+    -1.0347315502450112,
+    -0.26346415854192307,
+    -13.371799481909795,
+    1.190637818945896,
+    -2.8114209855859267,
+    -1.9963529554501145,
+    -2.066247804445284,
+    4.818683928946836,
+    0.3305307190554043,
+    -0.11356565495208842,
+    -0.10722293367358088,
+    0.13985966149495327,
+    -0.523153433646592,
+    -0.7291338227070904,
+    1.9777552363942554,
+    0.1282379254616588,
+    0.08333285716958888,
+    -0.22590423905753856,
+    -0.5898294815382586,
+    0.8209257465072691,
+    0.23612911857550048,
+    -0.003962599952383257,
+    0.014306438982139624,
+    1.653813156380097,
+    2.1566592165762573,
+    0.7919510468776393,
+    -5.38304056152942,
+    -5.295201012341094,
+    3.9680004323960714,
+    -1.4428479903079536,
+    24.456579949155575,
+    8.801026771524509,
+    -13.669042645705725,
+    0.18363784950918696,
+    0.40626756111609846,
+    0.515967187489962
+  ],
+  "requested_indices": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    83,
+    84,
+    85,
+    86,
+    87,
+    88,
+    89,
+    90,
+    91,
+    92
+  ],
+  "model": "ptq",
+  "likelihood_version": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+  "order": 192,
+  "scheme": "auto",
+  "theta_sha256": "8391be8fef4512ffbdb9fd193ad09915f19c5264081327080b93f30709f9c330",
+  "source_hashes": {
+    "models.py": "cba208085f4e5e6373fe3b1bd5b862e9be66a6d1412a6a7750c4c4b053bbc952",
+    "fit_global.py": "489a3c6394ffbf41ead56aa88d46cca664a934274b18c508cbbc8c5df82bbe46",
+    "mle.py": "1cc2b3eadcc7ae3f713a8c60a891670621d84d39fa18ab3a0d1edde2db14df6a",
+    "marginal_likelihood.py": "3766ef2c1385316d1825ea62d72979829e00267f09e951644c58760783b6cbb7",
+    "evaluation_contract.py": "b30445b9fd7edefe64f502c3f33f5e39dd6ad737f8de05d0069be7b2bbb6d4e2",
+    "dependency_gradient.py": "4117a4c95753a0fbd251513d2556ddd79a0c4b40b7b735401ef89e6883d9039f"
+  },
+  "receipt_sample_hash": "375587a30e76189f4060109878774616a090e671c4b020daffb0cced91dc1926",
+  "actual_galaxy_evaluations": 605,
+  "wall_seconds": 131.92256167600863,
+  "cache_policy": "baseline only inside this singlecall, exact theta/sample/target/order; no parameter-valued cache survivescall",
+  "full_recompute": false,
+  "input_theta": [
+    0.03514843499950247,
+    0.05,
+    0.05,
+    0.05,
+    0.05,
+    0.05,
+    1.5,
+    0.8233042930943957,
+    1.5,
+    1.5,
+    1.5,
+    0.05,
+    0.6769735421056213,
+    1.5,
+    0.05,
+    0.8131059724651152,
+    1.184379352523295,
+    0.7298334279749352,
+    0.4718932254727725,
+    0.6990722248033788,
+    0.8193365678856397,
+    0.7636847397322701,
+    0.8999534992759636,
+    0.5503676760458031,
+    0.6363955197322435,
+    0.9591720207740106,
+    0.05,
+    1.0518021704987603,
+    0.5778191079987229,
+    0.05,
+    0.7503543760354037,
+    0.5699931388661019,
+    0.6044071299365588,
+    0.9975459113779768,
+    0.5327804107604097,
+    0.7267152009189765,
+    0.955341183441749,
+    1.0795400731338634,
+    0.6354338420395371,
+    0.5878313280584688,
+    0.5677830439882287,
+    0.05,
+    0.4610521910625963,
+    0.37000686666839055,
+    0.8453936994690062,
+    0.7284730866078026,
+    0.4653046924048323,
+    1.2123927577646274,
+    0.23175261458253854,
+    0.567724208771902,
+    0.6303256341072625,
+    0.9654923198524956,
+    0.6820813657702157,
+    0.8269533420834922,
+    1.3754634407684014,
+    1.5,
+    0.3141983690434157,
+    0.6342155116443773,
+    0.8680392557902409,
+    1.5,
+    0.05,
+    0.9248567160987985,
+    0.8019072117497036,
+    0.5259140700019896,
+    0.8035735340253993,
+    0.05,
+    0.8626095695010867,
+    0.18523060949650147,
+    1.1334323667485822,
+    0.5952693554692737,
+    1.5,
+    0.05,
+    1.060387138134954,
+    0.5985611471103702,
+    1.5,
+    1.4706037330389903,
+    0.05,
+    0.8527422719683871,
+    0.9647074143894553,
+    0.4516687003605926,
+    0.05,
+    0.05,
+    0.05,
+    1.5,
+    1.5,
+    0.05,
+    0.2996537838724031,
+    1.0322657457625126,
+    0.4584507378099844,
+    1.5,
+    0.05,
+    0.05,
+    2.3458414625658612
+  ],
+  "phase": "optimizer",
+  "request_id": 181,
+  "native_theta_hash": "8391be8fef4512ffbdb9fd193ad09915f19c5264081327080b93f30709f9c330"
+}

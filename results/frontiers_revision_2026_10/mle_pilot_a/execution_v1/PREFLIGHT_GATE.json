@@ -1,0 +1,102 @@
+{
+  "status": "PASS",
+  "models": {
+    "baryon": {
+      "status": "PASS",
+      "reference_pergal_max": 3.410605131648481e-13,
+      "k": 92,
+      "objective": 8820.419022978633,
+      "wall_seconds": 150.3286632350646,
+      "repeat_max": 0.0
+    },
+    "mond": {
+      "status": "PASS",
+      "reference_pergal_max": 4.547473508864641e-13,
+      "k": 93,
+      "objective": 6707.112372915374,
+      "wall_seconds": 214.22256775014102,
+      "repeat_max": 0.0
+    },
+    "ptq": {
+      "status": "PASS",
+      "reference_pergal_max": 8.952838470577262e-13,
+      "k": 93,
+      "objective": 7245.8204023596545,
+      "wall_seconds": 206.5176697599236,
+      "repeat_max": 0.0
+    },
+    "ptq-nu": {
+      "status": "PASS",
+      "reference_pergal_max": 7.105427357601002e-13,
+      "k": 93,
+      "objective": 6707.11230704796,
+      "wall_seconds": 215.89965712395497,
+      "repeat_max": 0.0
+    },
+    "ptq-screen": {
+      "status": "PASS",
+      "reference_pergal_max": 3.979039320256561e-13,
+      "k": 94,
+      "objective": 6705.066883322178,
+      "wall_seconds": 259.70953073515557,
+      "repeat_max": 0.0
+    },
+    "mond-screen": {
+      "status": "PASS",
+      "reference_pergal_max": 4.831690603168681e-13,
+      "k": 94,
+      "objective": 6705.06688332218,
+      "wall_seconds": 253.116712766001,
+      "repeat_max": 0.0
+    },
+    "nfw1p": {
+      "status": "PASS",
+      "reference_pergal_max": 5.684341886080801e-13,
+      "k": 183,
+      "objective": 6547.742003005349,
+      "wall_seconds": 200.48245346010663,
+      "repeat_max": 0.0
+    }
+  },
+  "layouts": {
+    "baryon": 92,
+    "mond": 93,
+    "ptq": 93,
+    "ptq-nu": 93,
+    "ptq-screen": 94,
+    "mond-screen": 94,
+    "nfw1p": 183
+  },
+  "interior_family": {
+    "ptq-nu": {
+      "model": "ptq-nu",
+      "counterpart": "mond",
+      "phase": "preflight_interior",
+      "max_per_galaxy_abs": 7.048583938740194e-12,
+      "objective_abs": 7.275957614183426e-12,
+      "tolerance": 1e-08,
+      "status": "PASS",
+      "mapped_theta_sha256": "b0bac8ed5c1c40d5b1f80cc2c89e18621c6647ee42e3579c067a091a9b265114"
+    },
+    "ptq-screen": {
+      "model": "ptq-screen",
+      "counterpart": "mond-screen",
+      "phase": "preflight_interior",
+      "max_per_galaxy_abs": 1.4551915228366852e-11,
+      "objective_abs": 5.093170329928398e-11,
+      "tolerance": 1e-08,
+      "status": "PASS",
+      "mapped_theta_sha256": "2cfa10b8cb1f57855af567ef0a7bc364e5d55bfef80e406f6c323b9830d2be00"
+    }
+  },
+  "imports": {
+    "ptquat": "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_pilot_a/candidate/src/ptquat/__init__.py",
+    "marginal_likelihood": "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_pilot_a/candidate/src/ptquat/marginal_likelihood.py",
+    "models": "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_pilot_a/candidate/src/ptquat/models.py",
+    "dependency_gradient": "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_pilot_a/candidate/src/ptquat/dependency_gradient.py",
+    "mle": "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_pilot_a/candidate/src/ptquat/mle.py",
+    "data": "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_pilot_a/candidate/src/ptquat/data.py",
+    "fit_global": "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_pilot_a/candidate/src/ptquat/fit_global.py",
+    "driver": "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_pilot_a/candidate/src/ptquat/scientific_pilot_driver.py"
+  }
+}
