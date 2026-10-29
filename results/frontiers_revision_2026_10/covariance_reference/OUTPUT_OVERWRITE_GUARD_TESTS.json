@@ -1,0 +1,20 @@
+[
+  {
+    "script": "test_reference.py",
+    "exit_code": 1,
+    "refused_existing_output": true,
+    "console": "Traceback (most recent call last):\n  File \"/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/covariance_reference/test_reference.py\", line 121, in <module>\n    if __name__=='__main__':main()\n  File \"/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/covariance_reference/test_reference.py\", line 15, in main\n    out=B/'local_tests_v1';out.mkdir(exist_ok=False);ct=json.loads((B/'PREDECLARED_TEST_CONTRACT.json').read_text());tol=ct['test_acceptance'];sample=load_sample(I/'dataset/sparc_tidy.csv');names=[g.name for g in sample]\n  File \"/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py\", line 1313, in mkdir\n    self._accessor.mkdir(self, mode)\nFileExistsError: [Errno 17] File exists: '/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/covariance_reference/local_tests_v1'\n"
+  },
+  {
+    "script": "run_effects.py",
+    "exit_code": 1,
+    "refused_existing_output": true,
+    "console": "Traceback (most recent call last):\n  File \"/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/covariance_reference/run_effects.py\", line 85, in <module>\n    if __name__=='__main__':main()\n  File \"/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/covariance_reference/run_effects.py\", line 13, in main\n    out=B/'full_sample_v1';out.mkdir(exist_ok=False)\n  File \"/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py\", line 1313, in mkdir\n    self._accessor.mkdir(self, mode)\nFileExistsError: [Errno 17] File exists: '/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/covariance_reference/full_sample_v1'\n"
+  },
+  {
+    "script": "verify_outputs.py",
+    "exit_code": 1,
+    "refused_existing_output": true,
+    "console": "Traceback (most recent call last):\n  File \"/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/covariance_reference/verify_outputs.py\", line 29, in <module>\n    if __name__=='__main__':main()\n  File \"/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/covariance_reference/verify_outputs.py\", line 9, in main\n    if out.exists():raise FileExistsError(out)\nFileExistsError: /Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/covariance_reference/output_validation.json\n"
+  }
+]

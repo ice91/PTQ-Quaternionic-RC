@@ -1,0 +1,65 @@
+{
+  "stages": [
+    {
+      "stage": "source and P1E authority hashes",
+      "status": "PASS",
+      "log": "build_execution.log"
+    },
+    {
+      "stage": "initial assembly incident",
+      "status": "REPAIRED_BEFORE_TESTS",
+      "source": "build_candidate_assembly_failure_v0.txt"
+    },
+    {
+      "stage": "unit/fullfixedpoint/mapping/neighborhood/actualcallpaths",
+      "status": "PASS",
+      "log": "parity_execution_v1.log",
+      "records": "parity_v1"
+    },
+    {
+      "stage": "warning direct residual audit",
+      "status": "PASS",
+      "log": "warning_audit_execution.log"
+    },
+    {
+      "stage": "real optimizer smoke",
+      "label": "ENGINEERING_SMOKE_ONLY \u2014 NOT CORRECTED MLE",
+      "status": "BUDGET_LIMITED",
+      "log": "ENGINEERING_SMOKE_ONLY_execution_v1.log",
+      "records": "engineering_smoke_v1",
+      "fullsample_calls": 398,
+      "wall_seconds": 550.493800083
+    },
+    {
+      "stage": "smoke read-only analysis",
+      "label": "ENGINEERING_SMOKE_ONLY \u2014 NOT CORRECTED MLE",
+      "status": "COMPLETE",
+      "log": "smoke_analysis_execution.log"
+    },
+    {
+      "stage": "report initial failure",
+      "status": "ENCODING_READ_FAILURE",
+      "log": "report_generation_failure_v0.log"
+    },
+    {
+      "stage": "report generation",
+      "status": "COMPLETE",
+      "log": "report_generation_v1.log"
+    },
+    {
+      "stage": "independent review",
+      "status": "COMPLETE_WITH_OBJECTIONS",
+      "records": [
+        "INDEPENDENT_REVIEW_RAW.md",
+        "INDEPENDENT_REVIEW_SMOKE_ADDENDUM.md"
+      ]
+    }
+  ],
+  "commands": {
+    "pre_smoke": "PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OMP_NUM_THREADS=1 /tmp/rev26-p1a-env/bin/python run_parity.py",
+    "warningaudit": "sameenvironment python audit_matmul_warnings.py",
+    "actual_driver": "sameenvironment python candidate/scripts/run_uniform_explicit_smoke.py --bundle <this_new_bundle>; exact wrapper uses runpy and prints engineering label",
+    "postprocessing": "python analyze_smoke.py; python check_preservation.py; python write_reports.py; python finalize.py"
+  },
+  "no_optimizer_retries": true
+}

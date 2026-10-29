@@ -1,0 +1,18 @@
+PASS source_and_input_immutability_before
+PASS minimal_baryon_counterexample
+PASS parameter_layout_accounting
+PASS analytic_distance_inclination_FD_and_independent_laws
+PASS distance_and_angle_units
+/private/tmp/rev26-p1a-env/lib/python3.9/site-packages/numpy/linalg/_linalg.py:2311: RuntimeWarning: divide by zero encountered in slogdet
+  sign, logdet = _umath_linalg.slogdet(a, signature=signature)
+/private/tmp/rev26-p1a-env/lib/python3.9/site-packages/numpy/linalg/_linalg.py:2311: RuntimeWarning: overflow encountered in slogdet
+  sign, logdet = _umath_linalg.slogdet(a, signature=signature)
+/private/tmp/rev26-p1a-env/lib/python3.9/site-packages/numpy/linalg/_linalg.py:2311: RuntimeWarning: invalid value encountered in slogdet
+  sign, logdet = _umath_linalg.slogdet(a, signature=signature)
+PASS SPD_full_Gaussian_normalization_and_independent_solve
+PASS parameter_dependent_reference_C_recalculation
+PASS matched_PTQ_MOND_corrected_identity
+PASS restricted_NFW_radius_derivative
+PASS nominal_measure_change_of_variable_Jacobian
+PASS source_and_input_immutability_after
+LOCAL_GATE True

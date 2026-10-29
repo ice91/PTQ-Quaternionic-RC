@@ -1,0 +1,161 @@
+{
+  "label": "ENGINEERING_SMOKE_ONLY \u2014 NOT CORRECTED MLE",
+  "frozen_utc": "2026-10-28T23:31:03.189585Z",
+  "target": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+  "models": [
+    "ptq-screen",
+    "nfw1p"
+  ],
+  "starts": "exact original P1A bestvector/model; nootherstarts",
+  "optimizer": {
+    "method": "L-BFGS-B",
+    "jac": true,
+    "maxiter": 1,
+    "maxls": 20,
+    "maxcor": 10,
+    "ftol": 1e-12,
+    "gtol": 1e-06,
+    "max_gradient_batches_per_model": 21
+  },
+  "gradient": {
+    "relative_step": 0.0001,
+    "scheme": "auto central or inward",
+    "native": true,
+    "coarse_only_for_validation": true
+  },
+  "orders": {
+    "primary": 192,
+    "coarse": 96
+  },
+  "budget": {
+    "max_fullsample_equivalents": 600,
+    "max_actual_galaxy_calls": 60000,
+    "max_aggregate_seconds": 1800,
+    "max_accepted_iterations_per_model": 1,
+    "all_initial_terminal_precision_counted": true,
+    "no_retry": true,
+    "galaxy_work_weights_sha256": "6da10aa68e6b6d2c9296b64e73282b893ccff58b1d9f449a65bc0f97e4f43f15"
+  },
+  "preflight": {
+    "full_parity": "reuseR1 exactsciencecode/data/weights/receipt hashes; no sourcepath change; newdriver tests and actual startingfullG plus independentF/FD checks",
+    "separate_parity_work_accounting": true,
+    "initial_numerical_smoke_checks_in_aggregate_budget": true
+  },
+  "directions": {
+    "source": "R1 same7 native indices at initial and returnedterminal; fixedroles notoutcomes",
+    "coordinates": [
+      {
+        "model": "ptq-screen",
+        "index": 0,
+        "theta_value": 0.1637530585018761,
+        "bounds": [
+          0.07635543401657195,
+          0.3054217360662878
+        ],
+        "bound_contact": false,
+        "selection": "predeclaredrole/fixedF574-1/firstnativeboundcontact/firsthalo; no gradient or residual selection"
+      },
+      {
+        "model": "ptq-screen",
+        "index": 1,
+        "theta_value": -0.016291331349444823,
+        "bounds": [
+          -1.3862943611198906,
+          2.0794415416798357
+        ],
+        "bound_contact": false,
+        "selection": "predeclaredrole/fixedF574-1/firstnativeboundcontact/firsthalo; no gradient or residual selection"
+      },
+      {
+        "model": "ptq-screen",
+        "index": 93,
+        "theta_value": 1.929338998494988,
+        "bounds": [
+          -6.907755278982137,
+          5.298317366548036
+        ],
+        "bound_contact": false,
+        "selection": "predeclaredrole/fixedF574-1/firstnativeboundcontact/firsthalo; no gradient or residual selection"
+      },
+      {
+        "model": "ptq-screen",
+        "index": 11,
+        "theta_value": 0.9264312815677377,
+        "bounds": [
+          0.05,
+          1.5
+        ],
+        "bound_contact": false,
+        "selection": "predeclaredrole/fixedF574-1/firstnativeboundcontact/firsthalo; no gradient or residual selection"
+      },
+      {
+        "model": "nfw1p",
+        "index": 182,
+        "theta_value": 1.8743332934789647,
+        "bounds": [
+          -6.907755278982137,
+          5.298317366548036
+        ],
+        "bound_contact": false,
+        "selection": "predeclaredrole/fixedF574-1/firstnativeboundcontact/firsthalo; no gradient or residual selection"
+      },
+      {
+        "model": "nfw1p",
+        "index": 0,
+        "theta_value": 0.05,
+        "bounds": [
+          0.05,
+          1.5
+        ],
+        "bound_contact": true,
+        "selection": "predeclaredrole/fixedF574-1/firstnativeboundcontact/firsthalo; no gradient or residual selection"
+      },
+      {
+        "model": "nfw1p",
+        "index": 91,
+        "theta_value": 9.0,
+        "bounds": [
+          9.0,
+          13.0
+        ],
+        "bound_contact": true,
+        "selection": "predeclaredrole/fixedF574-1/firstnativeboundcontact/firsthalo; no gradient or residual selection"
+      }
+    ],
+    "steps": [
+      0.0001,
+      5e-05
+    ],
+    "candidate_vs_independent_scaled_abs": 2e-05,
+    "candidate_vs_independent_relative": 1e-06,
+    "refinement_scaled_abs": 0.001,
+    "refinement_relative": 0.001,
+    "noise_unresolved_ratio": 0.1,
+    "repeat_pergal_abs": 1e-12
+  },
+  "precision": {
+    "pergal_finecoarse_abs": 0.0001,
+    "sample_sumabs": 0.01,
+    "claimed_objective_abs": 1e-08,
+    "improvement_safety_factor": 10,
+    "improvement_error": "initial_sumabsrefinement+terminal_sumabsrefinement+16eps*sumabsell(initialandterminal)",
+    "no_uniform_domain_claim": true
+  },
+  "telemetry": {
+    "pergal_before_call_ledger": true,
+    "warning_checkpoint_each_galaxy": true,
+    "request_theta_vectors_durable": true,
+    "try_finally": true,
+    "signal_termination_records": true,
+    "threading": "serial mainthread only",
+    "original_R1_gap": "preserved unknown, never fabricated"
+  },
+  "decision": {
+    "accepted": "actualcallback moved originaltheta, independentlyvalidatedobjective decrease >10timesdeclarednumericalerror; allterminalprecisionchecks pass",
+    "ambiguous": "acceptedcallback butdecrease indistinguishablefromnumericerror",
+    "non_budget_failure": "finite optimizer line-search/gradientfailure withoutcap",
+    "blocked": "source ornumericalvalidationfailure",
+    "budget": "any hardcap reached; noautomaticretry"
+  },
+  "no_scientific_fitting": true
+}

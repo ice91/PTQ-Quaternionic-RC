@@ -1,0 +1,54 @@
+[
+  {
+    "test": "physical_normalized_kernels_and_i90",
+    "status": "PASS",
+    "detail": {
+      "galaxies": 91,
+      "max_constant_integral_error": 4.440892098500626e-16
+    }
+  },
+  {
+    "test": "conditional_Gaussian_and_baryon_counterexample",
+    "status": "PASS",
+    "detail": {
+      "zero_uncertainty": true,
+      "full_normalization": true,
+      "B0_B1": true,
+      "no_covariance_doublecount": true,
+      "independent_direct_grid": true
+    }
+  },
+  {
+    "test": "all7_native_laws_derivatives_units_NFW",
+    "status": "PASS",
+    "detail": {
+      "all_original_law_bodies_unchanged": true,
+      "max_prediction_abs": 4.263256414560601e-14,
+      "max_D_relative": 4.440768023494167e-09,
+      "max_i_relative": 1.6670389551809667e-09,
+      "FD_steps": [
+        0.0001,
+        1e-05,
+        1e-06
+      ]
+    }
+  },
+  {
+    "test": "real_imports_predictive_firewall_failclosed",
+    "status": "PASS",
+    "detail": {
+      "primary_radius_diagnostics_blocked": true,
+      "unsupported_version_rejected": true,
+      "exceptions_propagate": true,
+      "MCMC_disabled": true
+    }
+  },
+  {
+    "test": "source_immutability",
+    "status": "PASS",
+    "detail": {
+      "verified": 2114,
+      "changed": 0
+    }
+  }
+]

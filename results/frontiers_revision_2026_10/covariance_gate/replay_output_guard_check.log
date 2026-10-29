@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/covariance_gate/run_gate.py", line 160, in <module>
+    if __name__=='__main__':main()
+  File "/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/covariance_gate/run_gate.py", line 68, in main
+    out.mkdir(exist_ok=False)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py", line 1313, in mkdir
+    self._accessor.mkdir(self, mode)
+FileExistsError: [Errno 17] File exists: '/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/covariance_gate/run_v1'

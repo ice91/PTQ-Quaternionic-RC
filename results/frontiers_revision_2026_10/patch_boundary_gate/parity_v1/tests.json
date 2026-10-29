@@ -1,0 +1,97 @@
+[
+  {
+    "test": "all637_reference_parity_and_Gaussian_components_SPD",
+    "status": "PASS",
+    "detail": {
+      "rows": 637,
+      "max_abs_logL": 2.8421709430404007e-13,
+      "max_C_relative": 1.876397487901259e-15
+    }
+  },
+  {
+    "test": "all364_native_matched_parameter_mappings",
+    "status": "PASS",
+    "detail": {
+      "rows": 364,
+      "max_abs": 1.1368683772161603e-13
+    }
+  },
+  {
+    "test": "actual_likelihood_and_optimizer_callback_paths",
+    "status": "PASS",
+    "detail": {
+      "records": 28,
+      "optimizer_calls": 0
+    }
+  },
+  {
+    "test": "all_experiments_and_postprocess_covariance_expressions",
+    "status": "PASS",
+    "detail": {
+      "experiments_source_calls": 7,
+      "fit_postprocess_call": 1,
+      "model_call_combinations": 56,
+      "scope": "exact covariance/factory expressions only; no diagnostic artifact IO, sampling or fit run driver"
+    }
+  },
+  {
+    "test": "Jacobian_NFW_units_minimal_and_fail_closed_API",
+    "status": "PASS",
+    "detail": {
+      "comparisons": 126,
+      "finest_max_abs": 2.03821315380992e-09,
+      "finest_failures": 0,
+      "minimal_variance": 16.0,
+      "unit_checks": true
+    }
+  },
+  {
+    "test": "parameter_dependent_recalculation",
+    "status": "PASS",
+    "detail": [
+      {
+        "model": "baryon",
+        "point": "sigma1.02",
+        "delta": -0.1682467112383108
+      },
+      {
+        "model": "mond",
+        "point": "sigma1.02",
+        "delta": -0.08542020626141777
+      },
+      {
+        "model": "ptq",
+        "point": "sigma1.02",
+        "delta": -0.1456802376191888
+      },
+      {
+        "model": "ptq-nu",
+        "point": "sigma1.02",
+        "delta": -0.08541996103740246
+      },
+      {
+        "model": "ptq-screen",
+        "point": "sigma1.02",
+        "delta": -0.08558638280712216
+      },
+      {
+        "model": "mond-screen",
+        "point": "sigma1.02",
+        "delta": -0.08558638280710795
+      },
+      {
+        "model": "nfw1p",
+        "point": "sigma1.02",
+        "delta": -0.07507373254942706
+      }
+    ]
+  },
+  {
+    "test": "canonical_and_prior_evidence_immutability",
+    "status": "PASS",
+    "detail": {
+      "changed": 0,
+      "canonical_imports": false
+    }
+  }
+]

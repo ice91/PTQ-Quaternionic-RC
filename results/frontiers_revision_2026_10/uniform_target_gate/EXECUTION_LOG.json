@@ -1,0 +1,41 @@
+{
+  "sequence": [
+    {
+      "stage": "bootstrap",
+      "command": "/usr/bin/python3 bootstrap.py",
+      "status": "PASS",
+      "prior_files": 1957
+    },
+    {
+      "stage": "localcorrectness",
+      "command": "test_local.py",
+      "console": "local_execution.log",
+      "status": "PASS"
+    },
+    {
+      "stage": "driverpreexecution",
+      "command": "run_acceptance.py initialsyntaxattempt",
+      "console": "acceptance_syntax_failure_v0.log",
+      "status": "SyntaxError before any numericcomputation;failedsourcepreserved"
+    },
+    {
+      "stage": "acceptance",
+      "command": "run_acceptance.py correctedwhitespace",
+      "console": "acceptance_execution.log",
+      "status": "PASS;quantilepilotaccuracyfailuregloballyswitchedtopredeclaredfallback"
+    },
+    {
+      "stage": "artifactverification/Gaussiancost",
+      "command": "verify_and_cost.py",
+      "console": "verification_execution.log",
+      "extra_explicit_integrations": 0,
+      "status": "PASS"
+    }
+  ],
+  "thread_environment": "PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OMP_NUM_THREADS=1",
+  "python_environment": "local_v1/environment.json + environment_freeze.txt",
+  "independent_review": "read-only secondagent;nodecostapprox9.8M",
+  "main_node_cost": 5978148224,
+  "combined_local_main_independent_node_cost_conservative_upper": 5990000000,
+  "no_optimizer": true
+}

@@ -1,0 +1,50 @@
+{
+  "stages": [
+    {
+      "stage": "A",
+      "command": "bootstrap.py",
+      "prior_files": 1866
+    },
+    {
+      "stage": "protocol",
+      "command": "freeze_protocol.py",
+      "frozen_before_comparisons": true
+    },
+    {
+      "stage": "isolated_patch",
+      "command": "build_patch.py",
+      "canonical_writes": 0
+    },
+    {
+      "stage": "parity",
+      "command": "test_patch.py",
+      "console": "parity_execution.log",
+      "status": "PASS"
+    },
+    {
+      "stage": "bounded_sensitivity",
+      "command": "run_boundary.py",
+      "console": "boundary_execution.log",
+      "raw_integrals": 3300,
+      "status": "raw numerical complete;derived postprocess bug retained"
+    },
+    {
+      "stage": "derived_repair",
+      "command": "postprocess_v2.py",
+      "console": "postprocessing_v2.log",
+      "new_quadrature": 0,
+      "status": "PASS"
+    },
+    {
+      "stage": "existing66_supplementaryparity",
+      "command": "verify_neighborhood_patch.py",
+      "console": "neighborhood_patch_parity.log",
+      "new_cases": 0,
+      "new_quadrature": 0,
+      "status": "PASS"
+    }
+  ],
+  "environment": "parity_v1/environment.json and environment_freeze.txt",
+  "independent_review": "read-only second agent; review not proofauthority",
+  "optimization": false
+}

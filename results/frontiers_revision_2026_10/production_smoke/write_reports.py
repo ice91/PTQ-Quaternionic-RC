@@ -1,0 +1,219 @@
+# -*- coding: utf-8 -*-
+"""Generate reviewable P1F evidence reports. Does not run optimization."""
+from pathlib import Path
+import json,hashlib,statistics
+B=Path(__file__).resolve().parent;I=B.parents[2];P=I.parent;D=P/'docs/frontiers_major_revision_2026_10/rev26_p1f_production_smoke'
+LABEL='ENGINEERING_SMOKE_ONLY — NOT CORRECTED MLE'
+def load(p):return json.loads(p.read_text())
+def small_result(p):
+    # Entire JSON is anoriginal evidence record; reports omit duplicated warning arrays.
+    x=load(p);x.pop('warnings',None);return x
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def main():
+ gate=load(B/'parity_v1/PARITY_GATE.json');cost=load(B/'smoke_analysis_v1/COST_AND_WARNING_AUDIT.json');grad=load(B/'smoke_analysis_v1/FINITE_DIFFERENCE_AUDIT.json');source=load(B/'PRESERVATION_VALIDATION.json')
+ rs=[small_result(B/'engineering_smoke_v1'/f'{m}_result.json') for m in ['ptq_screen','nfw1p']]
+ bycost={r['model']:r for r in cost['models']};all_precision=all(len(r['precision'])==2 and all(p['pass'] for p in r['precision']) for r in rs)
+ smoke='FAIL' if any(r['status'] in ['FAIL','NO_ACCEPTED_ADVANCE'] for r in rs) else ('BUDGET_LIMITED' if any(r['status']=='DRIVER_SMOKE_BUDGET_LIMIT' for r in rs) else 'PASS')
+ verdict=dict(PRODUCTION_PARITY=gate['status'],DRIVER_SMOKE=smoke,NUMERICAL_OBJECTIVE='ACCEPTABLE_FOR_BOUNDED_MLE' if all_precision and not cost['failures'] else 'REQUIRES_ENGINEERING_FIX',CAMPAIGN_READINESS='ENGINEERING_REPAIR_REQUIRED' if smoke!='PASS' else 'READY_FOR_HUMAN_AUTHORIZATION')
+ verdict['CAMPAIGN_READINESS']='ENGINEERING_REPAIR_REQUIRED' # Directional-gradient precision and controlled NFW advancement are still engineering conditions, not target selection.
+ tables='| 參數化 | k | optimizer nfev | 全樣本呼叫（含驗證） | 接受步 | 秒 | 結果 |\n|---|---:|---:|---:|---:|---:|---|\n'
+ for r in rs:tables+=f"| {r['model']} | {r['parameter_count']} | {r['optimizer_evaluations']} | {r['fullsample_evaluations']} | {r['accepted_iterations']} | {r['wall_seconds']:.3f} | {r['status']} |\n"
+ precision='| 參數化／位置 | max per-gal refinement | sample sumabs | repeat | decomposition error |\n|---|---:|---:|---:|---:|\n'
+ for r in rs:
+  for q in r['precision']:precision+=f"| {r['model']}/{q['stage']} | {q['max_abs_refinement']:.9g} | {q['sum_abs_refinement']:.9g} | {q['repeat_max_abs']:.3g} | {q['sum_decomposition_error']:.3g} |\n"
+ totalcalls=sum(r['fullsample_evaluations'] for r in rs);totalwall=sum(r['wall_seconds'] for r in rs);aggregatewall=550.493800083
+ statuses='\n'.join(f'- `{k}={v}`' for k,v in verdict.items())
+ changes='''| 候選檔案 | 修改目的 |
+|---|---|
+| `src/ptquat/marginal_likelihood.py`（新增） | 移植 P1E segmented quantile192/96、physical normalized kernels、B0/B1 完整 density、geometry/policy cache；不匯入歷史 reference module。 |
+| `src/ptquat/models.py` | 只新增 catalog-distance adapter；原函數 AST 全部不變；同時縮放 r 與三模板，NFW 按新 r 評估。 |
+| `src/ptquat/fit_global.py` | 公開 global/per-gal likelihood 改為 explicit；舊 covariance implementation 私有 legacy；primary radius likelihood 拒絕；歷史 MCMC CLI disabled。 |
+| `src/ptquat/mle.py` | 版本化 scalar/per-gal/component APIs、例外傳播；舊無預算 optimizer/output writer disabled；原 layout/unpack/bounds 保留。 |
+| `src/ptquat/likelihood.py` | 只加 legacy 說明；原 Gaussian/covariance utility 公式不改，新 primary 不呼叫。 |
+| `src/ptquat/experiments.py` | 阻斷 primary WAIC/LOO／diagonal diagnostics；合法 per-gal marginal 與 descriptive residuals；plot imports 延遲以免 optional matplotlib 阻斷 likelihood import。 |
+| `src/ptquat/bounded_driver.py`（新增） | 實際 SciPy L-BFGS-B、hard nfev/wall guards、一次接受步上限、完整版本/向量/警告紀錄。 |
+| `scripts/run_uniform_explicit_smoke.py`（新增） | 真實 CLI，檢查 frozen protocol、tested-code 與 source input hashes 後才啟動單一起點 smoke。 |
+| `tests/test_uniform_target.py`（新增） | 獨立 normalized density、實際 law、derivative、units、fail-closed、firewall 及 immutability tests。 |'''
+ bodies={
+ '00_EXECUTIVE_VERDICT.md':f'''# REV26-P1F 執行裁決
+
+{statuses}
+
+凍結統計目標沒有重開：`REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1`。isolated production candidate 與獨立 P1E 一致，B0/B1 各637、728 mappings、144鄰域紀錄與35個公開全樣本呼叫比較通過。沒有 canonical installation、scientific refit、IC ranking 或新科學參數。
+
+{tables}
+
+共 {totalcalls} 次完整91星系目標呼叫（含所有initial/terminal/perturbation驗證），各模型<=200、aggregate<=400；smoke model wall 合計 {totalwall:.3f}s，未提高或重試預算。`BUDGET_LIMITED` 表示未完成凍結成本內的工程 advance，不是科學 optimizer failure。已完成的接受步也不是 stationary MLE。
+
+{precision}
+
+下一步是封閉工程缺口：統一 evaluator shape/bounds 契約、將重複警告分類計數、驗證少量固定方向的 fine/coarse 數值導數與原始步長、設計同一 target 的 exact per-gal dependency reuse。須另授權一個足以完成 NFW 梯度／接受步的工程 smoke，才可確認全 driver readiness。本輪不追加。Human Arbiter 仍保留 canonical integration 與七模型 fitting 的權限。
+''',
+ '01_INTEGRATION_DIFF_AND_CALL_GRAPH.md':f'''# 隔離整合與真實呼叫鏈
+
+候選位於 `{B}/candidate/`；完整9檔 unified diff 是 `integration.diff`，hash/用途清單為 `INTEGRATION_FILES.json`。
+
+{changes}
+
+```text
+candidate/scripts/run_uniform_explicit_smoke.py : main
+  -> verified input/code hashes + sorted 91 galaxies (1782 points)
+  -> bounded_driver.run_bounded_smoke
+  -> scipy.optimize.minimize(method=L-BFGS-B,jac=None,bounds=theta_bounds)
+  -> objective (negative sum of per-galaxy log-marginals)
+  -> mle.evaluate_loglike_components
+  -> fit_global._layout/_unpack (native transforms, U, sigma, q, acceleration, logM)
+  -> marginal_likelihood.galaxy_log_marginal
+  -> physical normalized external kernels + segmented quantile192
+  -> models.catalog_velocity_at_distance -> original physical law bodies
+  -> normalized conditional Gaussian -> logsumexp -> sum91 -> scalar negative logL
+```
+
+所有七模型的 shape、sign、native decode、global/per-gal/experiments 路徑透過 actual imports/calls 比對。`actual_call_paths.csv`35個 full-sample比較；另逐模型首末星系 scalar reporting 與 descriptive residuals。故意令舊 `fit_global.build_covariance` raise，new primary 仍正常，是無 covariance double-count 的呼叫證據。非有限／非法 geometry 例外直接傳遞，不轉成1e50 penalty。
+
+`CALL_GRAPH_STATIC.json`74條 source edges只作輔助，不能取代真實路徑測試。canonical `scripts/run_scientific_hardening_mle.py` 沒有複製為新 primary entry；`LEGACY_ENTRYPOINT_INVENTORY.json`明記 unchanged historical。舊 MCMC run、無預算 multistart與舊 writer disabled；本候選允許的 entrypoint 只有新 explicit-version CLI。原七參數數目92/93/93/93/94/94/183、hard bounds與stellar/halo conventions不改。
+''',
+ '02_FIXED_POINT_PARITY.md':f'''# 固定點完整比對
+
+所有值為 `FIXED_HISTORICAL_PARAMETER_POINT`，不稱 corrected MLE。原始theta未調整；P1A原本boundary metadata差異照保留。凍結 `SMOKE_PROTOCOL.json` 先於任何計算設定 abs logL parity1e-8、mapping1e-8、refinement pergal1e-4/sample sumabs.01、repeat1e-12。
+
+- B0 637、B1 637；各fine192/coarse96，共2548完整unique/finite rows；exact galaxy/model/floor/order key驗證。
+- 最大candidate/P1E原生差：{gate['max_native_parity']:.17g}。
+- 原生物理family mappings728；最大差 {gate['max_mapping_delta']:.17g}。
+- P1E已宣告72個參數點、144個B0/B1 rows，全部邊界／鄰域包含；最大差 {gate['max_neighborhood_parity']:.17g}。
+- 最大單星系192/96 refinement {gate['max_refinement_pergal']:.17g}；最大同模型sumabs {gate['max_refinement_sumabs']:.17g}。
+- 同一full91 NFW重複：pergal最大差 {gate['repeat_pergal_max']}。
+- 35個實際公開全樣本API比較通過；本次pre-smoke驗證 {gate['elapsed_seconds']:.3f}s。
+
+`parity_v1/native_parity_all2548.csv`、`native_matched_all728.csv`、`neighborhood_all144.csv`、`refinement_by_model.csv`、`actual_call_paths.csv`與`PARITY_GATE.json`保存完整結果，未選有利樣本。五個local correctness groups包含 full normalized conditional density、zero-error limit、all7 law/analytic-vsFD distance/inclination（steps1e-4/1e-5/1e-6）、NFW radius response、units、kernels、failure controls與immutability。沒有失敗數值案例被刪除。
+''',
+ '03_LIKELIHOOD_VERSION_AND_DIAGNOSTIC_FIREWALL.md':'''# 版本及預測診斷防火牆
+
+主版本 `REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1`；敏感度版本 `REV26-P1E-UNIFORM-EXPLICIT-B1-PHYSICAL-v1`。public likelihood 拒絕 `gauss`、unknown與不支持order。所有主 caller 明傳或明確預設主版本，沒有依來源或模型切target。global objective為負 sum_g log integral，不是 per-radius marginal likelihood product。
+
+固定觀測量y0/e0/r0/三模板/D0/i0，D變動使r=s*r0且三模板乘sqrt(s)；mean=sin(i)/sin(i0)*v(D)。B0 variance=e0²+sigma²，B1=e0²+b²sigma²；都保留sum log(2*pi*variance)。不加propagated covariance；每個theta重算means、sigma variance與conditional normalization。kernels normalized於D>0,0<i<pi/2，angle radians；geometry cache keys含中心、sigma、物理域、method、order，Legendre cache keyed order，不cache parameter means。
+
+新 primary 的WAIC、radius-pointwise LOO、old diagonalized PPC/kappa將raise，舊utility只可明示 `LEGACY_DIAGONALIZED_SENSITIVITY`。per-gal log-marginals可報告；descriptive residual不是marginal pointwise density，不生成canonical predictive ranking。部分legacy內部nested calls仍可能failclosed；不承諾舊workflow相容。runtime AST guard是臨時候選防火牆，正式整合應換明確registry或全面disable。
+
+raw kernels是已宣告Gaussian catalog error及conditioning下的conditional nuisance distributions，不是證明SPARC raw independence或image-level uncertainties。B0/B1是科學floor解讀差異，B1 material sensitivity沿用P1E，不按排名選target。本輪不再進行統計target選擇。
+''',
+ '04_FROZEN_SMOKE_PROTOCOL.md':f'''# 凍結 smoke 合約
+
+權威 `SMOKE_PROTOCOL.json` SHA256 `{sha(B/'SMOKE_PROTOCOL.json')}`，freeze時間2026-10-28T14:23:12.110061Z，先於optimizer；CLI硬驗證hash與candidate tested hashes。
+
+僅ptq-screen與restricted NFW-1p，各一個P1A原始best vector。真實SciPy L-BFGS-B，rawnative coordinate、原hardbounds、jac=None forward finite differences；maxiter1,maxls2,ftol1e-12,gtol1e-6,eps1e-8,maxcor10。沒有random starts、NFW multistart或科學收斂嘗試。
+
+aggregate400 fullsample calls、1200s；各模型200calls且optimizer最多190calls，initial6+terminal3驗證留額；在執行前計數，內層逐galaxy檢查wall，不依SciPy maxfun寬鬆行為。maxiter與callback同時限制最多一accepted iteration。未執行自動retry。每筆輸出標 `{LABEL}`。
+
+初始與terminal各fine192/coarse96/repeat192；initial另3固定方向boundspan*1e-6：qfamily epsilon/lnq/lnsigma，NFW第一U/第一logM/lnsigma，必要時inward。無profiling、line-search以外的額外參數搜尋或uncertainty estimates。budget超過回傳最後accepted callback或原start，不能稱MLE。
+''',
+ '05_REAL_DRIVER_SMOKE_RESULTS.md':f'''# 實際 driver 執行
+
+{LABEL}
+
+{tables}
+
+總計{totalcalls}次完整樣本呼叫、{totalwall:.3f}s模型wall合計（總budget對monotonic aggregate time另由driverguard）。具體SciPy結果、初始／終端native vectors、完整decoded terminal及accepted callback vectors見 `engineering_smoke_v1/*_result.json`；`*_initial.json`含原bounds。每次版本、theta/hash、hard-bound contacts、nfev、elapsed、per-gal marginals、density nodes與warnings見`*_objective_calls.jsonl`。所有artifact明標工程用途。console `ENGINEERING_SMOKE_ONLY_execution_v1.log`保留實際entrypoint進度。
+
+NFW的183個自由坐標使一個dense forward-difference gradient需184 fullsample calls；若只剩6calls便受190 cap停止，這不等同bad objective或scientific optimization failure。對所有模型，沒有接受步時terminal保留原start，不暗用尚未接受的line-search trial。已接受一步的returned x仍沒有stationarity／MLE意義；原始分數與smoke分數不產生科學排名。
+
+ptq-screen完成initial gradient95 calls及第一個trial的95 calls，尚未接受該line-search點而欲繼續時cap觸發；NFW完成initial184 calls後只餘6calls，第二個gradient未完成。兩者各0 accepted callbacks，terminal逐元素等於originalstart。aggregate driver wall550.493800083s（含model間序列化開銷），不是僅兩model wall合計。
+
+本輪無scientific refit、MCMC、profiles、uncertainties、新AIC/BIC、manuscript/public修改。沒有擴大budget來取得PASS。
+''',
+ '06_PRECISION_AND_GRADIENT_AUDIT.md':f'''# Objective 精度與梯度證據範圍
+
+{LABEL}
+
+{precision}
+
+`smoke_analysis_v1/FINITE_DIFFERENCE_AUDIT.json`從實際optimizer first k+1 calls重建初始forward finite differences，逐一驗證只擾動一native坐標、涵蓋全部k坐標、步長與值finite；沒有呼叫optimizer或再eval。這是integrated numerical objective 的差分，不是analytic gradient。
+
+同theta repeat=0與objective refinement通過，**不能單獨證明gradient accuracy**。eps1e-8在不同native scales、bounds與積分quadrature差值下可能敏感；本輪3個boundspan*1e-6固定擾動只提供有限連續性證據，沒有完成fine/coarse方向導數或兩種FD步長的一致性測試。不得稱KKT收斂或推算參數不確定度。正式campaign前需封閉此工程缺口，無需重開target。
+
+NumPy2.0.2/scipy1.13.1的matmul divide/overflow/invalid warnings逐呼叫保留，沒有靜默忽略。獨立`warning_audit_v1/AUDIT.json`對91個真實baryon cases、B0/B1共182次完整192節點direct residual-squared（無matmul與sufficient-sum取消）最大差8.526512829121202e-13；故受測結果無已觀察污染，但rootcause未證，不能推論所有future theta。future非finite或refinement failure仍必須failclosed。
+''',
+ '07_RUNTIME_AND_FIT_BUDGET.md':'',
+ '08_INDEPENDENT_REVIEW.md':f'''# 第二代理獨立唯讀審查
+
+審查者 `/root/p1f_independent_integration_review`，使用者明示要求。原始稿 `INDEPENDENT_REVIEW_RAW.md` SHA256 `{sha(B/'INDEPENDENT_REVIEW_RAW.md')}`，完整保留pre-smoke時間點與後續補充檔，沒有事後改寫成已看過接受步。AI agreement不是科學證明。
+
+1. Dense FD尤其NFW可能budgetlimited：接受，實測單列，不提高cap。
+2. Objective精度不證gradient：接受，production/campaign前需少量scaled direction檢查。
+3. Public component/pergal evaluators shape/bounds契約不一致：當前driver每call外層驗證足夠；正式整合前統一shape，明確區分pure evaluator與hard-bound optimizer objective，禁止暗改historical vectors。
+4. Legacy runtime AST wrapping及nested guard相容性：接受維護異議；primary安全failclosed，舊workflow兼容未宣稱。
+5. 舊mle與ported module docstrings殘留Gaussian/P1C wording：接受，正式整合前修正；當前明確版本與數值證據有權威。
+6. External independent kernels、B0/B1/image-level limitations：保留科學假設，不由工程審查消除。
+7. Refinement不是full-domain誤差定理：接受，campaign endpoints須另驗，任何failure不改target/門檻。
+
+182次warning direct check已回應局部數值污染疑慮，並保留rootcause未知。沒有fatal statistical/integration defect阻止本輪預宣告smoke；campaign未因此自動授權。
+''',
+ '09_INACTIVE_SEVEN_MODEL_CAMPAIGN.md':'''# 未啟動七模型 campaign 設計
+
+此方案**inactive且未獲本輪執行權**。統計target固定P1E uniform explicit B0；B1獨立版本。先完成工程closure與足額單一起點NFW driver接受步，再由Human審查canonical integration，拒絕沿用歷史run/release identifier。
+
+原七native輸出：baryon92、MOND93、PTQ linear93、PTQ-nu93、PTQ-screen94、MOND-screen94、NFW1p183；91星系1782點。original bounds完整記於candidate mle.parameter_domain_manifest、theta_bounds與每個initial.json，M/L .05..1.5、q .25..8（ln）、sigma .001..200（ln）、NFW logM9..13、MOND a0 5e-11..2e-10與mapped epsilon domain；linear PTQ原wide epsilon不變。no prior density加到MLE。
+
+預備三個start/native model：一historical recovered vector（只作warm start）、兩個獨立start，seeds260601與260602。獨立starts採原native bounds的20%..80%區域之固定seed uniform（scalar native coordinate，lnq/lnsigma/logM遵原坐標），避免按fit outcomes選start；matched families用同物理a0/q/U/sigma點再雙向map，保留七native terminal records，不能把七種報告縮成較少family。所有initial、global/pergal masks/config/hash/environment保存。禁止以historical posterior medians代best vector。
+
+暫定待審預算：非NFW每start<=20000 fullsample equivalents、<=8h；NFW每start<=40000、<=16h，最多3starts/model；總<=480000 fullsample equivalents、192h上限（包含validation、無自動retry）。此為硬上限提案，不是收斂時間預測，必須依工程cache/FD實測重新核准；不宜直接啟動。對exact reused per-gal項需同時記錄actual per-gal evaluations與fullsample-equivalent work，禁止以cache藏成本。
+
+候選stopping政策先ftol1e-12,gtol1e-6，native bounds用projected-gradient/KKT檢查並獨立scaled direction；只有budget-stop不得當converged。完整每start theta、objective/pergal decomposition、quadrature refinement、iterations/nfev/wall、SciPy messages、bound flags、finite warnings、failed starts與stationarity residual必須保存。terminal192/96若不通過不得宣稱accepted scientific MLE。NFW halo/mass degeneracy與multistart convergence另獨立審查，不由一步smoke代替。
+
+B1 sensitivity **預先**規劃：所有七B0 endpoints全91 fixed-point B1，並另提七native的B1 bounded re-estimation（B0 warm start +同seed獨立start、非NFW每start10000/NFW20000 calls、4/8h）；B1 run也需另Human授權，不依看到B0排名再挑family。B0/B1實質model uncertainty照報告。uncertainty/profile-likelihood、sigma/q/scale priorities留再下一獨立授權階段。
+
+campaign須每native start與terminal驗PTQ-nu/MOND與shared q identity，保留all7 output。AIC/BIC只用新獲准真正optimized maxima；point-count BIC在within-gal correlations下只屬descriptive convention，不聲稱獨立證明effective sample size。無任何本輪smoke／historical fixed point取代corrected maxima。
+''',
+ '10_NEXT_EXECUTION_PROMPT.md':'''# 唯一建議下一執行 prompt
+
+```text
+REV26-P1F-R1 — Closed engineering repair and fixed-direction precision audit (NO OPTIMIZER)
+
+在全新 docs/.../rev26_p1f_r1_engineering/ 與 implementation/results/frontiers_revision_2026_10/production_engineering_r1/ 作業。讀完整P1F、P1E frozen target與獨立 objections；canonical、歷史theta、數據、manuscript、P1A–P1F證據唯讀。統計target選擇已關閉，保留P1E segmented192/96、同一B0/B1 normalized physical target，禁止放寬parity門檻。
+
+只修隔離candidate工程接口：統一所有public evaluator shape/nonfinite validation與optimizer hard-bound contract；legacy diagnostics改明確disabled/registry，修正殘留docstrings；重複warnings改可追溯category/message/count/first-location聚合，保存代表性原文與所有真正exceptions，不壓制未解failure。
+
+在開始計算前凍結最多12個fixed parameter directions：只用原ptq-screen與NFW recovered vectors，各eps/q/sigma/U或halo適用方向；兩個預定scaled FD步長與fine192/coarse96，最多96 fullsample-equivalent evaluations、300s，無搜尋／profile。比較數值方向導數穩定性，報告bound inward conventions及所有failures。可評估exact per-gal dependency reuse以減少dense FD成本，但須先與全重算同target逐項parity，不改physical model/likelihood。
+
+重跑B0/B1各637、728native mappings、P1E72鄰域點與實際global/pergal/firewall paths，門檻照P1F；驗source immutability。整理唯一可審核patch/diff、成本、remaining failures。只準備一個新的NFW單一起點one-iteration smoke預算提案（考慮至少兩個184-call gradient加validation），本輪不可執行。不得optimizer、七模型fit、MCMC、profiles、AIC/BIC、canonical installation、Git/public操作。
+
+回報engineering closure是否完成，以及是否可另授權足額NFW engineering smoke；Human retains統計模型、canonical integration及scientific fitting批准權。
+```
+''',
+ 'SOURCE_PRESERVATION.md':f'''# Source preservation
+
+outer Git `{P}` HEAD `3eb302666da7eccca19c5843f729e98126d68977`；implementation是另一Git root `{I}` HEAD `5a8dca57f0fc3484387c643b51e22c7e10d024a8`，沒有誤認共享history。`AUTHORITY.json`及`GIT_AFTER.json`保留dirty/untracked/worktrees。原existing dirty .DS_Store/CITATION.cff/README.md/REPRODUCE_PAPER.md未處理、沒有stash/reset/checkout/pull/commit/push/tag/release。
+
+baseline `{len(load(B/'SOURCE_HASHES_BEFORE.json'))}`個既有檔案逐SHA256重檢，變更 {len(source['changed'])}、missing {len(source['missing'])}。原模型laws AST無變更，canonical source、dataset、seven原theta、submitted/public/preprints與P1A–P1E證據未改；P1D invalid v1仍存在且未用於結論，derived statistics只用P1D v2/P1E權威。
+
+P1E reference與data/7theta hashes列`INPUT_MANIFEST.json`；完整baseline`SOURCE_HASHES_BEFORE.json`，候選tested code`CANDIDATE_TESTED_HASHES.json`與`INTEGRATION_FILES.json`，差異`integration.diff`，environment/pip freeze在`parity_v1/`，單BLASthread與PYTHONDONTWRITEBYTECODE=1。新outputs僅兩個P1F roots；不存在previous directory overwrite。
+
+初次組裝腳本產生字串縮排錯誤，發生於任何test/optimization之前；original assembly source保存`build_candidate_assembly_failure_v0.txt`，修正後build log保存。沒有將這個組裝失敗藏成numerical failure，也沒有丟棄P1D incident。數值單元、parity、警告direct crosscheck皆通過；optimizer budget exceptions完整保存、不擴cap重試。
+
+`MANIFEST.json`、`FAILURE_AND_EXCEPTION_MANIFEST.json`及numerical `SHA256SUMS`涵蓋所有new assets（SHA256SUMS本身除外）；docs manifest另包含全部報告。smoke exact initial/terminal vectors與call logs全標 `{LABEL}`，不可進科學結果表。
+'''
+ }
+ costtable='| 參數化 | 平均完整B0 objective秒 | median秒 | 初始完整FD成本秒 | 初始FD呼叫 | warning數 |\n|---|---:|---:|---:|---:|---:|\n'
+ for r in cost['models']:costtable+=f"| {r['model']} | {r['mean_optimizer_seconds']:.6f} | {r['median_optimizer_seconds']:.6f} | {r['empirical_initial_gradient_cost_seconds']:.3f} | {95 if r['model']=='ptq-screen' else 184} | {r['warning_total']} |\n"
+ bodies['07_RUNTIME_AND_FIT_BUDGET.md']=f'''# 實測成本與campaign限制
+
+{LABEL}
+
+{costtable}
+
+總{totalcalls} fullsample calls、模型wall合計{totalwall:.3f}s，aggregate1200s內。cost是**實際driver B0-only**，不同於P1E的B0+B1 paired timing。每次都重算parameter means及sigma variance；cached只有catalog geometry/quadrature。
+
+初始denseFD k+1所需95/184 calls與實測秒數明列；一次accepted optimizer step可能需另一完整gradient及多個line-search trial，因此不得從一次smoke推可靠convergence時間。`smoke_analysis_v1/COST_AND_WARNING_AUDIT.json`包含每model cost、nodes、失敗與warning counts。quad192/96比較與repeat也計入總預算。
+
+重複warnings造成大量log及記憶體成本，是本次額外觀察的工程問題；原log與JSON不刪，正式campaign先改成分類count+representative evidence，保留failclosed。沒有在執行中改candidate或放寬budget。
+
+inactive campaign提案見09：包含完整nativevectors、start seeds、hardboundflags、stationarity、失敗start、NFW獨立review與B1先宣告。尚需工程closure與新的bounded NFWdriver足額檢查，不能以目前parity或budgetlimit自動授權scientificfit。
+'''
+ for name,text in bodies.items():
+  p=D/name
+  if p.exists():raise FileExistsError(p)
+  p.write_text(text)
+ decision=dict(verdicts=verdict,engineering_smoke_label=LABEL,fullsample_evaluations=totalcalls,model_wall_sum_seconds=totalwall,parity=gate,all_initial_terminal_precision_pass=all_precision,
+     canonical_installed=False,scientific_refit=False,next_task='P1F-R1 engineering closure fixed-direction audit, NO OPTIMIZER',limitations=['gradient accuracy not established','NFW driver accepted advance limited by frozenbudget','independent external kernels assumed','B0/B1 floor scientific sensitivity','matmul warning root cause unresolved; tested outputs directchecked'])
+ (B/'DECISION.json').write_text(json.dumps(decision,indent=2)+'\n');print(json.dumps(decision,indent=2))
+if __name__=='__main__':main()

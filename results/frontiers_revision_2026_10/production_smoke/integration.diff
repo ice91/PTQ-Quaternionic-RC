@@ -1,0 +1,825 @@
+--- /dev/null
++++ b/scripts/run_uniform_explicit_smoke.py
+@@ -0,0 +1,22 @@
++"""ENGINEERING_SMOKE_ONLY — NOT CORRECTED MLE. Actual isolated CLI and driver."""
++from pathlib import Path
++import argparse,hashlib,json,sys
++import numpy as np
++sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
++from ptquat.data import load_tidy_sparc
++from ptquat.bounded_driver import run_bounded_smoke
++
++def main():
++    p=argparse.ArgumentParser();p.add_argument('--bundle',required=True);a=p.parse_args();B=Path(a.bundle).resolve()
++    gate=json.loads((B/'parity_v1/PARITY_GATE.json').read_text());assert gate['status']=='PASS'
++    hashes=json.loads((B/'CANDIDATE_TESTED_HASHES.json').read_text())
++    for path,digest in hashes.items():assert hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest,path
++    protocol=json.loads((B/'SMOKE_PROTOCOL.json').read_text());assert hashlib.sha256((B/'SMOKE_PROTOCOL.json').read_bytes()).hexdigest()=='3860858cfc991489dc5d5ee878236efa5591f43e0f11b74cb280b318beff76cc'
++    inputs=json.loads((B/'INPUT_MANIFEST.json').read_text())
++    for r in [inputs['data'],inputs['P1E_reference']]+inputs['theta']:
++        assert hashlib.sha256(Path(r['path']).read_bytes()).hexdigest()==r['sha256'],r['path']
++    gd=load_tidy_sparc(inputs['data']['path']);gs=[gd[k] for k in sorted(gd)]
++    assert len(gs)==91 and sum(len(g.v_obs) for g in gs)==1782
++    vectors={Path(r['path']).parent.name.replace('_','-'):np.load(r['path']) for r in inputs['theta']}
++    run_bounded_smoke(gs,vectors,protocol,B/'engineering_smoke_v1')
++if __name__=='__main__':main()
+--- /dev/null
++++ b/src/ptquat/bounded_driver.py
+@@ -0,0 +1,114 @@
++"""Version-specific, single-start engineering driver. Never a scientific campaign."""
++from pathlib import Path
++import hashlib,json,time,warnings
++import numpy as np
++from scipy.optimize import minimize
++from . import mle
++from .fit_global import _layout,_unpack
++from .marginal_likelihood import PRIMARY_B0
++LABEL='ENGINEERING_SMOKE_ONLY — NOT CORRECTED MLE'
++class DriverBudgetLimit(RuntimeError): pass
++
++def write_json(path,record):
++    path.write_text(json.dumps(dict(label=LABEL,**record),indent=2,allow_nan=False)+'\n')
++
++def run_bounded_smoke(galaxies,vectors,protocol,out):
++    out=Path(out);out.mkdir(exist_ok=False)
++    cfg=protocol['smoke'];started=time.monotonic();aggregate=0;results=[]
++    def clockguard():
++        if time.monotonic()-started>=cfg['max_optimization_wall_seconds_aggregate']:
++            raise DriverBudgetLimit('aggregate wall-time cap')
++    for model in cfg['models']:
++        modelstart=time.monotonic();calls=0;optcalls=0;accepted=[];warnings_seen=[]
++        t0=np.array(vectors[model],dtype=float,copy=True);L=_layout(model,len(galaxies),True,None)
++        bounds=np.asarray(mle.theta_bounds(model,len(galaxies)),float)
++        logs=out/(model.replace('-','_')+'_objective_calls.jsonl')
++        exceptions=[];validation=[];trials=[];status='NOT_STARTED';scipy_record=None
++        write_json(out/(model.replace('-','_')+'_initial.json'),dict(model=model,theta=t0.tolist(),bounds=bounds.tolist(),likelihood_version=PRIMARY_B0))
++        def valid(t):
++            x=np.asarray(t,float)
++            if x.shape!=t0.shape or not np.isfinite(x).all():raise ValueError('invalid theta')
++            if np.any(x<bounds[:,0]) or np.any(x>bounds[:,1]):raise ValueError('theta outside original bounds')
++            return x
++        def evaluate(t,stage,order=192,optimizer=False):
++            nonlocal calls,optcalls,aggregate
++            clockguard();x=valid(t)
++            if calls>=cfg['max_per_model_fullsample_evaluations'] or aggregate>=cfg['max_fullsample_evaluations_aggregate']:
++                raise DriverBudgetLimit('hard full-sample count cap')
++            if optimizer and optcalls>=cfg['max_optimizer_calls_per_model']:
++                raise DriverBudgetLimit('optimizer count cap; validation reserve retained')
++            calls+=1;aggregate+=1
++            if optimizer:optcalls+=1
++            ts=time.monotonic();record=dict(label=LABEL,model=model,likelihood_version=PRIMARY_B0,stage=stage,
++                call=calls,aggregate_call=aggregate,optimizer_call=optcalls,quadrature_order=order,
++                theta_sha256=hashlib.sha256(x.astype('<f8').tobytes()).hexdigest(),theta=x.tolist(),
++                hard_bound_indices=np.flatnonzero((x==bounds[:,0])|(x==bounds[:,1])).tolist())
++            try:
++                with warnings.catch_warnings(record=True) as caught:
++                    warnings.simplefilter('always')
++                    parts=mle.evaluate_loglike_components(x,galaxies,model,likelihood_version=PRIMARY_B0,order=order,tick=clockguard)
++                warning_list=[dict(category=w.category.__name__,message=str(w.message)) for w in caught]
++                warnings_seen.extend(warning_list)
++                if not np.isfinite(parts['logL']):raise FloatingPointError('nonfinite objective')
++                record.update(status='COMPLETE',negative_logL=-parts['logL'],galaxy_log_marginals=parts['galaxy_log_marginals'],
++                    density_nodes=sum(z['density_nodes'] for z in parts['records']),warnings=warning_list)
++            except Exception as exc:
++                record.update(status='FAILED',error=repr(exc));exceptions.append(dict(stage=stage,error=repr(exc)))
++                raise
++            finally:
++                record.update(seconds=time.monotonic()-ts,elapsed_seconds=time.monotonic()-started)
++                with logs.open('a') as f:f.write(json.dumps(record,allow_nan=False)+'\n')
++            if optimizer and (optcalls==1 or optcalls%20==0):print('OBJECTIVE',model,optcalls,'wall',round(time.monotonic()-started,2),flush=True)
++            return parts
++        def precision(t,stage):
++            fine=evaluate(t,stage+'_fine');coarse=evaluate(t,stage+'_coarse',96);repeat=evaluate(t,stage+'_repeat')
++            delta=np.array(fine['galaxy_log_marginals'])-coarse['galaxy_log_marginals']
++            rep=np.max(np.abs(np.array(fine['galaxy_log_marginals'])-repeat['galaxy_log_marginals']))
++            r=dict(stage=stage,max_abs_refinement=float(abs(delta).max()),sum_abs_refinement=float(abs(delta).sum()),
++                signed_refinement=float(delta.sum()),repeat_max_abs=float(rep),
++                sum_decomposition_error=abs(float(np.sum(fine['galaxy_log_marginals']))-fine['logL']))
++            r['pass']=bool(r['max_abs_refinement']<=protocol['parity']['refinement_pergal'] and r['sum_abs_refinement']<=protocol['parity']['refinement_sample_sumabs'] and rep<=protocol['parity']['repeat_abs'])
++            validation.append(r)
++            if not r['pass']:raise ArithmeticError('frozen precision gate failed: '+stage)
++        terminal=t0.copy()
++        try:
++            precision(t0,'initial')
++            indices=[L['i_eps'],L['i_lq'],L['i_lnsig']] if model=='ptq-screen' else [L['sl_U'].start,L['sl_lM'].start,L['i_lnsig']]
++            for idx in indices:
++                t=t0.copy();step=1e-6*(bounds[idx,1]-bounds[idx,0]);direction=1 if t[idx]+step<=bounds[idx,1] else -1
++                t[idx]+=direction*step;r=evaluate(t,'fixed_perturbation_'+str(idx))
++                trials.append(dict(index=idx,step=direction*step,negative_logL=-r['logL']))
++            def objective(t):return -evaluate(t,'optimizer',optimizer=True)['logL']
++            def callback(t):
++                accepted.append(np.asarray(t,float).copy())
++                if len(accepted)>cfg['max_accepted_iterations_per_run']:raise RuntimeError('accepted iteration cap violated')
++            options=dict(cfg['options'],maxiter=cfg['maxiter'],maxls=cfg['maxls'],maxfun=cfg['max_optimizer_calls_per_model'])
++            try:
++                result=minimize(objective,t0,method='L-BFGS-B',bounds=bounds,jac=None,callback=callback,options=options)
++                terminal=np.array(result.x,copy=True)
++                scipy_record=dict(success=bool(result.success),status=int(result.status),message=str(result.message),nit=int(result.nit),nfev=int(result.nfev),njev=int(result.njev))
++                status='PASS' if result.nit>=1 else 'NO_ACCEPTED_ADVANCE'
++            except DriverBudgetLimit as exc:
++                status='DRIVER_SMOKE_BUDGET_LIMIT';exceptions.append(dict(stage='optimizer',error=repr(exc)))
++                terminal=accepted[-1] if accepted else t0.copy()
++            precision(terminal,'terminal')
++        except DriverBudgetLimit as exc:
++            status='DRIVER_SMOKE_BUDGET_LIMIT';exceptions.append(dict(stage='outer',error=repr(exc)))
++        except Exception as exc:
++            status='FAIL';exceptions.append(dict(stage='outer',error=repr(exc)))
++        p=_unpack(valid(terminal),L)
++        decoded={k:(v.tolist() if isinstance(v,np.ndarray) else v) for k,v in p.items()}
++        summary=dict(model=model,likelihood_version=PRIMARY_B0,status=status,fullsample_evaluations=calls,
++            optimizer_evaluations=optcalls,accepted_iterations=len(accepted),wall_seconds=time.monotonic()-modelstart,
++            parameter_count=L['k'],nominal_gradient_fullsample_cost=L['k']+1,scipy=scipy_record,
++            precision=validation,perturbations=trials,exceptions=exceptions,warnings=warnings_seen,
++            terminal_semantics='last accepted callback or returned x; original start if no accepted step; never scientific MLE',
++            terminal_theta=terminal.tolist(),initial_theta=t0.tolist(),decoded_terminal=decoded,
++            accepted_vectors=[x.tolist() for x in accepted])
++        write_json(out/(model.replace('-','_')+'_result.json'),summary);results.append(summary)
++        print('DRIVER_RESULT',model,status,'nfev',optcalls,'nit',len(accepted),flush=True)
++        if status=='FAIL':break
++    final=dict(results=results,total_fullsample_evaluations=aggregate,total_wall_seconds=time.monotonic()-started,
++        protocol_limits=cfg,optimization_campaign=False)
++    write_json(out/'SMOKE_SUMMARY.json',final)
++    return final
+--- a/src/ptquat/experiments.py
++++ b/src/ptquat/experiments.py
+@@ -23,7 +23,13 @@
+     log_likelihood_per_galaxy,
+     log_likelihood_full_per_galaxy,
+ )
+-from .plotting import plot_residual_plateau, plot_ppc_hist
++# Optional plotting dependencies are loaded only for explicit legacy descriptive calls.
++def plot_residual_plateau(*a, **k):
++    from .plotting import plot_residual_plateau as plot
++    return plot(*a, **k)
++def plot_ppc_hist(*a, **k):
++    from .plotting import plot_ppc_hist as plot
++    return plot(*a, **k)
+ 
+ 
+ # -------------------------------
+@@ -2559,3 +2565,49 @@
+     with open(res / f"{out_prefix}_summary.json", "w") as f:
+         json.dump(out, f, indent=2)
+     return out
++
++
++# Primary predictive firewall: no radius-level marginal factorization or ranking.
++from functools import wraps as _wraps
++from .marginal_likelihood import PRIMARY_B0, LEGACY_DIAGONALIZED_SENSITIVITY
++
++def _legacy_diagnostic_only(fn):
++    if getattr(fn,"_legacy_guarded",False): return fn
++    @_wraps(fn)
++    def guarded(*args, likelihood_version=PRIMARY_B0, **kwargs):
++        if likelihood_version != LEGACY_DIAGONALIZED_SENSITIVITY:
++            raise ValueError("LEGACY_DIAGONALIZED_SENSITIVITY only; unsupported for explicit primary target")
++        return fn(*args, **kwargs)
++    guarded._legacy_guarded = True
++    return guarded
++
++for _name in ("_call_fit", "ppc_check", "kappa_per_galaxy", "kappa_radius_resolved",
++              "kappa_geom_per_galaxy", "kappa_radius_resolved_geom", "compare_models_waic",
++              "loo_compare_models", "_write_pwaic_diagnostics"):
++    if _name in globals(): globals()[_name] = _legacy_diagnostic_only(globals()[_name])
++# Every function containing a historical covariance call is explicitly legacy-only.
++import ast as _ast
++from pathlib import Path as _Path
++_tree = _ast.parse(_Path(__file__).read_text())
++for _node in _tree.body:
++    if isinstance(_node, _ast.FunctionDef) and any(
++        isinstance(x, _ast.Call) and isinstance(x.func, _ast.Name)
++        and x.func.id == "build_covariance" for x in _ast.walk(_node)):
++        globals()[_node.name] = _legacy_diagnostic_only(globals()[_node.name])
++
++def per_galaxy_log_marginals(theta, galaxies, model, *, likelihood_version=PRIMARY_B0):
++    from .fit_global import _layout, log_likelihood_full_per_galaxy
++    return log_likelihood_full_per_galaxy(theta, galaxies,4.0,H0_SI,
++        _layout(model,len(galaxies),True,None),10.0,-0.1,None,likelihood_version,8.0)
++
++def descriptive_residuals(theta, galaxies, model):
++    from .fit_global import _layout,_unpack
++    from .marginal_likelihood import galaxy_log_marginal
++    from types import SimpleNamespace
++    from .models import catalog_velocity_at_distance
++    p=_unpack(theta,_layout(model,len(galaxies),True,None));rows=[]
++    for gi,g in enumerate(galaxies):
++        view=SimpleNamespace(r=g.r_kpc,disk=g.v_disk,bulge=g.v_bulge,gas=g.v_gas,D=g.D_Mpc)
++        v=catalog_velocity_at_distance(view,p,gi,model,g.D_Mpc)
++        rows.append({"galaxy":g.name,"residual":g.v_obs-v,"interpretation":"DESCRIPTIVE_RESIDUAL_ONLY_NOT_POINTWISE_MARGINAL"})
++    return rows
+--- a/src/ptquat/fit_global.py
++++ b/src/ptquat/fit_global.py
+@@ -148,7 +148,7 @@
+ 
+ # ------------------------- Likelihood -------------------------
+ 
+-def log_likelihood(theta: np.ndarray,
++def _legacy_log_likelihood(theta: np.ndarray,
+                    galaxies: List[GalaxyData],
+                    sigma_sys_fixed: float,
+                    H0_si: float,
+@@ -206,7 +206,12 @@
+     return total
+ 
+ 
+-def log_likelihood_per_galaxy(theta: np.ndarray,
++def log_likelihood(theta, galaxies, sigma_sys_fixed, H0_si, L, c0, c_slope, a0_fixed, like_kind, t_dof):
++    """Primary objective: sum of galaxy log-marginals, never pointwise factorization."""
++    return float(np.sum(log_likelihood_full_per_galaxy(theta, galaxies, sigma_sys_fixed, H0_si, L, c0, c_slope, a0_fixed, like_kind, t_dof)))
++
++
++def _legacy_log_likelihood_per_galaxy(theta: np.ndarray,
+                               galaxies: List[GalaxyData],
+                               sigma_sys_fixed: float,
+                               H0_si: float,
+@@ -287,7 +292,15 @@
+     return np.concatenate(ll_list)
+ 
+ 
+-def log_likelihood_full_per_galaxy(theta: np.ndarray,
++def log_likelihood_per_galaxy(theta, galaxies, sigma_sys_fixed, H0_si, L, c0, c_slope, a0_fixed, like_kind, t_dof):
++    from .marginal_likelihood import LEGACY_DIAGONALIZED_SENSITIVITY
++    if like_kind != LEGACY_DIAGONALIZED_SENSITIVITY:
++        raise ValueError("Explicit nuisance marginal is NOT a per-radius likelihood; use full per-galaxy log-marginals")
++    return _legacy_log_likelihood_per_galaxy(theta, galaxies, sigma_sys_fixed, H0_si,
++        L, c0, c_slope, a0_fixed, "gauss", t_dof)
++
++
++def _legacy_log_likelihood_full_per_galaxy(theta: np.ndarray,
+                                    galaxies: List[GalaxyData],
+                                    sigma_sys_fixed: float,
+                                    H0_si: float,
+@@ -350,6 +363,19 @@
+     return vals
+ 
+ 
++def log_likelihood_full_per_galaxy(theta, galaxies, sigma_sys_fixed, H0_si, L, c0, c_slope, a0_fixed, like_kind, t_dof):
++    from .marginal_likelihood import require_version, galaxy_log_marginal
++    require_version(like_kind)
++    if np.asarray(theta).shape != (L["k"],) or not np.all(np.isfinite(theta)):
++        raise ValueError("Invalid native theta")
++    pars = _unpack(theta, L)
++    pars["sigma"] = pars.get("sigma", sigma_sys_fixed)
++    pars["a0_fixed"] = a0_fixed
++    return np.asarray([galaxy_log_marginal(g, pars, gi, L["model"],
++        likelihood_version=like_kind, H0_si=H0_si, c0=c0, c_slope=c_slope)["log_marginal"]
++        for gi, g in enumerate(galaxies)], float)
++
++
+ def log_posterior(theta: np.ndarray,
+                   galaxies: List[GalaxyData],
+                   sigma_sys_fixed: float,
+@@ -413,6 +439,7 @@
+ # ---------------------------- 主程式 ----------------------------
+ 
+ def run(argv=None):
++    raise RuntimeError("Historical MCMC CLI disabled: use the versioned explicit MLE/smoke driver; no sampling authorized")
+     args = parse_args(argv)
+     outdir = Path(args.outdir); outdir.mkdir(parents=True, exist_ok=True)
+ 
+--- a/src/ptquat/likelihood.py
++++ b/src/ptquat/likelihood.py
+@@ -1,4 +1,5 @@
+ # src/ptquat/likelihood.py
++# Gaussian/covariance utilities are LEGACY_DIAGONALIZED_SENSITIVITY for the new primary target.
+ from __future__ import annotations
+ import numpy as np
+ from numpy.linalg import cholesky
+--- /dev/null
++++ b/src/ptquat/marginal_likelihood.py
+@@ -0,0 +1,126 @@
++"""Uniform physical-domain B0/B1 target. No optimization; same target for all galaxies.
++Node policy is a separate numerical choice. No finite-tail target truncation.
++Frozen P1C law equations are reused read-only; propagated covariance is never added.
++"""
++from pathlib import Path
++from functools import lru_cache
++import sys,time
++import numpy as np
++from scipy.special import ndtr,ndtri,roots_legendre,logsumexp
++from types import SimpleNamespace
++from .models import catalog_velocity_at_distance
++from .constants import H0_SI
++PRIMARY_B0 = "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1"
++SENSITIVITY_B1 = "REV26-P1E-UNIFORM-EXPLICIT-B1-PHYSICAL-v1"
++LEGACY_DIAGONALIZED_SENSITIVITY = "LEGACY_DIAGONALIZED_SENSITIVITY"
++ORDER_FINE = 192
++ORDER_COARSE = 96
++
++
++def require_version(version):
++    if version not in (PRIMARY_B0, SENSITIVITY_B1):
++        raise ValueError("Unsupported primary likelihood version: " + str(version))
++    return "B0" if version == PRIMARY_B0 else "B1"
++
++
++def velocity(g, pars, gi, D):
++    return catalog_velocity_at_distance(g, pars, gi, pars["model"], D,
++        H0_si=pars["_H0"], c0=pars["_c0"], c_slope=pars["_c_slope"])
++
++
++def validate_prior(g):
++ if not (g.D>0 and g.sD>=0 and 0<g.inc<=np.pi/2 and g.si>=0):raise ValueError('Invalid nominal geometry/errors')
++ if np.any(~np.isfinite(g.y)) or np.any(~np.isfinite(g.e)) or np.any(g.e<0):raise ValueError('Invalid observations/errors')
++
++def quantile_standard(a,b,u):
++ u=np.asarray(u,float)
++ if np.any((u<=0)|(u>=1)) or np.any(~np.isfinite(u)):raise ValueError('Quadrature probabilities must be strictly inside(0,1)')
++ A=ndtr(a);SB=ndtr(-b);Z=ndtr(b)-A
++ if not (np.isfinite(Z) and Z>0):raise ValueError('Empty/unstable physical prior mass')
++ # Choose stable CDF or survival branch; never form 1-CDF near upper endpoint.
++ p=A+u*Z;q=SB+(1-u)*Z
++ z=np.where(p<=.5,ndtri(p),-ndtri(q))
++ if np.any(~np.isfinite(z)) or np.any(z<a) or np.any(z>b):raise FloatingPointError('Unrepresentable physical quantile')
++ return z
++
++@lru_cache(None)
++def legendre(order):
++ z,w=roots_legendre(order)
++ if np.any(w<=0) or not np.isclose(w.sum(),2.,rtol=0,atol=1e-13):raise ValueError('Invalid quadrature weights')
++ return z,w
++
++@lru_cache(None)
++def axis_nodes(center,sigma,lo,hi,method,order):
++ if sigma==0:return np.array([center]),np.ones(1),1.
++ a=(lo-center)/sigma;b=(hi-center)/sigma;Z=float(ndtr(b)-ndtr(a))
++ breaks=[0.,1.]
++ if method=='segmented_quantile':
++  for knot in [-6.,-4.,-2.,0.,2.,4.,6.]:
++   if a<knot<b:breaks.append(float((ndtr(knot)-ndtr(a))/Z))
++ elif method!='quantile':raise ValueError(method)
++ breaks=np.unique(breaks);z,w=legendre(order);u=[];weights=[]
++ for left,right in zip(breaks[:-1],breaks[1:]):
++  if not right>left:raise ValueError('Invalid probability segment')
++  u.append(left+(z+1)*(right-left)/2);weights.append(w*(right-left)/2)
++ u=np.concatenate(u);weights=np.concatenate(weights)
++ zz=quantile_standard(a,b,u)
++ # Lower physical D bound is zero: use difference from lower standardized bound.
++ values=sigma*(zz-a)+lo if np.isfinite(lo) else center+sigma*zz
++ if np.any(~np.isfinite(values)) or np.any(values<=lo) or np.any(values>=hi):raise FloatingPointError('Physical quadrature node outside open domain')
++ if np.any(weights<=0) or abs(weights.sum()-1.)>1e-12:raise ValueError('Weights not positive/normalized')
++ return values,weights,Z
++
++def nuisance_nodes(g,method,order):
++ validate_prior(g)
++ ds,wd,ZD=axis_nodes(float(g.D),float(g.sD),0.,np.inf,method,int(order));incs,wi,Zi=axis_nodes(float(g.inc),float(g.si),0.,float(np.pi/2),method,int(order))
++ return ds,wd,incs,wi,ZD,Zi
++
++def conditional_logdensity(g,mu,sigma,b,floor):
++ var=g.e*g.e+(sigma*sigma if floor=='B0' else (b*sigma)**2)
++ if np.any(var<=0) or np.any(~np.isfinite(var)):raise ValueError('Nonpositive conditional variance')
++ return -.5*np.sum((g.y-mu)**2/var+np.log(2*np.pi*var),axis=-1)
++
++def integrate(g,p,gi,method,order,floors=('B0','B1'),linear=False):
++ begin=time.perf_counter();ds,wd,incs,wi,ZD,Zi=nuisance_nodes(g,method,order);nn=len(ds)*len(incs)*len(floors)
++ if p['sigma']<=0 or not np.isfinite(p['sigma']):raise ValueError('Invalid floor parameter')
++ if linear: raise ValueError('Linearized mean is not the primary marginal target')
++ vd=velocity(g,p,gi,ds[:,None]);b=np.sin(incs)/np.sin(g.inc)
++ accum={floor:-np.inf for floor in floors};nodeshape=(len(ds),len(incs));max_roundoff=0.
++ # Efficient exact conditional quadratic uses weighted sufficient sums; blocked grids.
++ for floor in floors:
++  var=g.e[None,:]**2+(p['sigma']**2 if floor=='B0' else (p['sigma']*b[:,None])**2)
++  if var.shape[0]==1:var=np.broadcast_to(var,(len(incs),len(g.y)))
++  if np.any(var<=0) or np.any(~np.isfinite(var)):raise ValueError('Invalid conditional variance')
++  inv=1/var;yi=g.y[None,:]*inv;Y2=(g.y[None,:]**2*inv).sum(axis=1);norm=np.log(2*np.pi*var).sum(axis=1)
++  for start in range(0,len(ds),128):
++   end=min(start+128,len(ds));v=vd[start:end]
++   cross=v@yi.T;vv=(v*v)@inv.T
++   Q=Y2[None,:]-2*b[None,:]*cross+b[None,:]**2*vv
++   scale=Y2[None,:]+2*np.abs(b[None,:]*cross)+b[None,:]**2*np.abs(vv)
++   tolerance=64*np.finfo(float).eps*np.maximum(scale,1.)
++   if np.any(Q < -tolerance):raise FloatingPointError('Quadratic cancellation outside roundoff bound')
++   max_roundoff=max(max_roundoff,float(np.max(tolerance)))
++   ll=-.5*(Q+norm[None,:]);assert np.isfinite(ll).all()
++   value=float(logsumexp(ll+np.log(wd[start:end,None])+np.log(wi)[None,:]));accum[floor]=float(np.logaddexp(accum[floor],value))
++ for value in accum.values():
++  if not np.isfinite(value):raise FloatingPointError('Non-finite marginal logL')
++ return dict(logL=accum,method=method,order=int(order),D_nodes=nodeshape[0],i_nodes=nodeshape[1],density_nodes=nn,ZD=ZD,Zi=Zi,weight_sum=float(wd.sum()*wi.sum()),seconds=time.perf_counter()-begin,max_quadratic_roundoff_bound=max_roundoff,linear=linear)
++
++
++
++def galaxy_log_marginal(galaxy, pars, gi, model, *, likelihood_version=PRIMARY_B0,
++                        H0_si=H0_SI, c0=10.0, c_slope=-0.1, order=ORDER_FINE):
++    floor = require_version(likelihood_version)
++    if order not in (ORDER_FINE, ORDER_COARSE):
++        raise ValueError("Only frozen fine/coarse quadrature orders are supported")
++    g = SimpleNamespace(name=galaxy.name, r=galaxy.r_kpc, y=galaxy.v_obs,
++        e=galaxy.v_err, disk=galaxy.v_disk, bulge=galaxy.v_bulge,
++        gas=galaxy.v_gas, D=float(galaxy.D_Mpc), sD=float(galaxy.D_err_Mpc),
++        inc=float(np.deg2rad(galaxy.i_deg)), si=float(np.deg2rad(galaxy.i_err_deg)))
++    p = dict(pars, model=model, _H0=H0_si, _c0=c0, _c_slope=c_slope)
++    record = integrate(g, p, gi, "segmented_quantile", order, floors=(floor,))
++    record["likelihood_version"] = likelihood_version
++    record["galaxy"] = galaxy.name
++    record["log_marginal"] = record["logL"][floor]
++    record["conditional_normalization"] = "full sum(log(2*pi*variance)) at every node"
++    return record
+--- a/src/ptquat/mle.py
++++ b/src/ptquat/mle.py
+@@ -17,6 +17,7 @@
+ import yaml
+ from scipy.optimize import minimize
+ 
++from .marginal_likelihood import PRIMARY_B0, SENSITIVITY_B1
+ from .constants import C_LIGHT, H0_SI
+ from .data import GalaxyData, load_tidy_sparc
+ from .fit_global import _layout, _unpack, log_likelihood
+@@ -103,91 +104,30 @@
+     return out
+ 
+ 
+-def objective_neg_loglike(theta: np.ndarray,
+-                          galaxies: List[GalaxyData],
+-                          model: str,
+-                          H0_si: float,
+-                          c0: float = 10.0,
+-                          c_slope: float = -0.1) -> float:
+-    """Minimize this: -log L. No prior terms."""
+-    L = _layout(model, len(galaxies), sigma_sys_learn=True, a0_fixed=None)
+-    theta = np.asarray(theta, float)
+-    # Soft domain rejection without prior density
+-    for i, (lo, hi) in enumerate(theta_bounds(model, len(galaxies), H0_si)):
+-        if not (lo <= theta[i] <= hi):
+-            return 1.0e50
+-    try:
+-        ll = log_likelihood(
+-            theta, galaxies, sigma_sys_fixed=4.0, H0_si=H0_si, L=L,
+-            c0=c0, c_slope=c_slope, a0_fixed=None, like_kind="gauss", t_dof=8.0,
+-        )
+-    except Exception:
+-        return 1.0e50
+-    if not np.isfinite(ll):
+-        return 1.0e50
+-    return float(-ll)
+-
+-
+-def evaluate_loglike(theta: np.ndarray,
+-                     galaxies: List[GalaxyData],
+-                     model: str,
+-                     H0_si: float = H0_SI,
+-                     c0: float = 10.0,
+-                     c_slope: float = -0.1) -> float:
+-    L = _layout(model, len(galaxies), sigma_sys_learn=True, a0_fixed=None)
+-    return float(log_likelihood(
+-        np.asarray(theta, float), galaxies, 4.0, H0_si, L, c0, c_slope, None, "gauss", 8.0,
+-    ))
+-
+-
+-def galaxy_loglike(theta: np.ndarray,
+-                   galaxies: List[GalaxyData],
+-                   gi: int,
+-                   model: str,
+-                   H0_si: float = H0_SI,
+-                   c0: float = 10.0,
+-                   c_slope: float = -0.1) -> float:
+-    """Full-covariance logL contribution of a single galaxy (no prior)."""
+-    from .models import (
+-        model_v_baryon, model_v_mond, model_v_mond_screen, model_v_nfw1p,
+-        model_v_ptq, model_v_ptq_nu, model_v_ptq_screen,
+-    )
+-    from .likelihood import build_covariance, gaussian_loglike
+-
++def objective_neg_loglike(theta, galaxies, model, H0_si, c0=10.0, c_slope=-0.1, *, likelihood_version=PRIMARY_B0):
++    from .marginal_likelihood import require_version
++    require_version(likelihood_version)
++    t = np.asarray(theta, float)
++    bounds = theta_bounds(model, len(galaxies), H0_si)
++    if t.shape != (len(bounds),) or not np.all(np.isfinite(t)):
++        raise ValueError("Invalid native parameter vector")
++    if not all(lo <= v <= hi for v, (lo, hi) in zip(t, bounds)):
++        raise ValueError("Native parameters outside hard bounds")
++    return -evaluate_loglike(t, galaxies, model, H0_si, c0, c_slope, likelihood_version=likelihood_version)
++
++
++def evaluate_loglike(theta, galaxies, model, H0_si=H0_SI, c0=10.0, c_slope=-0.1, *, likelihood_version=PRIMARY_B0):
++    values = evaluate_loglike_components(theta, galaxies, model, H0_si, c0, c_slope,
++        likelihood_version=likelihood_version)
++    return float(np.sum(values["galaxy_log_marginals"]))
++
++
++def galaxy_loglike(theta, galaxies, gi, model, H0_si=H0_SI, c0=10.0, c_slope=-0.1, *, likelihood_version=PRIMARY_B0):
++    from .marginal_likelihood import galaxy_log_marginal
+     L = _layout(model, len(galaxies), True, None)
+-    pars = _unpack(np.asarray(theta, float), L)
+-    g = galaxies[gi]
+-    sigma_use = pars.get("sigma", 4.0)
+-    m = model
+-
+-    if m == "ptq":
+-        U = float(pars["U"][gi]); eps = float(pars["eps"])
+-        def vfun(rk): return model_v_ptq(U, eps, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+-    elif m == "ptq-nu":
+-        U = float(pars["U"][gi]); eps = float(pars["eps"])
+-        def vfun(rk): return model_v_ptq_nu(U, eps, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+-    elif m == "ptq-screen":
+-        U = float(pars["U"][gi]); eps = float(pars["eps"]); q = float(np.exp(pars["lq"]))
+-        def vfun(rk): return model_v_ptq_screen(U, eps, q, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si)
+-    elif m == "baryon":
+-        U = float(pars["U"][gi])
+-        def vfun(rk): return model_v_baryon(U, rk, g.v_disk, g.v_bulge, g.v_gas)
+-    elif m == "mond":
+-        U = float(pars["U"][gi]); a0 = 10.0 ** pars["log10a0"]
+-        def vfun(rk): return model_v_mond(U, a0, rk, g.v_disk, g.v_bulge, g.v_gas)
+-    elif m == "mond-screen":
+-        U = float(pars["U"][gi]); a0 = 10.0 ** pars["log10a0"]; q = float(np.exp(pars["lq"]))
+-        def vfun(rk): return model_v_mond_screen(U, a0, q, rk, g.v_disk, g.v_bulge, g.v_gas)
+-    elif m == "nfw1p":
+-        U = float(pars["U"][gi]); lM = float(pars["lM"][gi])
+-        def vfun(rk): return model_v_nfw1p(U, lM, rk, g.v_disk, g.v_bulge, g.v_gas, H0_si=H0_si, c0=c0, c_slope=c_slope)
+-    else:
+-        raise ValueError(m)
+-
+-    v_mod = vfun(g.r_kpc)
+-    Cg = build_covariance(v_mod, g.r_kpc, g.v_err, g.D_Mpc, g.D_err_Mpc,
+-                          g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sigma_use)
+-    return float(gaussian_loglike(g.v_obs, v_mod, Cg))
++    p = _unpack(np.asarray(theta, float), L)
++    return float(galaxy_log_marginal(galaxies[gi], p, gi, model, likelihood_version=likelihood_version,
++        H0_si=H0_si, c0=c0, c_slope=c_slope)["log_marginal"])
+ 
+ 
+ def map_theta_ptqnu_to_mond(theta_ptqnu: np.ndarray, G: int, H0_si: float = H0_SI) -> np.ndarray:
+@@ -456,98 +396,8 @@
+     return theta, res, ll0, ll_f
+ 
+ 
+-def optimize_mle(model: str,
+-                 galaxies: List[GalaxyData],
+-                 starts: List[Tuple[str, np.ndarray]],
+-                 H0_si: float = H0_SI,
+-                 domain: str = "matched",
+-                 maxiter: int = 25) -> dict:
+-    """maxiter here means block-coordinate outer iterations."""
+-    G = len(galaxies)
+-    L = _layout(model, G, True, None)
+-    bounds = theta_bounds(model, G, H0_si, domain=domain)
+-    N_points = int(sum(len(g.r_kpc) for g in galaxies))
+-    k = int(L["k"])
+-
+-    n_outer = maxiter if model != "nfw1p" else max(maxiter, 15)
+-
+-    best = None
+-    best_theta = None
+-    best_start = None
+-    best_msg = ""
+-    best_success = False
+-    start_rows = []
+-    traces = []
+-
+-    for start_id, theta0 in starts:
+-        theta_f, res, ll0, ll_f = _block_coordinate_mle(
+-            model, galaxies, theta0, H0_si, bounds, n_outer=n_outer
+-        )
+-        bstat = boundary_status(theta_f, bounds)
+-        row = StartResult(
+-            start_id=start_id,
+-            initial_logL=ll0,
+-            final_logL=ll_f,
+-            success=bool(res.success),
+-            message=str(res.message),
+-            nit=int(res.nit),
+-            nfev=int(res.nfev),
+-            boundary=bstat,
+-        )
+-        start_rows.append(asdict(row))
+-        traces.append({
+-            "start_id": start_id,
+-            "initial_logL": ll0,
+-            "final_logL": ll_f,
+-            "success": bool(res.success),
+-            "message": str(res.message),
+-            "nit": int(res.nit),
+-            "nfev": int(res.nfev),
+-        })
+-        if best is None or ll_f > best:
+-            best = ll_f
+-            best_theta = theta_f
+-            best_start = start_id
+-            best_msg = str(res.message)
+-            best_success = bool(res.success)
+-
+-    finals = sorted([t["final_logL"] for t in traces], reverse=True)
+-    cross_start_delta = float(finals[0] - finals[1]) if len(finals) > 1 else 0.0
+-
+-    AIC = -2.0 * best + 2 * k
+-    BIC = -2.0 * best + k * math.log(N_points)
+-    pars = _unpack(best_theta, L)
+-
+-    param_vector = {
+-        "eps": pars.get("eps"),
+-        "log10a0": pars.get("log10a0"),
+-        "a0": (10.0 ** pars["log10a0"]) if "log10a0" in pars else None,
+-        "q": float(np.exp(pars["lq"])) if "lq" in pars else None,
+-        "sigma_sys": pars.get("sigma"),
+-        "Upsilon_mean": float(np.mean(pars["U"])) if "U" in pars else None,
+-        "log10_M200_mean": float(np.mean(pars["lM"])) if "lM" in pars else None,
+-    }
+-
+-    return {
+-        "model": model,
+-        "max_loglike": float(best),
+-        "AIC": float(AIC),
+-        "BIC_NPOINTS": float(BIC),
+-        "k": k,
+-        "N_data": N_points,
+-        "N_gal": G,
+-        "optimizer": "block-coordinate ascent on logL (globals + per-galaxy; no priors)",
+-        "converged": bool(best_success),
+-        "termination_status": best_msg,
+-        "best_start": best_start,
+-        "cross_start_delta_logL": cross_start_delta,
+-        "boundary": boundary_status(best_theta, bounds),
+-        "parameter_vector": param_vector,
+-        "theta": best_theta.tolist(),
+-        "starts": start_rows,
+-        "domain": domain,
+-        "H0_si": H0_si,
+-    }
++def optimize_mle(*args, **kwargs):
++    raise RuntimeError("Legacy unbudgeted multistart driver disabled; use version-specific bounded driver")
+ 
+ 
+ def build_multistart(model: str,
+@@ -598,33 +448,31 @@
+     return starts
+ 
+ 
+-def write_model_outputs(outdir: Path, result: dict, hist_meta: dict) -> None:
+-    outdir.mkdir(parents=True, exist_ok=True)
+-    theta = result["theta"]
+-    summary = {k: v for k, v in result.items() if k != "theta"}
+-    summary["historical"] = hist_meta
+-    summary["delta_logL_vs_historical_median"] = float(
+-        result["max_loglike"] - hist_meta["historical_logL_total_full"]
+-    )
+-    summary["delta_AIC_vs_historical_median"] = float(
+-        result["AIC"] - hist_meta["historical_AIC_full"]
+-    )
+-    (outdir / "mle_summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+-    pd.DataFrame(result["starts"]).to_csv(outdir / "optimization_trace.csv", index=False)
+-    init_rows = [
+-        {
+-            "start_id": s["start_id"],
+-            "initial_logL": s["initial_logL"],
+-            "final_logL": s["final_logL"],
+-            "success": s["success"],
+-            "nit": s["nit"],
+-            "nfev": s["nfev"],
+-        }
+-        for s in result["starts"]
+-    ]
+-    pd.DataFrame(init_rows).to_csv(outdir / "initialization_summary.csv", index=False)
+-    np.save(outdir / "theta_mle.npy", np.asarray(theta, float))
++def write_model_outputs(*args, **kwargs):
++    raise RuntimeError("Historical MLE output writer disabled for the new target; versioned provenance required")
+ 
+ 
+ def model_dirname(model: str) -> str:
+     return model.replace("-", "_")
++
++
++
++def evaluate_loglike_components(theta, galaxies, model, H0_si=H0_SI,
++                                c0=10.0, c_slope=-0.1, *,
++                                likelihood_version=PRIMARY_B0, order=192, tick=None):
++    from .marginal_likelihood import require_version, galaxy_log_marginal
++    require_version(likelihood_version)
++    t = np.asarray(theta, float)
++    L = _layout(model, len(galaxies), True, None)
++    if t.shape != (L["k"],) or not np.all(np.isfinite(t)):
++        raise ValueError("Invalid native theta shape/value")
++    p = _unpack(t, L)
++    vals=[];records=[]
++    for gi,g in enumerate(galaxies):
++        if tick is not None: tick()
++        record=galaxy_log_marginal(g,p,gi,model,H0_si=H0_si,c0=c0,c_slope=c_slope,
++            likelihood_version=likelihood_version,order=order)
++        vals.append(record["log_marginal"]);records.append(record)
++    return {"likelihood_version":likelihood_version,"galaxy_log_marginals":vals,
++            "logL":float(np.sum(vals)),"native_parameter_count":L["k"],
++            "quadrature_order":order,"records":records}
+--- a/src/ptquat/models.py
++++ b/src/ptquat/models.py
+@@ -232,3 +232,27 @@
+ # --- Backward-compat aliases (keep old imports working) ---
+ model_v_kms = model_v_ptq
+ model_v_kms_split = model_v_ptq_split
++
++
++def catalog_velocity_at_distance(g, pars, gi, model, D_Mpc, *,
++                                 H0_si=H0_SI, c0=10.0, c_slope=-0.1):
++    """Full catalog transform at fixed angular samples and physical parameters."""
++    scale = np.asarray(D_Mpc, float) / g.D
++    if np.any(scale <= 0) or np.any(~np.isfinite(scale)):
++        raise ValueError("Nonpositive or nonfinite distance")
++    radius = g.r * scale
++    disk = g.disk * np.sqrt(scale)
++    bulge = g.bulge * np.sqrt(scale)
++    gas = g.gas * np.sqrt(scale)
++    U = float(pars["U"][gi])
++    if model == "baryon": return model_v_baryon(U, radius, disk, bulge, gas)
++    if model == "ptq": return model_v_ptq(U, pars["eps"], radius, disk, bulge, gas, H0_si=H0_si)
++    if model == "ptq-nu": return model_v_ptq_nu(U, pars["eps"], radius, disk, bulge, gas, H0_si=H0_si)
++    if model == "ptq-screen": return model_v_ptq_screen(U, pars["eps"], float(np.exp(pars["lq"])), radius, disk, bulge, gas, H0_si=H0_si)
++    if model in ("mond", "mond-screen"):
++        a0 = pars.get("a0_fixed")
++        if a0 is None: a0 = 10.0**pars["log10a0"]
++        if model == "mond": return model_v_mond(U, a0, radius, disk, bulge, gas)
++        return model_v_mond_screen(U, a0, float(np.exp(pars["lq"])), radius, disk, bulge, gas)
++    if model == "nfw1p": return model_v_nfw1p(U, float(pars["lM"][gi]), radius, disk, bulge, gas, H0_si=H0_si, c0=c0, c_slope=c_slope)
++    raise ValueError("Unsupported explicit native parameterization: " + model)
+--- /dev/null
++++ b/tests/test_uniform_target.py
+@@ -0,0 +1,92 @@
++"""Independent deterministic integration correctness and real-call firewall tests."""
++from pathlib import Path
++from types import SimpleNamespace
++import sys,json,hashlib,traceback,ast
++import numpy as np
++from scipy.special import logsumexp
++ROOT=Path(__file__).resolve().parents[2];I=ROOT.parents[2]
++sys.path.insert(0,str(ROOT/'candidate/src'))
++sys.path.insert(1,str(I/'results/frontiers_revision_2026_10/uniform_target_gate'))
++import explicit_reference as ex
++from ptquat import mle,fit_global as fg,experiments as exp,marginal_likelihood as ml,models
++from ptquat.data import load_tidy_sparc
++
++def run(out):
++    gs0=load_tidy_sparc(str(I/'dataset/sparc_tidy.csv'));gs=[gs0[k] for k in sorted(gs0)]
++    M=I/'results/frontiers_revision_2026_10/mle_recovery/original_recovered/01_mle'
++    vectors={m:np.load(M/m.replace('-','_')/'theta_mle.npy') for m in ex.laws.MODELS}
++    tests=[]
++    def check(name,fn):
++        try:r=fn();tests.append(dict(test=name,status='PASS',detail=r));print('UNIT PASS',name,flush=True)
++        except Exception as exc:tests.append(dict(test=name,status='FAIL',error=repr(exc),traceback=traceback.format_exc()));print('UNIT FAIL',name,repr(exc),flush=True)
++    def rejected(fn):
++        try:fn()
++        except (ValueError,RuntimeError,FloatingPointError):return
++        raise AssertionError('expected fail-closed exception')
++    def kernels():
++        maxerr=0
++        for g0 in gs:
++            g=SimpleNamespace(D=g0.D_Mpc,sD=g0.D_err_Mpc,inc=np.deg2rad(g0.i_deg),si=np.deg2rad(g0.i_err_deg),y=g0.v_obs,e=g0.v_err)
++            ds,wd,ii,wi,_,_=ml.nuisance_nodes(g,'segmented_quantile',192)
++            maxerr=max(maxerr,abs(wd.sum()*wi.sum()-1));assert (ds>0).all() and (ii>0).all() and (ii<np.pi/2).all()
++            for center,sigma,lo,hi in [(g.D,g.sD,0,np.inf),(g.inc,g.si,0,np.pi/2)]:
++                if sigma:
++                    z=ml.quantile_standard((lo-center)/sigma,(hi-center)/sigma,np.array([1e-14,.5,1-1e-14]));assert np.isfinite(z).all()
++        assert maxerr<=1e-12
++        return dict(galaxies=91,max_constant_integral_error=maxerr)
++    check('physical_normalized_kernels_and_i90',kernels)
++    def localdensity():
++        g=SimpleNamespace(name='synthetic',r=np.array([1.,2.]),y=np.array([80.,82.]),e=np.array([2.,2.]),disk=np.array([80.,80.]),bulge=np.zeros(2),gas=np.zeros(2),D=10.,sD=0.,inc=np.pi/3,si=0.)
++        p=dict(model='baryon',U=np.ones(1),sigma=3.,_H0=ml.H0_SI,_c0=10.,_c_slope=-.1)
++        v=ml.velocity(g,p,0,g.D);expected=-.5*(((g.y-v)**2/13)+np.log(2*np.pi*13)).sum()
++        r=ml.integrate(g,p,0,'segmented_quantile',192)
++        assert max(abs(r['logL'][f]-expected) for f in ['B0','B1'])<1e-10
++        np.testing.assert_allclose(ml.velocity(g,p,0,1.21*g.D),1.1*v,rtol=1e-13)
++        b=.8;expected1=-.5*(((g.y-b*v)**2/(4+9*b*b))+np.log(2*np.pi*(4+9*b*b))).sum()
++        assert abs(ml.conditional_logdensity(g,b*v,3.,b,'B1')-expected1)<1e-12
++        g.sD=1.;g.si=.1;ds,wd,ii,wi,_,_=ml.nuisance_nodes(g,'quantile',12);vd=ml.velocity(g,p,0,ds[:,None]);b=np.sin(ii)/np.sin(g.inc)
++        fast=ml.integrate(g,p,0,'quantile',12)
++        for f in ['B0','B1']:
++            grid=np.array([[ml.conditional_logdensity(g,b[j]*vd[k],3.,b[j],f) for j in range(len(ii))] for k in range(len(ds))]);direct=float(logsumexp(grid+np.log(wd[:,None])+np.log(wi[None,:])))
++            assert abs(direct-fast['logL'][f])<1e-10
++        return dict(zero_uncertainty=True,full_normalization=True,B0_B1=True,no_covariance_doublecount=True,independent_direct_grid=True)
++    check('conditional_Gaussian_and_baryon_counterexample',localdensity)
++    def laws():
++        gi=[g.name for g in gs].index('F574-1');g=gs[gi];ref=ex.laws.load_sample(I/'dataset/sparc_tidy.csv')[gi];maxv=0;maxd=0;maxi=0
++        view=SimpleNamespace(r=g.r_kpc,disk=g.v_disk,bulge=g.v_bulge,gas=g.v_gas,D=g.D_Mpc)
++        for m,t in vectors.items():
++            p=fg._unpack(t,fg._layout(m,91,True,None));rp=ex.laws.decode(m,t,91);jd,ji=ex.laws.derivatives(ref,rp,gi)
++            fun=lambda d:models.catalog_velocity_at_distance(view,p,gi,m,d)
++            v=fun(g.D_Mpc);rv=ex.laws.velocity(ref,rp,gi);maxv=max(maxv,float(abs(v-rv).max()));assert np.max(abs(v-rv))<=1e-9
++            for h in [1e-4,1e-5,1e-6]:
++                hd=h*g.D_Mpc;fd=(fun(g.D_Mpc+hd)-fun(g.D_Mpc-hd))/(2*hd);err=np.linalg.norm(fd-jd)/max(np.linalg.norm(jd),1e-10);maxd=max(maxd,float(err));assert err<=1e-6
++                i=np.deg2rad(g.i_deg);fi=(np.sin(i+h)-np.sin(i-h))/(2*h*np.sin(i))*v;err=np.linalg.norm(fi-ji)/max(np.linalg.norm(ji),1e-10);maxi=max(maxi,float(err));assert err<=1e-6
++            if m!='nfw1p':np.testing.assert_allclose(fun(1.2*g.D_Mpc),v*np.sqrt(1.2),rtol=1e-12)
++            else:assert not np.allclose(fun(1.2*g.D_Mpc),v*np.sqrt(1.2),rtol=1e-4)
++        old=ast.parse((I/'src/ptquat/models.py').read_text());new=ast.parse((ROOT/'candidate/src/ptquat/models.py').read_text());nd={n.name:ast.dump(n) for n in new.body if isinstance(n,ast.FunctionDef)}
++        assert all(nd[n.name]==ast.dump(n) for n in old.body if isinstance(n,ast.FunctionDef))
++        return dict(all_original_law_bodies_unchanged=True,max_prediction_abs=maxv,max_D_relative=maxd,max_i_relative=maxi,FD_steps=[1e-4,1e-5,1e-6])
++    check('all7_native_laws_derivatives_units_NFW',laws)
++    def firewalls():
++        t=vectors['mond'];g=gs[0];L=fg._layout('mond',91,True,None)
++        for f in [exp.compare_models_waic,exp.loo_compare_models,exp.ppc_check,exp.kappa_per_galaxy,exp._call_fit]:rejected(lambda:f())
++        rejected(lambda:fg.log_likelihood_per_galaxy(t,gs,4.,ml.H0_SI,L,10.,-.1,None,ml.PRIMARY_B0,8.))
++        rejected(lambda:mle.evaluate_loglike(t,gs,'mond',likelihood_version='gauss'))
++        rejected(lambda:fg.run([]));rejected(lambda:mle.optimize_mle());rejected(lambda:ml.galaxy_log_marginal(g,fg._unpack(t,L),0,'mond',order=32))
++        for u in [0.,1.,np.nan]:rejected(lambda:ml.quantile_standard(-5,np.inf,[u]))
++        rejected(lambda:ml.conditional_logdensity(SimpleNamespace(y=np.array([1.]),e=np.array([0.])),np.array([1.]),0.,1.,'B0'))
++        bad=t.copy();bad[0]=np.nan;rejected(lambda:mle.evaluate_loglike(bad,gs,'mond'))
++        bad=t.copy();bad[-1]=99;rejected(lambda:mle.objective_neg_loglike(bad,gs,'mond',ml.H0_SI))
++        # Invalid conditional source must propagate through real production public path.
++        import dataclasses
++        badg=dataclasses.replace(g,D_Mpc=-1.)
++        rejected(lambda:mle.galaxy_loglike(t,[badg]+gs[1:],0,'mond'))
++        return dict(primary_radius_diagnostics_blocked=True,unsupported_version_rejected=True,exceptions_propagate=True,MCMC_disabled=True)
++    check('real_imports_predictive_firewall_failclosed',firewalls)
++    def source():
++        h=json.loads((ROOT/'SOURCE_HASHES_BEFORE.json').read_text());bad=[p for p,v in h.items() if hashlib.sha256(Path(p).read_bytes()).hexdigest()!=v];assert not bad,bad
++        return dict(verified=len(h),changed=0)
++    check('source_immutability',source)
++    (out/'unit_tests.json').write_text(json.dumps(tests,indent=2)+'\n')
++    assert all(x['status']=='PASS' for x in tests),'local tests fail; no full sample or optimizer authorized'
++    return gs,vectors

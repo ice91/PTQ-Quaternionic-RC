@@ -1,0 +1,89 @@
+{
+  "frozen_utc": "2026-10-28T12:01:15.930331Z",
+  "local_real_cases": [
+    "ESO444-G084",
+    "UGC03205",
+    "UGC06614"
+  ],
+  "model_order": [
+    "baryon",
+    "mond",
+    "ptq",
+    "ptq-nu",
+    "ptq-screen",
+    "mond-screen",
+    "nfw1p"
+  ],
+  "synthetic_cases": [
+    "minimal baryon D0=10,v0=80,U=1",
+    "unit conversion control, scaled D units/radian-degree",
+    "NFW at r=0.2,1,10,40kpc fixed logM=11",
+    "inclination boundary i0=90deg synthetic second-order sensitivity"
+  ],
+  "FD_relative_steps": [
+    0.001,
+    0.0001,
+    1e-05
+  ],
+  "test_acceptance": {
+    "finest_J_relative_L2": 1e-06,
+    "finest_J_absolute": 1e-05,
+    "mean_comparison_abs": 1e-09,
+    "covariance_relative": 1e-10,
+    "logL_abs": 1e-08,
+    "identity_logL_abs": 1e-08,
+    "quadrature_last_two_abs": 0.001,
+    "prior_weight_sum_error": 1e-10
+  },
+  "scientific_effect_flags": {
+    "abs_delta_logL": 1.0,
+    "nonlinear_minus_matched_linear_abs": 0.1,
+    "tail_T5_T4_abs": 0.01,
+    "floor_B1_B0_abs": 0.1,
+    "note": "diagnostic flags; not universal validity thresholds"
+  },
+  "local_tests": [
+    "minimal counterexample",
+    "analytic vs FD distance",
+    "inclination fixed frame",
+    "distance/radian units",
+    "SPD",
+    "quadratic/logdet/normalization independent solve + 1D integral",
+    "parameter dependent recalculation",
+    "matched-family identity",
+    "restricted NFW derivative",
+    "immutability"
+  ],
+  "nuisance_cases": [
+    "ESO444-G084",
+    "UGC03205",
+    "UGC06614"
+  ],
+  "nuisance_tail_T": [
+    3.0,
+    4.0,
+    5.0
+  ],
+  "quadrature_orders": [
+    64,
+    128,
+    256
+  ],
+  "quadrature_models": [
+    "B0 nonlinear",
+    "B1 nonlinear",
+    "B0 linear conditional mean; same truncated measure"
+  ],
+  "operating_regime": "nominal local linear reference; no implied uniform bound over91 galaxies or optimizer domain",
+  "full_sample_gate": "only after all hard local correctness tests PASS; do not stop on scientific sensitivity flag but preserve it; hard identity/normalization/spec conflict stops",
+  "full_sample_outputs": "637 rows original/corrected components,Cdiff/physical diagnostics;7 totals;364 bidirectional matched galaxy checks",
+  "budget": "<=20min; 3gal*7models*3tails*3orders*3integrands <=1.7e7 node-density eval; no quadrature above256; no fitting, profile, new data or cases selected from residuals",
+  "stop_rules": [
+    "hard local test FAIL => no full sample",
+    "reference identity FAIL => STOP",
+    "normalization/coordinate inconsistent => STOP",
+    "source drift or existing output overwrite => STOP",
+    "quadrature nonconvergence retained => approximation CONDITIONAL, do not retune tests",
+    "large likelihood effects do not trigger optimization"
+  ]
+}

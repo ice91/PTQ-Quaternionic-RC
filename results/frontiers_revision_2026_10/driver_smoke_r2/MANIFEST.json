@@ -1,0 +1,43 @@
+{
+  "task": "REV26-P1F-R2",
+  "label": "ENGINEERING_SMOKE_ONLY \u2014 NOT CORRECTED MLE",
+  "verdicts": {
+    "DRIVER_WIRING": "PASS",
+    "PTQ_SCREEN_STEP": "ACCEPTED_AND_NUMERICALLY_VALIDATED",
+    "NFW_STEP": "ACCEPTED_AND_NUMERICALLY_VALIDATED",
+    "SCIENTIFIC_CAMPAIGN_READINESS": "READY_FOR_BOUNDED_P1G_AUTHORIZATION"
+  },
+  "numerical_root": "/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/driver_smoke_r2",
+  "reports_root": "/Users/rocky/ptq-mond/docs/frontiers_major_revision_2026_10/rev26_p1f_r2_driver_smoke",
+  "reports": [
+    "00_EXECUTIVE_VERDICT.md",
+    "01_DRIVER_INTEGRATION_AND_CALL_GRAPH.md",
+    "02_PREFLIGHT_PARITY.md",
+    "03_FROZEN_SMOKE_PROTOCOL.md",
+    "04_PTQ_SCREEN_SMOKE.md",
+    "05_NFW_SMOKE.md",
+    "06_ACCEPTED_STEP_AND_PRECISION_AUDIT.md",
+    "07_WORK_AND_WARNING_TELEMETRY.md",
+    "08_INDEPENDENT_REVIEW.md",
+    "09_SCIENTIFIC_CAMPAIGN_READINESS.md",
+    "10_NEXT_EXECUTION_PROMPT.md",
+    "SOURCE_PRESERVATION.md"
+  ],
+  "isolated_source": "candidate",
+  "patch": "integration_from_R1.diff",
+  "source_manifest": "SOURCE_MANIFEST.json",
+  "failure_manifest": "FAILURE_MANIFEST.json",
+  "checksums": "SHA256SUMS",
+  "execution": "EXECUTION_INDEX.json",
+  "actual_optimizer_assets": "execution_v1",
+  "synthetic_only_assets": [
+    "controls_v1",
+    "controls_v2"
+  ],
+  "verified_results": "analysis_v1/VALIDATED_RESULTS.json",
+  "protocol": "SMOKE_PROTOCOL.json",
+  "protocol_sha256": "aefe3ebc8f0500ae3fd79eb39305da7e3025cc2b237d9df7dac0c7be3db4f6dc",
+  "inactive_next_plan": "INACTIVE_P1G_PLAN.json",
+  "scientific_fitting_campaign_executed": false,
+  "canonical_installed": false
+}

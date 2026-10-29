@@ -1,0 +1,227 @@
+from pathlib import Path
+import ast,json,difflib
+B=Path(__file__).resolve().parent;I=B.parents[2];W=B/'candidate';E=I/'results/frontiers_revision_2026_10/uniform_target_gate'
+if (B/'integration.diff').exists():raise FileExistsError('candidate already built')
+# No changes to any original physical law body.
+p=W/'src/ptquat/models.py';s=p.read_text();s+='''
+
+def catalog_velocity_at_distance(g, pars, gi, model, D_Mpc, *,
+                                 H0_si=H0_SI, c0=10.0, c_slope=-0.1):
+    """Full catalog transform at fixed angular samples and physical parameters."""
+    scale = np.asarray(D_Mpc, float) / g.D
+    if np.any(scale <= 0) or np.any(~np.isfinite(scale)):
+        raise ValueError("Nonpositive or nonfinite distance")
+    radius = g.r * scale
+    disk = g.disk * np.sqrt(scale)
+    bulge = g.bulge * np.sqrt(scale)
+    gas = g.gas * np.sqrt(scale)
+    U = float(pars["U"][gi])
+    if model == "baryon": return model_v_baryon(U, radius, disk, bulge, gas)
+    if model == "ptq": return model_v_ptq(U, pars["eps"], radius, disk, bulge, gas, H0_si=H0_si)
+    if model == "ptq-nu": return model_v_ptq_nu(U, pars["eps"], radius, disk, bulge, gas, H0_si=H0_si)
+    if model == "ptq-screen": return model_v_ptq_screen(U, pars["eps"], float(np.exp(pars["lq"])), radius, disk, bulge, gas, H0_si=H0_si)
+    if model in ("mond", "mond-screen"):
+        a0 = pars.get("a0_fixed")
+        if a0 is None: a0 = 10.0**pars["log10a0"]
+        if model == "mond": return model_v_mond(U, a0, radius, disk, bulge, gas)
+        return model_v_mond_screen(U, a0, float(np.exp(pars["lq"])), radius, disk, bulge, gas)
+    if model == "nfw1p": return model_v_nfw1p(U, float(pars["lM"][gi]), radius, disk, bulge, gas, H0_si=H0_si, c0=c0, c_slope=c_slope)
+    raise ValueError("Unsupported explicit native parameterization: " + model)
+''';p.write_text(s)
+# Port accepted numerical kernel, replacing only frozen reference-law adapter and research budget.
+s=(E/'explicit_reference.py').read_text();a=s.index('B=Path(');z=s.index('def validate_prior',a)
+s=s[:a]+'''from types import SimpleNamespace
+from .models import catalog_velocity_at_distance
+from .constants import H0_SI
+PRIMARY_B0 = "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1"
+SENSITIVITY_B1 = "REV26-P1E-UNIFORM-EXPLICIT-B1-PHYSICAL-v1"
+LEGACY_DIAGONALIZED_SENSITIVITY = "LEGACY_DIAGONALIZED_SENSITIVITY"
+ORDER_FINE = 192
+ORDER_COARSE = 96
+
+
+def require_version(version):
+    if version not in (PRIMARY_B0, SENSITIVITY_B1):
+        raise ValueError("Unsupported primary likelihood version: " + str(version))
+    return "B0" if version == PRIMARY_B0 else "B1"
+
+
+def velocity(g, pars, gi, D):
+    return catalog_velocity_at_distance(g, pars, gi, pars["model"], D,
+        H0_si=pars["_H0"], c0=pars["_c0"], c_slope=pars["_c_slope"])
+
+
+'''+s[z:]
+s=s.replace(' global NODE_EVALUATIONS\n','')
+a=s.index(' if NODE_EVALUATIONS+nn>');z=s.index(' if p[\'sigma\']',a);s=s[:a]+s[z:]
+s=s.replace(" vd=laws.velocity(g,p,gi,ds[:,None]);b=np.sin(incs)/np.sin(g.inc);v0=laws.velocity(g,p,gi);jd,ji=laws.derivatives(g,p,gi)"," if linear: raise ValueError('Linearized mean is not the primary marginal target')\n vd=velocity(g,p,gi,ds[:,None]);b=np.sin(incs)/np.sin(g.inc)")
+a=s.index('  if linear:\n');z=s.index('  for start in range',a);s=s[:a]+s[z:]
+s=s.replace("v=vd[start:end] if not linear else v0[None,:]+jd[None,:]*(ds[start:end,None]-g.D)","v=vd[start:end]")
+s=s.replace("Q=Y2[None,:]-2*cross+(vv) if linear else Y2[None,:]-2*b[None,:]*cross+b[None,:]**2*vv","Q=Y2[None,:]-2*b[None,:]*cross+b[None,:]**2*vv")
+s=s.replace("scale=Y2[None,:]+2*np.abs(cross)+(np.abs(vv)) if linear else Y2[None,:]+2*np.abs(b[None,:]*cross)+b[None,:]**2*np.abs(vv)","scale=Y2[None,:]+2*np.abs(b[None,:]*cross)+b[None,:]**2*np.abs(vv)")
+s=s.replace(' NODE_EVALUATIONS+=nn\n','')
+s+='''
+
+
+def galaxy_log_marginal(galaxy, pars, gi, model, *, likelihood_version=PRIMARY_B0,
+                        H0_si=H0_SI, c0=10.0, c_slope=-0.1, order=ORDER_FINE):
+    floor = require_version(likelihood_version)
+    if order not in (ORDER_FINE, ORDER_COARSE):
+        raise ValueError("Only frozen fine/coarse quadrature orders are supported")
+    g = SimpleNamespace(name=galaxy.name, r=galaxy.r_kpc, y=galaxy.v_obs,
+        e=galaxy.v_err, disk=galaxy.v_disk, bulge=galaxy.v_bulge,
+        gas=galaxy.v_gas, D=float(galaxy.D_Mpc), sD=float(galaxy.D_err_Mpc),
+        inc=float(np.deg2rad(galaxy.i_deg)), si=float(np.deg2rad(galaxy.i_err_deg)))
+    p = dict(pars, model=model, _H0=H0_si, _c0=c0, _c_slope=c_slope)
+    record = integrate(g, p, gi, "segmented_quantile", order, floors=(floor,))
+    record["likelihood_version"] = likelihood_version
+    record["galaxy"] = galaxy.name
+    record["log_marginal"] = record["logL"][floor]
+    record["conditional_normalization"] = "full sum(log(2*pi*variance)) at every node"
+    return record
+'''
+assert 'laws.' not in s and 'NODE_EVALUATIONS' not in s
+(W/'src/ptquat/marginal_likelihood.py').write_text(s)
+# AST-based replace bodies while keeping legacy code private for explicit diagnostic firewall only.
+def replace_functions(path,replacements,retain=False):
+ s=path.read_text();tree=ast.parse(s);lines=s.splitlines(True);starts=[0]
+ for line in lines:starts.append(starts[-1]+len(line))
+ edits=[]
+ for node in tree.body:
+  if isinstance(node,ast.FunctionDef) and node.name in replacements:
+   old=''.join(lines[node.lineno-1:node.end_lineno]);new=replacements[node.name]
+   if retain:new=old.replace('def '+node.name+'(','def _legacy_'+node.name+'(',1)+'\n\n'+new
+   edits.append((starts[node.lineno-1],starts[node.end_lineno],new+'\n'))
+ for a,z,new in sorted(edits,reverse=True):s=s[:a]+new+s[z:]
+ path.write_text(s)
+common='''theta, galaxies, sigma_sys_fixed, H0_si, L, c0, c_slope, a0_fixed, like_kind, t_dof'''
+replacements={
+'log_likelihood':f'''def log_likelihood({common}):
+    """Primary objective: sum of galaxy log-marginals, never pointwise factorization."""
+    return float(np.sum(log_likelihood_full_per_galaxy({common})))''',
+'log_likelihood_full_per_galaxy':f'''def log_likelihood_full_per_galaxy({common}):
+    from .marginal_likelihood import require_version, galaxy_log_marginal
+    require_version(like_kind)
+    if np.asarray(theta).shape != (L["k"],) or not np.all(np.isfinite(theta)):
+        raise ValueError("Invalid native theta")
+    pars = _unpack(theta, L)
+    pars["sigma"] = pars.get("sigma", sigma_sys_fixed)
+    pars["a0_fixed"] = a0_fixed
+    return np.asarray([galaxy_log_marginal(g, pars, gi, L["model"],
+        likelihood_version=like_kind, H0_si=H0_si, c0=c0, c_slope=c_slope)["log_marginal"]
+        for gi, g in enumerate(galaxies)], float)''',
+'log_likelihood_per_galaxy':f'''def log_likelihood_per_galaxy({common}):
+    from .marginal_likelihood import LEGACY_DIAGONALIZED_SENSITIVITY
+    if like_kind != LEGACY_DIAGONALIZED_SENSITIVITY:
+        raise ValueError("Explicit nuisance marginal is NOT a per-radius likelihood; use full per-galaxy log-marginals")
+    return _legacy_log_likelihood_per_galaxy(theta, galaxies, sigma_sys_fixed, H0_si,
+        L, c0, c_slope, a0_fixed, "gauss", t_dof)'''}
+replace_functions(W/'src/ptquat/fit_global.py',replacements,True)
+p=W/'src/ptquat/fit_global.py';s=p.read_text().replace('def run(argv=None):\n','def run(argv=None):\n    raise RuntimeError("Historical MCMC CLI disabled: use the versioned explicit MLE/smoke driver; no sampling authorized")\n',1);p.write_text(s)
+# MLE public endpoints all route explicit target; exceptions propagate, no fake1e50 fallback.
+replace_functions(W/'src/ptquat/mle.py',{
+'objective_neg_loglike':'''def objective_neg_loglike(theta, galaxies, model, H0_si, c0=10.0, c_slope=-0.1, *, likelihood_version=PRIMARY_B0):
+    from .marginal_likelihood import require_version
+    require_version(likelihood_version)
+    t = np.asarray(theta, float)
+    bounds = theta_bounds(model, len(galaxies), H0_si)
+    if t.shape != (len(bounds),) or not np.all(np.isfinite(t)):
+        raise ValueError("Invalid native parameter vector")
+    if not all(lo <= v <= hi for v, (lo, hi) in zip(t, bounds)):
+        raise ValueError("Native parameters outside hard bounds")
+    return -evaluate_loglike(t, galaxies, model, H0_si, c0, c_slope, likelihood_version=likelihood_version)''',
+'evaluate_loglike':'''def evaluate_loglike(theta, galaxies, model, H0_si=H0_SI, c0=10.0, c_slope=-0.1, *, likelihood_version=PRIMARY_B0):
+    values = evaluate_loglike_components(theta, galaxies, model, H0_si, c0, c_slope,
+        likelihood_version=likelihood_version)
+    return float(np.sum(values["galaxy_log_marginals"]))''',
+'galaxy_loglike':'''def galaxy_loglike(theta, galaxies, gi, model, H0_si=H0_SI, c0=10.0, c_slope=-0.1, *, likelihood_version=PRIMARY_B0):
+    from .marginal_likelihood import galaxy_log_marginal
+    L = _layout(model, len(galaxies), True, None)
+    p = _unpack(np.asarray(theta, float), L)
+    return float(galaxy_log_marginal(galaxies[gi], p, gi, model, likelihood_version=likelihood_version,
+        H0_si=H0_si, c0=c0, c_slope=c_slope)["log_marginal"])''',
+'optimize_mle':'''def optimize_mle(*args, **kwargs):
+    raise RuntimeError("Legacy unbudgeted multistart driver disabled; use version-specific bounded driver")''',
+'write_model_outputs':'''def write_model_outputs(*args, **kwargs):
+    raise RuntimeError("Historical MLE output writer disabled for the new target; versioned provenance required")'''},False)
+p=W/'src/ptquat/mle.py';s=p.read_text().replace('from .constants import C_LIGHT, H0_SI','from .marginal_likelihood import PRIMARY_B0, SENSITIVITY_B1\nfrom .constants import C_LIGHT, H0_SI',1)
+s+='''
+
+
+def evaluate_loglike_components(theta, galaxies, model, H0_si=H0_SI,
+                                c0=10.0, c_slope=-0.1, *,
+                                likelihood_version=PRIMARY_B0, order=192, tick=None):
+    from .marginal_likelihood import require_version, galaxy_log_marginal
+    require_version(likelihood_version)
+    t = np.asarray(theta, float)
+    L = _layout(model, len(galaxies), True, None)
+    if t.shape != (L["k"],) or not np.all(np.isfinite(t)):
+        raise ValueError("Invalid native theta shape/value")
+    p = _unpack(t, L)
+    vals=[];records=[]
+    for gi,g in enumerate(galaxies):
+        if tick is not None: tick()
+        record=galaxy_log_marginal(g,p,gi,model,H0_si=H0_si,c0=c0,c_slope=c_slope,
+            likelihood_version=likelihood_version,order=order)
+        vals.append(record["log_marginal"]);records.append(record)
+    return {"likelihood_version":likelihood_version,"galaxy_log_marginals":vals,
+            "logL":float(np.sum(vals)),"native_parameter_count":L["k"],
+            "quadrature_order":order,"records":records}
+''';p.write_text(s)
+# Explicit historical diagnostic labels; no accidental modern pointwise predictive factorization.
+p=W/'src/ptquat/likelihood.py';s=p.read_text();s=s.replace('# src/ptquat/likelihood.py','# src/ptquat/likelihood.py\n# Gaussian/covariance utilities are LEGACY_DIAGONALIZED_SENSITIVITY for the new primary target.',1);p.write_text(s)
+p=W/'src/ptquat/experiments.py';s=p.read_text();s=s.replace('from .plotting import plot_residual_plateau, plot_ppc_hist','''# Optional plotting dependencies are loaded only for explicit legacy descriptive calls.
+def plot_residual_plateau(*a, **k):
+    from .plotting import plot_residual_plateau as plot
+    return plot(*a, **k)
+def plot_ppc_hist(*a, **k):
+    from .plotting import plot_ppc_hist as plot
+    return plot(*a, **k)''',1)
+s+='''
+
+# Primary predictive firewall: no radius-level marginal factorization or ranking.
+from functools import wraps as _wraps
+from .marginal_likelihood import PRIMARY_B0, LEGACY_DIAGONALIZED_SENSITIVITY
+
+def _legacy_diagnostic_only(fn):
+    @_wraps(fn)
+    def guarded(*args, likelihood_version=PRIMARY_B0, **kwargs):
+        if likelihood_version != LEGACY_DIAGONALIZED_SENSITIVITY:
+            raise ValueError("LEGACY_DIAGONALIZED_SENSITIVITY only; unsupported for explicit primary target")
+        return fn(*args, **kwargs)
+    return guarded
+
+for _name in ("_call_fit", "ppc_check", "kappa_per_galaxy", "kappa_radius_resolved",
+              "kappa_geom_per_galaxy", "kappa_radius_resolved_geom", "compare_models_waic",
+              "loo_compare_models", "_write_pwaic_diagnostics"):
+    if _name in globals(): globals()[_name] = _legacy_diagnostic_only(globals()[_name])
+# Every function containing a historical covariance call is explicitly legacy-only.
+import ast as _ast
+from pathlib import Path as _Path
+_tree = _ast.parse(_Path(__file__).read_text())
+for _node in _tree.body:
+    if isinstance(_node, _ast.FunctionDef) and any(
+        isinstance(x, _ast.Call) and isinstance(x.func, _ast.Name)
+        and x.func.id == "build_covariance" for x in _ast.walk(_node)):
+        globals()[_node.name] = _legacy_diagnostic_only(globals()[_node.name])
+
+def per_galaxy_log_marginals(theta, galaxies, model, *, likelihood_version=PRIMARY_B0):
+    from .fit_global import _layout, log_likelihood_full_per_galaxy
+    return log_likelihood_full_per_galaxy(theta, galaxies,4.0,H0_SI,
+        _layout(model,len(galaxies),True,None),10.0,-0.1,None,likelihood_version,8.0)
+
+def descriptive_residuals(theta, galaxies, model):
+    from .fit_global import _layout,_unpack
+    from .marginal_likelihood import galaxy_log_marginal
+    from types import SimpleNamespace
+    from .models import catalog_velocity_at_distance
+    p=_unpack(theta,_layout(model,len(galaxies),True,None));rows=[]
+    for gi,g in enumerate(galaxies):
+        view=SimpleNamespace(r=g.r_kpc,disk=g.v_disk,bulge=g.v_bulge,gas=g.v_gas,D=g.D_Mpc)
+        v=catalog_velocity_at_distance(view,p,gi,model,g.D_Mpc)
+        rows.append({"galaxy":g.name,"residual":g.v_obs-v,"interpretation":"DESCRIPTIVE_RESIDUAL_ONLY_NOT_POINTWISE_MARGINAL"})
+    return rows
+''';p.write_text(s)
+# Decomposition and cache data explicitly are primary per-galaxy quantities, not pointwise WAIC.
+for p in (W/'src/ptquat').glob('*.py'):ast.parse(p.read_text())
+print('candidate integration built; driver will be added separately')

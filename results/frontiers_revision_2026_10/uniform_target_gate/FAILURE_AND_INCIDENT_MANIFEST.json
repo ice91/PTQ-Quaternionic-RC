@@ -1,0 +1,22 @@
+{
+  "pre_execution_incidents": [
+    {
+      "source": "run_acceptance_syntax_failure_v0.txt",
+      "log": "acceptance_syntax_failure_v0.log",
+      "issue": "missingwhitespace else199.999 SyntaxError before any scientificcomputation",
+      "resolution": "whitespacefixed;statistical/numericalcontractunchanged"
+    }
+  ],
+  "numerical_policy_failures": {
+    "method": "unsegmentedquantile512vs256",
+    "failed_rows": 2,
+    "source": "UNSEGMENTED_QUANTILE_ACCEPTANCE_FAILURES.csv",
+    "resolution": "predeclaredglobal switch tosame-targetsegmentedquantile"
+  },
+  "main_exceptions": [],
+  "selected_policy_pergal_acceptance_failures": 0,
+  "neighborhood_failures": 0,
+  "all_attempts_retained": true,
+  "independent_warning_note": "NumPy matmulFPE warningslogged;alloutputsfinite,directdensitycomparisonpasses",
+  "prior_P1D_incident": "preservedunchanged;onlypostprocessing_v2usedfordecomposition"
+}

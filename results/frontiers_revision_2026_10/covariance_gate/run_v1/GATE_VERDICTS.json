@@ -1,0 +1,55 @@
+{
+  "overall_verdict": "COVARIANCE_CORRECTION_REQUIRED_BEFORE_REFIT",
+  "verdicts": {
+    "HISTORICAL_OBJECTIVE_REPLAY": {
+      "status": "PASS",
+      "evidence": "authenticated P1A fixed-vector objective replay max delta 4.547473508864641e-12; source hashes unchanged; not rerun/discovery"
+    },
+    "FULL_RESIDUAL_JACOBIAN": {
+      "status": "FAIL",
+      "evidence": "missing distance-template amplitude derivative; transformed-observation Ji differs from model-based Ji; fixed-frame mean Ji matches production sign-oriented"
+    },
+    "PARAMETER_DEPENDENT_COVARIANCE": {
+      "status": "PASS",
+      "evidence": "168 prescribed callback evaluations; updated C/logdet, complete normalization, 0 callback endpoint delta; no optimizer driver"
+    },
+    "LINEARIZED_NUISANCE_APPROXIMATION": {
+      "status": "FAIL",
+      "evidence": "frozen covariance fails source-backed distance propagation; B0-A differences up to about 2.83916 logL for a selected galaxy; conditional corrected-D linearization separate limited finding"
+    },
+    "MATCHED_MODEL_IDENTITY": {
+      "status": "PASS",
+      "evidence": "108 matched point comparisons, complete likelihood/covariance identity within predeclared thresholds"
+    }
+  },
+  "statistics": {
+    "finest_fd_analytic_max_abs": 2.8787610517611032e-08,
+    "finest_fd_analytic_max_rel_norm": 1.0405769604850594e-09,
+    "coarse_failed_rows": 45,
+    "finest_cases_pass": 135,
+    "callback_max_abs_delta": 0.0,
+    "independent_galaxy_max_abs_delta": 5.968558980384843e-13,
+    "captured_C_max_rel": 1.8776420122137633e-13,
+    "matched_C_max_rel": 3.433645105976813e-13,
+    "matched_logL_max_abs": 6.110667527536862e-12,
+    "distance_only_real_min_delta_logL": -2.827114314097372,
+    "distance_only_real_max_delta_logL": 1.4705343101014137,
+    "distance_only_real_max_C_relative": 6.1674694605980775,
+    "quadrature_max_128_64": 0.0003970349619706326,
+    "quadrature_converged_cases": 42,
+    "quadrature_total_cases": 42,
+    "B0_minus_A_min": -2.83915672187743,
+    "B0_minus_A_max": 0.1007617597323999,
+    "B0_minus_fullD_max_abs": 0.0833717807745131,
+    "B1_minus_fullD_max_abs": 1.0874913052477808,
+    "prior_weight_max_error": 2.824407374646398e-13,
+    "matrices_spd": 303
+  },
+  "optimization_performed": false,
+  "original_MLE_tables": "retain immutable historical replay artifacts only; not validated estimates for corrected statistical specification",
+  "production_correction": "necessary before using full-distance-propagation claims; requires Human Arbiter approval",
+  "new_fitting": "not authorized or run; authorize only after corrected specification and read-only verification",
+  "parameter_and_ranking_impact": "UNKNOWN_PENDING_REFIT",
+  "observation_scope": "catalog-level global D/i convention; image-based inclination/template reconstruction and D/i correlations unavailable",
+  "reviewer_request_source": "original R1 C3/R2 C2 not found; author supplied numbering only; provisional response cannot quote actual requests"
+}

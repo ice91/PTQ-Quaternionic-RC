@@ -1,0 +1,38 @@
+{
+  "status": "INACTIVE_REQUIRES_STATISTICAL_SPECIFICATION_DECISION",
+  "can_run": false,
+  "likelihood_candidate": "REV26-P1D-B0-FULLD-GAUSS-CANDIDATE-v1",
+  "alternative": "REV26-P1D-UNIFORM-EXPLICIT-PROPOSAL-v1,notimplemented",
+  "seven_models": {
+    "baryon": 92,
+    "mond": 93,
+    "ptq": 93,
+    "ptq-nu": 93,
+    "ptq-screen": 94,
+    "mond-screen": 94,
+    "nfw1p": 183
+  },
+  "seeds_proposed_not_used": [
+    42,
+    104729,
+    20261028
+  ],
+  "historical_best_as_start_only": true,
+  "no_start_vectors_generated": true,
+  "convergence_design": "ifauthorized:fixeddata/target/environment;L-BFGS-B/scaledcoordinates and fixedblocks with fullC recomputation;function and stationarity gates;separateNFW reviewer-approved multistart budget",
+  "starts_record": "completeinitial/finalvectors,RNGstate,allstartobjectives,termination/bounds/KKT/gradientdiagnostics;nooverwrites",
+  "KKT_design": "scaledcoordinate projectedgradient infinity norm<=1e-4,interiorcentralgradient;one-sidedboundchecks;relativeobjective stability1e-8 over3acceptediterations;crossstart tolerance1e-4 logL fornonNFW;all gatesprovisional forauthorreview",
+  "uncertainties": "afterconvergedauthorizedfit:profilepriorities q,acceleration,sigma_sys withboundary interpretation;noCIfromhistoricalmedians",
+  "B1_plan": "predeclare allseven target-consistent sensitivity;neverchoosebyranking",
+  "information_criteria": "computeonlyfromactuallyoptimizedvalues;ifauthorizedBIC_NPOINTS uses1782descriptiveconventionunderwithin-galaxycorrelation,noNefftheorem",
+  "new_run_id": "reestimated/<likelihood-version>/<run-id>; preserveoriginal_recovered and01_mle",
+  "authorization_needed": [
+    "statisticaltarget/floor policy",
+    "new targetall91numericalvalidationifchosen",
+    "canonicalproductionpatch",
+    "fittingstartsandbudget",
+    "NFWconvergencepacket",
+    "uncertainty/profilecalculations",
+    "manuscriptreplacement"
+  ]
+}

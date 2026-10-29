@@ -1,0 +1,5 @@
+OPTIMIZER G ptq-screen 1 eq 0.0 wall 0.0
+OPTIMIZER G ptq-screen 2 eq 0.0 wall 0.0
+ACCEPTED CALLBACK ptq-screen advanced True
+RUN RESULT ptq-screen ACCEPTED_AND_NUMERICALLY_VALIDATED
+DRIVER UNIT PASS 17 syntheticonly; zerooptimizer zeroactualgal

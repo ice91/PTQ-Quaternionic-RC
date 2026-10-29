@@ -1,0 +1,59 @@
+=== R1B PREFLIGHT 2026-08-07T10:52:04Z ===
+PROJECT_ROOT=/Users/rocky/ptq-mond
+IMPL_ROOT=/Users/rocky/ptq-mond/PTQ-Quaternionic-RC
+impl_HEAD=9f80b41a284bbbc2f11f147dd0e0580c39c9d917
+expected_HEAD=9f80b41a284bbbc2f11f147dd0e0580c39c9d917
+outer_HEAD=0dfbcca0e94cf976e09857984418ce73bee5518d
+HEAD_MATCH=YES
+
+=== ref/ ===
+REF_PRESENT
+/Users/rocky/ptq-mond/ref/PTQ熱力學4.pdf
+/Users/rocky/ptq-mond/ref/preprints202604.1054.v2.pdf
+/Users/rocky/ptq-mond/ref/preprints202604.0888.v1.pdf
+/Users/rocky/ptq-mond/ref/.DS_Store
+/Users/rocky/ptq-mond/ref/preprints202507.2429.v2.pdf
+/Users/rocky/ptq-mond/ref/symmetry-18-00170-v2.pdf
+/Users/rocky/ptq-mond/ref/preprints202601.0352.v1.pdf
+/Users/rocky/ptq-mond/ref/preprints202502.2222.v3.pdf
+/Users/rocky/ptq-mond/ref/preprints202607.0976.v1.pdf
+
+=== main2.tex SHA256 ===
+b93bb80ecc0b73c6c6264ed279782fbe0da4c3d4fe738c1e473a49182061473a  /Users/rocky/ptq-mond/main2.tex
+
+=== historical immutability inventory (sha256 of key files) ===
+python= /Users/rocky/ptq-mond/PTQ-Quaternionic-RC/.venv/bin/python
+ptquat= /Users/rocky/ptq-mond/PTQ-Quaternionic-RC/src/ptquat/__init__.py
+IMPORT_OK=YES
+=== historical summaries ===
+baseline_breakdown.csv
+baseline_compare_table.csv
+baseline_compare_table.tex
+baseline_loo_table.csv
+baseline_model_compare.csv
+baseline_sixmodels_summary.md
+baseline_sixmodels_table.tex
+
+=== R1B MLE RUN START 2026-08-07T10:56:27Z ===
+cmd: python scripts/run_scientific_hardening_mle.py --maxiter 400 --n-perturb 3
+[R1B] N_gal=91 N_points=1782
+[R1B] optimizing baryon ...
+
+=== R1B MLE RUN (block-coordinate) START 2026-08-07T11:11:25Z ===
+[R1B] N_gal=91 N_points=1782
+[R1B] optimizing baryon ...
+[R1B] baryon: max_logL=-8826.776935 AIC=17837.554 best_start=perturb_0 crossΔ=1.273e-11
+[R1B] optimizing mond ...
+[R1B] mond: max_logL=-6663.422141 AIC=13512.844 best_start=perturb_0 crossΔ=8.115e-08
+[R1B] optimizing ptq ...
+[R1B] ptq: max_logL=-7138.535286 AIC=14463.071 best_start=perturb_1 crossΔ=1.520e-08
+[R1B] optimizing ptq-nu ...
+[R1B] ptq-nu: max_logL=-6663.422141 AIC=13512.844 best_start=perturb_1 crossΔ=3.778e-08
+[R1B] optimizing ptq-screen ...
+[R1B] ptq-screen: max_logL=-6663.050634 AIC=13514.101 best_start=perturb_0 crossΔ=5.520e-03
+[R1B] optimizing mond-screen ...
+[R1B] mond-screen: max_logL=-6663.035476 AIC=13514.071 best_start=perturb_0 crossΔ=2.068e-02
+[R1B] optimizing nfw1p ...
+[R1B] nfw1p: max_logL=-6508.169660 AIC=13382.339 best_start=perturb_1 crossΔ=2.912e+01
+[R1B] done /Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/scientific_hardening_r1/01_mle
+EXIT=0

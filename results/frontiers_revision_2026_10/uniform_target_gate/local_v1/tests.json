@@ -1,0 +1,59 @@
+[
+  {
+    "test": "normalized_physical_prior_constant_endpoints",
+    "status": "PASS",
+    "detail": {
+      "max_constant_integral_error": 0.0,
+      "extreme_quantile_checks": 70
+    }
+  },
+  {
+    "test": "zero_uncertainty_conditional_limit",
+    "status": "PASS",
+    "detail": {
+      "logL_error": -9.237055564881302e-14
+    }
+  },
+  {
+    "test": "normalized_Gaussian_floor_measure_no_double_count",
+    "status": "PASS",
+    "detail": {
+      "conditional_density_integral": 0.9999999999999998,
+      "fixed_measure": true,
+      "fast_vs_direct_grid": true,
+      "no_propagated_covariance": true
+    }
+  },
+  {
+    "test": "full_model_distance_NFW_inclination_units",
+    "status": "PASS",
+    "detail": {
+      "max_D_error": 8.024685238629468e-11,
+      "NFW_not_forced_sqrt": true
+    }
+  },
+  {
+    "test": "native_matched_identity_repeatability",
+    "status": "PASS",
+    "detail": {
+      "mapped_max_error": 3.979039320256561e-13,
+      "repeatability": true
+    }
+  },
+  {
+    "test": "fail_closed_nonfinite_and_variance",
+    "status": "PASS",
+    "detail": {
+      "invalid_endpoints_rejected": true,
+      "nonpositivevariance_rejected": true
+    }
+  },
+  {
+    "test": "source_data_immutability",
+    "status": "PASS",
+    "detail": {
+      "files": 1957,
+      "changed": 0
+    }
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "stage": "postprocessing only",
+  "bug": "pandas cf.T/dd.T denotes transpose, not temperature/tail column; use frame['T']",
+  "affected_files": [
+    "boundary_v1/neighborhood_effect_changes.csv (NaN effects/identities)",
+    "boundary_v1/decomposition.csv convergence flags linkage (vacuous empty all)"
+  ],
+  "raw_numerical_integrals_affected": false,
+  "v1_files_preserved": true,
+  "contract_or_quadrature_changed": false,
+  "source_script_preserved": "run_boundary.py",
+  "corrected_output": "postprocessing_v2",
+  "independent_agent_detected_same_issue": true
+}

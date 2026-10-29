@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "authorized_now": "fixed-vector replay only; completed",
+  "replay_entrypoint": "/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_recovery/replay_fixed.py",
+  "input_authority": "SOURCE_MANIFEST.json",
+  "environment": "derived_from_archive/replay_v1/environment_freeze.txt",
+  "new_output_required": true,
+  "model_order": [
+    "baryon",
+    "mond",
+    "ptq",
+    "ptq-nu",
+    "ptq-screen",
+    "mond-screen",
+    "nfw1p"
+  ],
+  "galaxy_order": "sorted load_tidy_sparc keys; r_kpc ascending",
+  "normalization": "full multivariate Gaussian with per-galaxy C(theta)",
+  "parameter_counts": {
+    "baryon": 92,
+    "mond": 93,
+    "ptq": 93,
+    "ptq-nu": 93,
+    "ptq-screen": 94,
+    "mond-screen": 94,
+    "nfw1p": 183
+  },
+  "table_formula": {
+    "AIC": "-2 logL + 2k",
+    "BIC_NPOINTS": "-2 logL + k log(1782)"
+  },
+  "rotation_curves": "render derived rotation_curve_points.csv by galaxy/model; join decoded_parameters.csv; no new fit needed",
+  "full_optimizer_reconstruction_blocked_by": [
+    "all start initial/final vectors",
+    "completed run command/RNG/environment",
+    "shared-family refinement steps"
+  ],
+  "future_reestimation_requires": "explicit Human Arbiter authorization; new reestimated/run-id; never original_recovered",
+  "next_gate_prompt": "/Users/rocky/ptq-mond/docs/frontiers_major_revision_2026_10/rev26_p1a_mle_recovery/06_NEXT_COVARIANCE_PROMPT.md"
+}

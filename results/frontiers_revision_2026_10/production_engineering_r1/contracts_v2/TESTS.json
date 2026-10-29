@@ -1,0 +1,231 @@
+{
+  "status": "PASS",
+  "cases": [
+    {
+      "case": "missing/scalar",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "missing/components",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "missing/local",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "missing/fg",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "missing/descriptive",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "extra/scalar",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "extra/components",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "extra/local",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "extra/fg",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "extra/descriptive",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "matrix/scalar",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "matrix/components",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "matrix/local",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "matrix/fg",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "matrix/descriptive",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "NaN/scalar",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "NaN/components",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "NaN/local",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "NaN/fg",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "NaN/descriptive",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "infinity/scalar",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "infinity/components",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "infinity/local",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "infinity/fg",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "infinity/descriptive",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "invalidID/-1",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "invalidID/91",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "invalidID/1.5",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "invalidID/True",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "invalidID/NOT_A_GALAXY",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "decoded_negative_index",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "decoded_badU",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "badversion/gauss",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "badversion/UNKNOWN",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "badversion/None",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "hard_bound_no_clip",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "firewall/_call_fit",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "firewall/_write_pwaic_diagnostics",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "firewall/compare_models_waic",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "firewall/kappa_geom_per_galaxy",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "firewall/kappa_per_galaxy",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "firewall/kappa_radius_resolved",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "firewall/kappa_radius_resolved_geom",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "firewall/loo_compare_models",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "firewall/ppc_check",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "firewall/z_per_galaxy",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "firewall/z_profile",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "fg_legacy_disabled",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "unverified_B1_gradient",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "unverified_dependency",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "invalid_quad_weights",
+      "status": "PASS_REJECTED"
+    }
+  ],
+  "telemetry": {
+    "total_events": 17,
+    "distinct_keys": 1,
+    "records": [
+      {
+        "category": "RuntimeWarning",
+        "normalized_message": "repeated warning control",
+        "source_file": "/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/production_engineering_r1/test_contracts_final.py",
+        "line": 31,
+        "model": "synthetic",
+        "likelihood_version": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+        "count": 17,
+        "first_occurrence_utc": "2026-10-28T23:08:36Z",
+        "representative_parameter_hash": "e839d2cbbd704bbf854d9620a4ff2ee077e430e0fd18ba29e310e3fe03f1a8ea",
+        "numerical_validity_status": "FINITE_OUTPUT_ONLY_NOT_A_HARMLESSNESS_PROOF",
+        "classification": "UNRESOLVED_WARNING_ROOT_CAUSE"
+      }
+    ],
+    "exceptions": [],
+    "storage": "bounded one representative/key, exact counts"
+  },
+  "pure_evaluation_outside_bounds_not_clipped": true
+}

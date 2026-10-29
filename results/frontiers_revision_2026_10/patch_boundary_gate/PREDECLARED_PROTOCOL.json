@@ -1,0 +1,334 @@
+{
+  "schema_version": 1,
+  "frozen_utc": "2026-10-28T13:07:43.132263Z",
+  "status": "PREDECLARED_BEFORE_PATCH_PARITY_AND_BOUNDARY_NUMERICS",
+  "likelihood_version": "REV26-P1D-B0-FULLD-GAUSS-CANDIDATE-v1",
+  "parity": {
+    "galaxy_model_points": 637,
+    "native_mapped_galaxy_points": 364,
+    "per_galaxy_logL_abs": 1e-08,
+    "C_relative": 1e-09,
+    "mapped_logL_abs": 1e-08,
+    "Jac_relative": 1e-06,
+    "Jac_near_zero_abs": 1e-05,
+    "FD_steps": [
+      0.001,
+      0.0001,
+      1e-05
+    ],
+    "call_paths": [
+      "mle.galaxy_loglike",
+      "objective_neg_loglike globals callback target",
+      "fit_global.log_likelihood",
+      "fit_global.log_likelihood_full_per_galaxy",
+      "fit_global.log_likelihood_per_galaxy diagonal diagnostic",
+      "fit_global.run postprocessing covariance call AST only (no fit driver)",
+      "experiments all7 direct build_covariance call AST-only covariance snippets, plus _make_vfun factory AST",
+      "mle optimizer nested callbacks AST at fixed inputs only"
+    ]
+  },
+  "tier1": [
+    {
+      "galaxy": "ESO563-G021",
+      "i_deg": 83.0,
+      "i_err_deg": 3.0000000000000004,
+      "relD": 0.1496710526315789,
+      "edge_distance_sigma": 2.333333333333333,
+      "n": 30
+    },
+    {
+      "galaxy": "F574-1",
+      "i_deg": 65.0,
+      "i_err_deg": 10.0,
+      "relD": 0.1,
+      "edge_distance_sigma": 2.5,
+      "n": 14
+    },
+    {
+      "galaxy": "IC2574",
+      "i_deg": 75.0,
+      "i_err_deg": 7.0,
+      "relD": 0.0511508951406649,
+      "edge_distance_sigma": 2.142857142857143,
+      "n": 34
+    },
+    {
+      "galaxy": "IC4202",
+      "i_deg": 90.0,
+      "i_err_deg": 1.0,
+      "relD": 0.099601593625498,
+      "edge_distance_sigma": 0.0,
+      "n": 32
+    },
+    {
+      "galaxy": "NGC0891",
+      "i_deg": 90.0,
+      "i_err_deg": 1.0,
+      "relD": 0.0504540867810292,
+      "edge_distance_sigma": 0.0,
+      "n": 18
+    },
+    {
+      "galaxy": "NGC2683",
+      "i_deg": 80.0,
+      "i_err_deg": 5.0,
+      "relD": 0.0499490316004077,
+      "edge_distance_sigma": 2.0,
+      "n": 11
+    },
+    {
+      "galaxy": "NGC2841",
+      "i_deg": 76.0,
+      "i_err_deg": 10.0,
+      "relD": 0.0992907801418439,
+      "edge_distance_sigma": 1.4,
+      "n": 50
+    },
+    {
+      "galaxy": "NGC2976",
+      "i_deg": 61.0,
+      "i_err_deg": 10.0,
+      "relD": 0.0502793296089385,
+      "edge_distance_sigma": 2.9,
+      "n": 27
+    },
+    {
+      "galaxy": "NGC4010",
+      "i_deg": 89.0,
+      "i_err_deg": 1.0,
+      "relD": 0.1388888888888889,
+      "edge_distance_sigma": 1.0,
+      "n": 12
+    },
+    {
+      "galaxy": "NGC4013",
+      "i_deg": 89.0,
+      "i_err_deg": 1.0,
+      "relD": 0.1388888888888889,
+      "edge_distance_sigma": 1.0,
+      "n": 36
+    },
+    {
+      "galaxy": "NGC4157",
+      "i_deg": 82.0,
+      "i_err_deg": 3.0000000000000004,
+      "relD": 0.1388888888888889,
+      "edge_distance_sigma": 2.666666666666666,
+      "n": 17
+    },
+    {
+      "galaxy": "NGC4217",
+      "i_deg": 86.0,
+      "i_err_deg": 2.0,
+      "relD": 0.1388888888888889,
+      "edge_distance_sigma": 2.0,
+      "n": 19
+    },
+    {
+      "galaxy": "NGC5907",
+      "i_deg": 88.0,
+      "i_err_deg": 2.0,
+      "relD": 0.0520231213872832,
+      "edge_distance_sigma": 1.0,
+      "n": 19
+    },
+    {
+      "galaxy": "NGC7814",
+      "i_deg": 90.0,
+      "i_err_deg": 1.0,
+      "relD": 0.0458333333333333,
+      "edge_distance_sigma": 0.0,
+      "n": 18
+    },
+    {
+      "galaxy": "UGC01281",
+      "i_deg": 90.0,
+      "i_err_deg": 1.0,
+      "relD": 0.0455407969639468,
+      "edge_distance_sigma": 0.0,
+      "n": 25
+    },
+    {
+      "galaxy": "UGC05750",
+      "i_deg": 64.0,
+      "i_err_deg": 10.0,
+      "relD": 0.1993185689948892,
+      "edge_distance_sigma": 2.6,
+      "n": 11
+    },
+    {
+      "galaxy": "UGC06667",
+      "i_deg": 89.0,
+      "i_err_deg": 1.0,
+      "relD": 0.1388888888888889,
+      "edge_distance_sigma": 1.0,
+      "n": 9
+    },
+    {
+      "galaxy": "UGC07151",
+      "i_deg": 90.0,
+      "i_err_deg": 3.0000000000000004,
+      "relD": 0.049490538573508,
+      "edge_distance_sigma": 0.0,
+      "n": 11
+    },
+    {
+      "galaxy": "UGC08286",
+      "i_deg": 90.0,
+      "i_err_deg": 3.0000000000000004,
+      "relD": 0.0323076923076923,
+      "edge_distance_sigma": 0.0,
+      "n": 17
+    },
+    {
+      "galaxy": "UGC08837",
+      "i_deg": 80.0,
+      "i_err_deg": 5.0,
+      "relD": 0.0499306518723994,
+      "edge_distance_sigma": 2.0,
+      "n": 8
+    },
+    {
+      "galaxy": "UGC11455",
+      "i_deg": 90.0,
+      "i_err_deg": 1.0,
+      "relD": 0.1501272264631043,
+      "edge_distance_sigma": 0.0,
+      "n": 36
+    },
+    {
+      "galaxy": "UGC12506",
+      "i_deg": 86.0,
+      "i_err_deg": 4.0,
+      "relD": 0.1003976143141153,
+      "edge_distance_sigma": 1.0,
+      "n": 31
+    }
+  ],
+  "tier2_edge_on": [
+    "IC4202",
+    "NGC0891",
+    "NGC7814",
+    "UGC01281",
+    "UGC07151",
+    "UGC08286",
+    "UGC11455"
+  ],
+  "tier3": [
+    {
+      "galaxy": "F574-1",
+      "selection": "boundary_largest_i_error",
+      "i_deg": 65.0,
+      "i_err_deg": 10.0
+    },
+    {
+      "galaxy": "NGC4010",
+      "selection": "boundary_closest_edge",
+      "i_deg": 89.0,
+      "i_err_deg": 1.0
+    },
+    {
+      "galaxy": "D631-7",
+      "selection": "interior_nearest_60deg",
+      "i_deg": 59.00000000000001,
+      "i_err_deg": 3.0000000000000004
+    },
+    {
+      "galaxy": "F568-3",
+      "selection": "interior_largest_i_error",
+      "i_deg": 40.0,
+      "i_err_deg": 10.0
+    }
+  ],
+  "integration_galaxies": [
+    "IC4202",
+    "NGC0891",
+    "NGC7814",
+    "UGC01281",
+    "UGC07151",
+    "UGC08286",
+    "UGC11455",
+    "F574-1",
+    "NGC4010",
+    "D631-7",
+    "F568-3"
+  ],
+  "model_order": [
+    "baryon",
+    "mond",
+    "ptq",
+    "ptq-nu",
+    "ptq-screen",
+    "mond-screen",
+    "nfw1p"
+  ],
+  "historical_vectors": "original_recovered binary MLE only; no fitted changes; P1A manifest hashes",
+  "nuisance": {
+    "primary_data": "fixed nominal deprojected y0",
+    "mean": "sin(i)/sin(i0)*v(D) with r scale s and all templates sqrt(s)",
+    "prior": "independent Gaussian kernels D0/i0, errors nominal Mpc/rad; normalized physical D>0,0<i<pi/2 intersect finite tail; no cos(i) prior; correlations unknown",
+    "tails_T": [
+      3.0,
+      4.0,
+      5.0
+    ],
+    "orders": [
+      64,
+      128,
+      256
+    ],
+    "conditional_floor_B0": "e0^2+sigma_sys^2",
+    "conditional_floor_B1": "e0^2+(sigma_sys*sin(i)/sin(i0))^2",
+    "integrands": [
+      "B0_linear",
+      "B0_nonlinear",
+      "B1_nonlinear",
+      "inclination_only_nonlinear_B0 with linear D response; isolates inclination nonlinearity including D/i product"
+    ],
+    "convergence_abs_logL": 0.001,
+    "tail_abs_logL_flag": 0.01,
+    "no_propagated_terms_in_conditional": true
+  },
+  "neighborhood": {
+    "galaxies": [
+      "IC4202",
+      "UGC07151",
+      "F574-1"
+    ],
+    "points": [
+      "historical",
+      "acceleration_scale*1.01 where present",
+      "q*1.01 where present",
+      "sigma_sys*1.02",
+      "selected_U+0.01 if in bounds else -0.01",
+      "NFW_logM+0.02 if in bounds else -0.02"
+    ],
+    "tails_T": [
+      5.0
+    ],
+    "orders": [
+      128,
+      256
+    ],
+    "bounds": "original manifest; preserve each native parameter layout",
+    "baseline_reuse": true,
+    "comparison": "both Gaussian covariance and nuisance logL, no profiles or optimizing",
+    "untested": "remaining parameter coordinates/negative perturbation direction/joint perturbations/full optimizer domain"
+  },
+  "materiality": {
+    "nonlinear_minus_matched_linear_abs_flag": 0.1,
+    "nonlinear_minus_Acorr_abs_flag": 0.1,
+    "floor_B1_B0_abs_flag": 0.1,
+    "neighborhood_effect_change_abs_flag": 0.1,
+    "interpretation": "conservative predeclared diagnostic flags for this audit, not universal statistical thresholds; any converged material boundary effect => requires statistical target decision before fitting; nonconvergence=>inconclusive no extra campaign"
+  },
+  "budget": {
+    "max_runtime_seconds": 1200,
+    "max_conditional_density_node_evaluations": 150000000,
+    "max_order": 256,
+    "no_extra_adaptive_cases": true,
+    "stop": "parity fail=>no boundary; budget=>retain unfinished combinations; no optimizer/MCMC/refit"
+  },
+  "boundaries_not_excluded": true,
+  "reference": "P1C frozen reference is read-only; code parity errors fixed only against original declared contract, failures retained"
+}

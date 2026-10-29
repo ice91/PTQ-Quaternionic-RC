@@ -1,0 +1,243 @@
+--- a/src/ptquat/likelihood.py
++++ b/src/ptquat/likelihood.py
+@@ -22,21 +22,26 @@
+                      D_Mpc: float, D_err_Mpc: float,
+                      i_deg: float, i_err_deg: float,
+                      v_fun_for_grad,                 # callable: r_kpc -> v_model(r)
+-                     sigma_sys_kms: float = 4.0) -> np.ndarray:
+-    """
+-    C = diag(meas^2) + sigma_D^2 J_D J_D^T + sigma_i^2 J_i J_i^T + sigma_sys^2 I
+-    其中
+-      J_D = dv/dD ≈ (dv/dr) * (r/D)      (因 r = D*theta, dr/dD = r/D)
+-      J_i = dv/di ≈ v * cot(i)           (已在 deprojected 速度下回推)
+-    單位一致皆為 [km/s]。
++                     sigma_sys_kms: float = 4.0, *,
++                     distance_jacobian_kms_per_Mpc: np.ndarray) -> np.ndarray:
++    """Corrected B0 covariance in the fixed nominal observed-velocity measure.
++
++    The caller must supply the full catalog-level mean derivative dmu/dD
++    in (km/s)/Mpc, including radius AND baryonic-template rescaling.
++    J_i = v_model*cot(i0) is per radian; inclination error is converted here.
++    The positional v_fun_for_grad remains for caller signature continuity,
++    but its historical radius-only derivative is never used by this target.
++    This normalized local Gaussian surrogate is not exact truncated nuisance
++    marginalization. sigma_sys is additive in the nominal y0 coordinate.
+     """
+     n = len(v_model_kms)
+     C = np.diag(np.asarray(v_err_meas_kms, float)**2)
+ 
+     # Distance term
+     if D_Mpc > 0 and D_err_Mpc > 0:
+-        dv_dr = _num_grad_v_wrt_r(r_kpc, v_fun_for_grad)
+-        J_D = dv_dr * (r_kpc / D_Mpc)
++        J_D = np.asarray(distance_jacobian_kms_per_Mpc, float)
++        if J_D.shape != np.asarray(v_model_kms).shape or not np.all(np.isfinite(J_D)):
++            raise ValueError("Full distance Jacobian must be finite and match model shape")
+         C += (D_err_Mpc**2) * np.outer(J_D, J_D)
+ 
+     # Inclination term
+--- a/src/ptquat/models.py
++++ b/src/ptquat/models.py
+@@ -232,3 +232,34 @@
+ # --- Backward-compat aliases (keep old imports working) ---
+ model_v_kms = model_v_ptq
+ model_v_kms_split = model_v_ptq_split
++
++
++# REV26-P1D: fixed-y0 B0 covariance interface; radial laws above are unchanged.
++def model_distance_jacobian(model, v_model_kms, r_kpc, D_Mpc, *,
++                            log10_M200=None, H0_si=H0_SI,
++                            c0=10.0, c_slope=-0.1):
++    """Total catalog distance derivative in (km/s)/Mpc at fixed angular samples.
++
++    All baryonic velocity templates scale as sqrt(D/D0), physical radii as
++    D/D0, with Upsilon/acceleration/q/halo mass held fixed.  This is a mean
++    derivative; the residual derivative has the opposite sign.
++    """
++    if not (np.isfinite(D_Mpc) and D_Mpc > 0):
++        raise ValueError("Distance must be positive and finite")
++    v = np.asarray(v_model_kms, float)
++    r = np.asarray(r_kpc, float)
++    if model in ("baryon", "ptq", "ptq-split", "mond", "ptq-nu",
++                 "ptq-screen", "mond-screen"):
++        return v / (2.0 * D_Mpc)
++    if model != "nfw1p" or log10_M200 is None:
++        raise ValueError("Unsupported model or missing restricted NFW mass")
++    mass = 10.0**float(log10_M200)
++    c = c_powerlaw(mass, c0=c0, beta=c_slope)
++    vh = nfw_v_kms_M200_c(r, mass, c, H0_si=H0_si)
++    rho = 3.0 * H0_si**2 / (8.0 * np.pi * G_SI)
++    R200 = (3.0 * mass * MSUN / (4.0 * np.pi * 200.0 * rho))**(1.0/3.0)
++    x = r * KPC * c / R200
++    f = np.log1p(x) - x / (1.0 + x)
++    eta = x*x / ((1.0+x)**2 * f) - 1.0
++    # v^2-vh^2 is the frozen baryonic contribution; no new halo freedom.
++    return (v*v - vh*vh + vh*vh*eta) / (2.0 * v * D_Mpc)
+--- a/src/ptquat/fit_global.py
++++ b/src/ptquat/fit_global.py
+@@ -12,6 +12,7 @@
+ from .likelihood import build_covariance, gaussian_loglike, student_t_loglike
+ from .constants import H0_SI
+ from .models import (
++    model_distance_jacobian,
+     model_v_ptq, model_v_ptq_split, model_v_baryon, model_v_mond, model_v_nfw1p,
+     model_v_ptq_nu, model_v_ptq_screen, model_v_mond_screen,
+ )
+@@ -201,7 +202,7 @@
+ 
+         v_mod = vfun(g.r_kpc)
+         Cg = build_covariance(v_mod, g.r_kpc, g.v_err, g.D_Mpc, g.D_err_Mpc,
+-                              g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sigma_use)
++                              g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sigma_use, distance_jacobian_kms_per_Mpc=model_distance_jacobian(m, v_mod, g.r_kpc, g.D_Mpc, log10_M200=(lM if m == "nfw1p" else None), H0_si=H0_si, c0=c0, c_slope=c_slope))
+         total += _ll(g.v_obs, v_mod, Cg)
+     return total
+ 
+@@ -260,7 +261,7 @@
+ 
+         v_mod = vfun(g.r_kpc)
+         Cg = build_covariance(v_mod, g.r_kpc, g.v_err, g.D_Mpc, g.D_err_Mpc,
+-                              g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sigma_use)
++                              g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sigma_use, distance_jacobian_kms_per_Mpc=model_distance_jacobian(m, v_mod, g.r_kpc, g.D_Mpc, log10_M200=(lM if m == "nfw1p" else None), H0_si=H0_si, c0=c0, c_slope=c_slope))
+ 
+         r = np.asarray(g.v_obs, float) - np.asarray(v_mod, float)
+         diag = np.clip(np.diag(Cg), 1e-30, np.inf)
+@@ -344,7 +345,7 @@
+ 
+         v_mod = vfun(g.r_kpc)
+         Cg = build_covariance(v_mod, g.r_kpc, g.v_err, g.D_Mpc, g.D_err_Mpc,
+-                              g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sigma_use)
++                              g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sigma_use, distance_jacobian_kms_per_Mpc=model_distance_jacobian(m, v_mod, g.r_kpc, g.D_Mpc, log10_M200=(lM if m == "nfw1p" else None), H0_si=H0_si, c0=c0, c_slope=c_slope))
+         vals[gi] = _ll(g.v_obs, v_mod, Cg)
+ 
+     return vals
+@@ -620,7 +621,7 @@
+ 
+         v_mod = vfun(g.r_kpc)
+         Cg = build_covariance(v_mod, g.r_kpc, g.v_err, g.D_Mpc, g.D_err_Mpc,
+-                              g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sigma_use)
++                              g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sigma_use, distance_jacobian_kms_per_Mpc=model_distance_jacobian(args.model, v_mod, g.r_kpc, g.D_Mpc, log10_M200=(lM if args.model == "nfw1p" else None), H0_si=H0_si, c0=args.c0, c_slope=args.c_slope))
+ 
+         r = g.v_obs - v_mod
+         alpha = np.linalg.solve(Cg, r)
+--- a/src/ptquat/mle.py
++++ b/src/ptquat/mle.py
+@@ -149,6 +149,7 @@
+                    c_slope: float = -0.1) -> float:
+     """Full-covariance logL contribution of a single galaxy (no prior)."""
+     from .models import (
++        model_distance_jacobian,
+         model_v_baryon, model_v_mond, model_v_mond_screen, model_v_nfw1p,
+         model_v_ptq, model_v_ptq_nu, model_v_ptq_screen,
+     )
+@@ -186,7 +187,7 @@
+ 
+     v_mod = vfun(g.r_kpc)
+     Cg = build_covariance(v_mod, g.r_kpc, g.v_err, g.D_Mpc, g.D_err_Mpc,
+-                          g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sigma_use)
++                          g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sigma_use, distance_jacobian_kms_per_Mpc=model_distance_jacobian(m, v_mod, g.r_kpc, g.D_Mpc, log10_M200=(lM if m == "nfw1p" else None), H0_si=H0_si, c0=c0, c_slope=c_slope))
+     return float(gaussian_loglike(g.v_obs, v_mod, Cg))
+ 
+ 
+--- a/src/ptquat/experiments.py
++++ b/src/ptquat/experiments.py
+@@ -11,6 +11,7 @@
+ from .likelihood import build_covariance
+ from .constants import H0_SI, KPC, KM
+ from .models import (
++    model_distance_jacobian,
+     model_v_baryon, model_v_mond, model_v_nfw1p,
+     model_v_ptq, model_v_ptq_split, model_v_ptq_nu, model_v_ptq_screen,
+     model_v_mond_screen,
+@@ -139,11 +140,15 @@
+         else:
+             raise ValueError("unknown model")
+ 
++        vfun.full_distance_jacobian = lambda D: model_distance_jacobian(
++            model, vfun(g.r_kpc), g.r_kpc, D,
++            log10_M200=(lM if model == "nfw1p" else None),
++            H0_si=(H0_SI if model == "nfw1p" else H0_si))
+         v_mod = vfun(g.r_kpc)
+         Cg = build_covariance(
+             v_mod, g.r_kpc, g.v_err, g.D_Mpc, g.D_err_Mpc,
+             g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med
+-        )
++        , distance_jacobian_kms_per_Mpc=vfun.full_distance_jacobian(g.D_Mpc))
+         diag = np.clip(np.diag(Cg), 1e-12, None)
+         sig = np.sqrt(diag)
+         r = np.abs(g.v_obs - v_mod)
+@@ -563,6 +568,10 @@
+         vbar2 = vbar_squared_kms2(U, g.v_disk, g.v_bulge, g.v_gas)
+     else:
+         raise ValueError(model)
++    vfun.full_distance_jacobian = lambda D: model_distance_jacobian(
++        model, vfun(g.r_kpc), g.r_kpc, D,
++        log10_M200=(float(per_row["log10_M200_med"]) if model == "nfw1p" else None),
++        H0_si=H0_si)
+     return vfun, vbar2
+ 
+ def _eps_cos_from_args(epsilon_cos: Optional[float], omega_lambda: Optional[float]) -> float:
+@@ -720,7 +729,7 @@
+             C_full = build_covariance(
+                 v_mod, r, g.v_err, g.D_Mpc, g.D_err_Mpc,
+                 g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med
+-            )
++            , distance_jacobian_kms_per_Mpc=vfun.full_distance_jacobian(g.D_Mpc))
+             try:
+                 Vs = rng.multivariate_normal(mean=v_obs, cov=C_full, size=nsamp)
+                 v_star = _interp_rows_at_scalar(r, Vs, r_star)
+@@ -864,7 +873,7 @@
+         vfun, vbar2 = _make_vfun(model, H0_si, per.loc[name], g, res.get("epsilon_median"), q, a0)
+         v_mod = vfun(g.r_kpc)
+         C = build_covariance(v_mod, g.r_kpc, g.v_err, g.D_Mpc, g.D_err_Mpc,
+-                             g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med)
++                             g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med, distance_jacobian_kms_per_Mpc=vfun.full_distance_jacobian(g.D_Mpc))
+         sig_pt = np.sqrt(np.clip(np.diag(C), 1e-30, np.inf))
+ 
+         denom = linear_term_kms2(1.0, g.r_kpc, H0_si=H0_si)  # (cH0) r
+@@ -1295,7 +1304,7 @@
+             C_full = build_covariance(
+                 v_mod, r, g.v_err, g.D_Mpc, g.D_err_Mpc,
+                 g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med
+-            )
++            , distance_jacobian_kms_per_Mpc=vfun.full_distance_jacobian(g.D_Mpc))
+             try:
+                 Vs = rng.multivariate_normal(mean=v_obs, cov=C_full, size=nsamp)
+                 v_star = _interp_rows_at_scalar(r, Vs, r_star)
+@@ -1431,7 +1440,7 @@
+         vfun, vbar2 = _make_vfun(model, H0_si, per.loc[name], g, summ.get("epsilon_median"), q, a0)
+         v_mod = vfun(g.r_kpc)
+         C = build_covariance(v_mod, g.r_kpc, g.v_err, g.D_Mpc, g.D_err_Mpc,
+-                             g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med)
++                             g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med, distance_jacobian_kms_per_Mpc=vfun.full_distance_jacobian(g.D_Mpc))
+         _ = np.sqrt(np.clip(np.diag(C), 1e-30, np.inf))  # 僅為過濾可疑點時參考
+ 
+         denom = linear_term_kms2(1.0, g.r_kpc, H0_si=H0_si)
+@@ -2296,7 +2305,7 @@
+         # 用完整 C 僅為了保守濾出離群 σ；實際 σy 用測量誤差線性化（避免 D/i 關聯）
+         try:
+             C = build_covariance(v_mod, g.r_kpc, g.v_err, g.D_Mpc, g.D_err_Mpc,
+-                                 g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med)
++                                 g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med, distance_jacobian_kms_per_Mpc=vfun.full_distance_jacobian(g.D_Mpc))
+             diag_ok = np.sqrt(np.clip(np.diag(C), 1e-30, np.inf)) < 1e5
+         except Exception:
+             diag_ok = np.ones_like(g.r_kpc, dtype=bool)
+@@ -2457,7 +2466,7 @@
+             C_full = build_covariance(
+                 v_mod, r, g.v_err, g.D_Mpc, g.D_err_Mpc,
+                 g.i_deg, g.i_err_deg, vfun, sigma_sys_kms=sig_med
+-            )
++            , distance_jacobian_kms_per_Mpc=vfun.full_distance_jacobian(g.D_Mpc))
+             try:
+                 Vs = rng.multivariate_normal(mean=v_obs, cov=C_full, size=nsamp)
+                 v_star = _interp_rows_at_scalar(r, Vs, r_star)
+--- a/tests/test_covariance.py
++++ b/tests/test_covariance.py
+@@ -7,7 +7,7 @@
+     v_mod = 150 + 0.0*r
+     v_err = np.full(n, 5.0)
+     def vfun(x): return 150 + 0*x
+-    C = build_covariance(v_mod, r, v_err, 10.0, 1.0, 60.0, 2.0, vfun, sigma_sys_kms=4.0)
++    C = build_covariance(v_mod, r, v_err, 10.0, 1.0, 60.0, 2.0, vfun, sigma_sys_kms=4.0, distance_jacobian_kms_per_Mpc=v_mod/(2*10.0))
+     # Cholesky should succeed with small jitter if needed
+     try:
+         np.linalg.cholesky(C)

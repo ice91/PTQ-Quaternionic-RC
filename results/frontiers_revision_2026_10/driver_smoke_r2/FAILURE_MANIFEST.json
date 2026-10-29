@@ -1,0 +1,40 @@
+{
+  "label": "ENGINEERING_SMOKE_ONLY \u2014 NOT CORRECTED MLE",
+  "actual_optimizer_calls": 2,
+  "actual_optimizer_run_attempts": 2,
+  "additional_starts": 0,
+  "retries": 0,
+  "actual_runtime_exceptions": [],
+  "numerical_source_or_budget_failures": [],
+  "scipy_iteration_limit_stops": [
+    {
+      "model": "ptq-screen",
+      "status": 1,
+      "message": "STOP: TOTAL NO. of ITERATIONS REACHED LIMIT",
+      "accepted_iterations": 1,
+      "stationarity_established": false
+    },
+    {
+      "model": "nfw1p",
+      "status": 1,
+      "message": "STOP: TOTAL NO. of ITERATIONS REACHED LIMIT",
+      "accepted_iterations": 1,
+      "stationarity_established": false
+    }
+  ],
+  "rejected_linesearch_trials": {
+    "ptq-screen": 2,
+    "nfw1p": 2
+  },
+  "rejected_trials_are_not_runtime_exceptions": true,
+  "all_attempted_marginal_calls_completed": true,
+  "warnings": {
+    "events": 1002600,
+    "keys": 6,
+    "classification": "UNRESOLVED_WARNING_ROOT_CAUSE",
+    "numerical_corruption_confirmed": false,
+    "global_suppression": false
+  },
+  "synthetic_unit_controls": "controls_v1/v2 clearly marked; zeroactualoptimizer/likelihoodcalls",
+  "prior_R1_metadata_gap": "exact failedNFWbenchmark wall/warningcounts remainUNKNOWN; nofabrication"
+}

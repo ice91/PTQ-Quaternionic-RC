@@ -1,0 +1,24 @@
+{
+  "source": "/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/src/ptquat/mle.py",
+  "source_sha256": "5ae179fe567094eb22f17cefc121a18fbdadfbfc6d06a697b88d02c689da78ef",
+  "paths": [
+    {
+      "entry": "_block_coordinate_mle.neg_g / neg_g2",
+      "endpoint": "neg_full -> objective_neg_loglike -> fit_global.log_likelihood -> build_covariance -> gaussian_loglike",
+      "runtime_exercised": "source AST neg_g callback at prescribed global input; 91 fresh covariance calls per invocation"
+    },
+    {
+      "entry": "_block_coordinate_mle.neg_u",
+      "endpoint": "galaxy_loglike -> likelihood.build_covariance -> gaussian_loglike",
+      "runtime_exercised": "source AST callback at prescribed U; one fresh covariance call"
+    },
+    {
+      "entry": "_block_coordinate_mle.neg_um",
+      "endpoint": "galaxy_loglike -> likelihood.build_covariance -> gaussian_loglike",
+      "runtime_exercised": "source AST NFW callback at prescribed U, fixed logM; one fresh covariance call"
+    }
+  ],
+  "final_polish_callback_body_identical": true,
+  "limitations": "optimizer iterations/scheduling not executed; source call path and exact callback evaluation demonstrated; no claim of global convergence",
+  "no_optimizer_driver_called": true
+}

@@ -1,0 +1,76 @@
+{
+  "optimizer_calls": 0,
+  "single_thread_environment": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "VECLIB_MAXIMUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1"
+  },
+  "python": "/tmp/rev26-p1a-env/bin/python",
+  "stages": [
+    {
+      "stage": "bootstrap source/previouschecksums",
+      "status": "PASS",
+      "record": "AUTHORITY.json/INPUT_MANIFEST.json/SOURCE_HASHES_BEFORE.json"
+    },
+    {
+      "stage": "contractnegativecontrols",
+      "status": "PASS",
+      "logs": [
+        "contracts_execution.log",
+        "contracts_execution_v2.log"
+      ]
+    },
+    {
+      "stage": "full728coarse dependency",
+      "status": "PASS",
+      "log": "dependency_execution.log",
+      "actual_galaxy_evaluations": 67613
+    },
+    {
+      "stage": "7directions",
+      "status": "PASS",
+      "log": "directions_execution.log",
+      "equivalents": 64.26640124933355,
+      "wall_seconds": 88.276265667
+    },
+    {
+      "stage": "legacyAPIclosure",
+      "status": "PASS",
+      "record": "LEGACY_CLOSURE_AST_PROOF.json"
+    },
+    {
+      "stage": "fullgradientbenchmarkv1",
+      "status": "HARNESS_FAILURE_AFTER_COMPLETENFW",
+      "log": "benchmark_execution.log",
+      "actual_galaxy_evaluations": 819,
+      "metadata_missing": true
+    },
+    {
+      "stage": "NFWbenchmarkv2",
+      "status": "PASS",
+      "log": "benchmark_execution_v2.log",
+      "actual_galaxy_evaluations": 364
+    },
+    {
+      "stage": "fullregression",
+      "status": "PASS",
+      "log": "regression_execution.log"
+    },
+    {
+      "stage": "warningdirect8fixedpoints",
+      "status": "PASS",
+      "log": "warning_audit_execution.log"
+    },
+    {
+      "stage": "independentreview",
+      "status": "COMPLETE_WITH_PROVENANCE_CONDITION",
+      "records": [
+        "INDEPENDENT_REVIEW_RAW.md",
+        "INDEPENDENT_REVIEW_NUMERICAL_ADDENDUM.md"
+      ]
+    }
+  ],
+  "all_attempted_benchmark_equivalents": 13,
+  "no_optimizer_or_dense_refit": true
+}

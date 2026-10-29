@@ -1,0 +1,130 @@
+{
+  "label": "ENGINEERING_SMOKE_ONLY \u2014 NOT CORRECTED MLE",
+  "status": "PASS",
+  "tests": [
+    {
+      "case": "firewall/_call_fit",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "firewall/_write_pwaic_diagnostics",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "firewall/compare_models_waic",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "firewall/kappa_geom_per_galaxy",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "firewall/kappa_per_galaxy",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "firewall/kappa_radius_resolved",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "firewall/kappa_radius_resolved_geom",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "firewall/loo_compare_models",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "firewall/ppc_check",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "firewall/z_per_galaxy",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "firewall/z_profile",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "radius_factorization",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "actualgal_cap",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "equivalent_cap",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "wallcap",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "21gradient_cap",
+      "status": "PASS_REJECTED"
+    },
+    {
+      "case": "synthetic_jacTrue_actual_callback_path_no_optimizer",
+      "status": "PASS"
+    }
+  ],
+  "warning_control": {
+    "total_events": 17,
+    "distinct_keys": 1,
+    "records": [
+      {
+        "category": "RuntimeWarning",
+        "normalized_message": "synthetic repeated control",
+        "source_file": "/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/driver_smoke_r2/test_driver_controls.py",
+        "line": 37,
+        "model": "synthetic",
+        "likelihood_version": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+        "count": 17,
+        "first_occurrence_utc": "2026-10-28T23:35:36Z",
+        "representative_parameter_hash": "e839d2cbbd704bbf854d9620a4ff2ee077e430e0fd18ba29e310e3fe03f1a8ea",
+        "numerical_validity_status": "FINITE_OUTPUT_AUDIT_REQUIRED",
+        "classification": "UNRESOLVED_WARNING_ROOT_CAUSE",
+        "representative_native_theta_hash": "SYNTHETIC_NOT_HISTORICAL"
+      }
+    ],
+    "exceptions": [
+      {
+        "model": "synthetic",
+        "likelihood_version": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+        "parameter_hash": "e839d2cbbd704bbf854d9620a4ff2ee077e430e0fd18ba29e310e3fe03f1a8ea",
+        "error": "FloatingPointError('deliberate test, no real likelihood')",
+        "classification": "NUMERICAL_CALL_FAILED"
+      }
+    ],
+    "storage": "bounded one representative/key, exact counts"
+  },
+  "source_identity_files": [
+    "tests/test_uniform_target.py",
+    "scripts/run_uniform_explicit_smoke.py",
+    "src/ptquat/models.py",
+    "src/ptquat/preprocess.py",
+    "src/ptquat/warning_telemetry.py",
+    "src/ptquat/dependency_gradient.py",
+    "src/ptquat/plotting.py",
+    "src/ptquat/constants.py",
+    "src/ptquat/__init__.py",
+    "src/ptquat/experiments.py",
+    "src/ptquat/evaluation_contract.py",
+    "src/ptquat/cli.py",
+    "src/ptquat/utils.py",
+    "src/ptquat/geometry.py",
+    "src/ptquat/bounded_driver.py",
+    "src/ptquat/fetch_vizier.py",
+    "src/ptquat/mle.py",
+    "src/ptquat/fit_global.py",
+    "src/ptquat/likelihood.py",
+    "src/ptquat/data.py",
+    "src/ptquat/marginal_likelihood.py"
+  ],
+  "synthetic_only": true,
+  "real_optimizer_invocations": 0,
+  "real_galaxy_likelihood_evaluations": 0
+}

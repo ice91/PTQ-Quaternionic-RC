@@ -1,0 +1,58 @@
+{
+  "agent": "/root/p1d_independent_patch_review",
+  "role": "independent second-agent read-only critique; no proof authority",
+  "actions": "read-only code/diff/output checks and stdout-only Python; no writes/optimizer",
+  "recommendations": {
+    "PATCH_PARITY": "PASS",
+    "BOUNDARY_APPROXIMATION": "MATERIAL_SENSITIVITY_REQUIRES_NEW_SPEC",
+    "FLOOR_SENSITIVITY": "MATERIAL_MODEL_UNCERTAINTY",
+    "REFIT_LAUNCH": "REQUIRES_STATISTICAL_SPECIFICATION_DECISION"
+  },
+  "confirmed": {
+    "source_calls": 12,
+    "all637_finite_unique": true,
+    "mapped_points": 364,
+    "NFW_independent_FD_cases": 6,
+    "NFW_mass_range": [
+      9,
+      11,
+      13
+    ],
+    "NFW_H0_variations": "default/+5%;c0=8,c_slope=-0.13",
+    "NFW_max_relative_error": 5.470334916578418e-10,
+    "all66_candidate_parity_pass": true,
+    "old_source_hashes_unchanged": 1866
+  },
+  "actual_defect": {
+    "issue": "v1 cf.T/dd.T incorrectly uses pandas transpose instead of column ['T']",
+    "scope": "v1 derived convergence linkage/neighborhood summaries; raw3300 numerical integrals unaffected",
+    "disposition": "preserve failedv1 and source; regenerate postprocessing_v2 only; no target/contract or quadrature changes"
+  },
+  "objections": [
+    {
+      "severity": "major_scientific_attribution",
+      "issue": "seven edge-on inclination-only max0.043860,fullTaylor edge maxima are distance-dominated; do not call all7 inclination failures"
+    },
+    {
+      "severity": "major_operating_regime",
+      "issue": "wider-uncertainty selected controls material;11gal maxincl0.285845,fullTaylor0.311277,NL-A0.370923"
+    },
+    {
+      "severity": "major_model_uncertainty",
+      "issue": "B1-B0 max3.829767;B1T5-T4max0.011052 exceeds threshold"
+    },
+    {
+      "severity": "coverage_limit",
+      "issue": "22Tier1,9boundary integrals,13Tier1only;66one-sided/inward points no joint/optimizer domain"
+    },
+    {
+      "severity": "verification_scope",
+      "issue": "AST callback/covariance expressions are not complete diagnostics IO/sampling/fit-driver execution"
+    },
+    {
+      "severity": "decomposition_limit",
+      "issue": "inclination-only integrand retains D/i product, not unique interaction-free error decomposition"
+    }
+  ],
+  "parent_disposition": "all objections retained; no production or statistical-target change to satisfy agent; supplementary66 parity within already predeclared points; fit launch requires Human statistical-target decision"
+}

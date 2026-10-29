@@ -1,0 +1,74 @@
+{
+  "label": "ENGINEERING_SMOKE_ONLY — NOT CORRECTED MLE",
+  "frozen_utc": "2026-10-28T14:23:12.110061Z",
+  "likelihood_B0": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+  "likelihood_B1": "REV26-P1E-UNIFORM-EXPLICIT-B1-PHYSICAL-v1",
+  "policy": "segmented_quantile 192 fixedpieceorder;96precisioncomparison;physicalCDFknots -6,-4,-2,0,2,4,6 withfullprobabilitydomain",
+  "parity": {
+    "all637eachfloor": true,
+    "native728": true,
+    "neighborhood_P1E72points": true,
+    "pergal_logL_abs": 1e-08,
+    "mapping_abs": 1e-08,
+    "refinement_pergal": 0.0001,
+    "refinement_sample_sumabs": 0.01,
+    "repeat_abs": 1e-12,
+    "nonfinite_allowed": false
+  },
+  "smoke": {
+    "models": [
+      "ptq-screen",
+      "nfw1p"
+    ],
+    "starts": "one original recovered theta permodel,nootherstarts",
+    "optimizer": "scipy.optimize.minimize L-BFGS-B,rawnativecoordinates,boundsoriginal,jac=None numericalforwarddifferences",
+    "max_accepted_iterations_per_run": 1,
+    "maxiter": 1,
+    "maxls": 2,
+    "max_fullsample_evaluations_aggregate": 400,
+    "max_per_model_fullsample_evaluations": 200,
+    "max_optimizer_calls_per_model": 190,
+    "max_optimization_wall_seconds_aggregate": 1200,
+    "include_validation_calls_in400": true,
+    "initial_validation": "fine192,coarse96,repeatfine192,3prescribedperturbations",
+    "terminal_validation": "fine192,coarse96,repeatfine192 ifbudgetpermits",
+    "reserved_validation_calls_per_model": 9,
+    "options": {
+      "ftol": 1e-12,
+      "gtol": 1e-06,
+      "eps": 1e-08,
+      "maxcor": 10
+    },
+    "retry": false,
+    "per_galaxy_wallguard": true,
+    "gradient_kind": "finite differences ofintegratednumericalobjective,notanalyticderivatives",
+    "perturbations": {
+      "ptq_screen": [
+        "epsilon +1e-6*nativeboundspan",
+        "lnq +1e-6*nativeboundspan",
+        "lnsigma +1e-6*nativeboundspan"
+      ],
+      "nfw1p": [
+        "firstU +1e-6span ifinboundelseminus",
+        "firstlogM +1e-6span ifinboundelseminus",
+        "lnsigma +1e-6span"
+      ]
+    },
+    "terminal_if_budget": "lastaccepted callback vector ifavailable,else originalstart;labelmissingvalidation,nevercallitMLE",
+    "budget_result": "DRIVER_SMOKE_BUDGET_LIMIT;noautomaticretryorcapincrease"
+  },
+  "pre_smoke_gates": "unit/parity/allactualpubliclikelihoodcallpaths/firewallPASSbeforeanyoptimizer",
+  "post_fit_not_authorized": [
+    "sevenmodelMLE",
+    "NFWmultistart",
+    "profiles",
+    "MCMC",
+    "newICranking",
+    "manuscriptupdates",
+    "canonicalinstallation"
+  ],
+  "source_roots": [
+    "/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/production_smoke",
+    "/Users/rocky/ptq-mond/docs/frontiers_major_revision_2026_10/rev26_p1f_production_smoke"
+  ]
+}

@@ -1,0 +1,131 @@
+"""Final bounded numerical acceptance, never optimization or fitted result generation."""
+from pathlib import Path
+import sys,json,hashlib,time,traceback,resource
+import numpy as np,pandas as pd
+import explicit_reference as ex
+from explicit_reference import laws
+B=Path(__file__).resolve().parent;I=B.parents[2];M=I/'results/frontiers_revision_2026_10/mle_recovery';P=I/'results/frontiers_revision_2026_10/patch_boundary_gate';C=I/'results/frontiers_revision_2026_10/covariance_reference'
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def js(p,x):p.write_text(json.dumps(x,indent=2,allow_nan=False)+'\n')
+def main():
+ gate=json.loads((B/'local_v1/LOCAL_GATE.json').read_text());assert gate['status']=='PASS' and gate['code_sha256']==sha(B/'explicit_reference.py')
+ out=B/'acceptance_v1';out.mkdir(exist_ok=False);protocol=json.loads((B/'PREDECLARED_PROTOCOL.json').read_text());tol=protocol['tolerances'];gs=laws.load_sample(I/'dataset/sparc_tidy.csv');names=[g.name for g in gs];assert len(gs)==91 and sum(len(g.y) for g in gs)==1782
+ vectors={m:np.load(M/'original_recovered/01_mle'/m.replace('-','_')/'theta_mle.npy') for m in laws.MODELS};pars={m:laws.decode(m,t,91) for m,t in vectors.items()};attempts=[];exceptions=[];start=time.monotonic()
+ js(out/'EXECUTION_PLAN.json',dict(protocol_sha256=sha(B/'PREDECLARED_PROTOCOL.json'),code_sha256=sha(B/'explicit_reference.py'),repeat_model='nfw1p',repeat_reason='fixed before comparisons to test complete91gal expensivehalo path;2 repeats B0/B1;all7model timings recorded frominitialpass',repeat_count=2,primary_data='fixed y0',optimization=False))
+ def evaluate(stage,g,m,p,gi,method,order,point='historical',linear=False):
+  try:
+   r=ex.integrate(g,p,gi,method,order,linear=linear)
+   attempts.append(dict(stage=stage,galaxy=g.name,model=m,point=point,method=method,order=order,linear=linear,status='COMPLETE',nodes=r['density_nodes'],seconds=r['seconds']))
+   return r
+  except Exception as exc:
+   rec=dict(stage=stage,galaxy=g.name,model=m,point=point,method=method,order=order,error=repr(exc),traceback=traceback.format_exc());exceptions.append(rec);attempts.append(dict(**rec,status='FAILED'));raise
+ def save_attempts():js(out/'attempts.json',attempts);js(out/'exceptions.json',exceptions)
+ pilot=[]
+ try:
+  # First policy is explicitly investigated, not assumed superior.
+  for name in protocol['pilot_galaxies']:
+   gi=names.index(name);g=gs[gi]
+   for m,p in pars.items():
+    for order in protocol['numerical_methods']['initial_quantile_orders']:
+     r=evaluate('pilot_quantile',g,m,p,gi,'quantile',order)
+     for floor,v in r['logL'].items():pilot.append(dict(galaxy=name,model=m,method='quantile',order=order,floor=floor,logL=v,D_nodes=r['D_nodes'],i_nodes=r['i_nodes'],seconds=r['seconds']))
+   print('PILOT quantile',name,'nodes',ex.NODE_EVALUATIONS,flush=True)
+  pd.DataFrame(pilot).to_csv(out/'pilot_all_levels.csv',index=False)
+  qdf=pd.DataFrame(pilot);qlo=qdf[qdf.order==256].set_index(['galaxy','model','floor']);qhi=qdf[qdf.order==512].set_index(['galaxy','model','floor']);qd=(qhi.logL-qlo.logL).rename('delta512_256').reset_index();qd.to_csv(out/'pilot_quantile_convergence.csv',index=False)
+  fallback=bool((abs(qd.delta512_256)>tol['per_galaxy_refinement_abs_logL']).any())
+  if fallback:
+   method='segmented_quantile';levels=protocol['numerical_methods']['segmented_orders_per_piece']
+   for name in protocol['pilot_galaxies']:
+    gi=names.index(name);g=gs[gi]
+    for m,p in pars.items():
+     for order in levels:
+      r=evaluate('pilot_segmented',g,m,p,gi,method,order)
+      for floor,v in r['logL'].items():pilot.append(dict(galaxy=name,model=m,method=method,order=order,floor=floor,logL=v,D_nodes=r['D_nodes'],i_nodes=r['i_nodes'],seconds=r['seconds']))
+    print('PILOT segmented',name,'nodes',ex.NODE_EVALUATIONS,flush=True)
+  else:method='quantile';levels=protocol['numerical_methods']['initial_quantile_orders']
+  pd.DataFrame(pilot).to_csv(out/'pilot_all_methods.csv',index=False);fine=levels[-1];coarse=levels[-2]
+  js(out/'NUMERICAL_POLICY.json',dict(method=method,fine_order=fine,coarse_order=coarse,fallback_triggered=fallback,quantile_pilot_max_last_delta=float(abs(qd.delta512_256).max()),policy='fixed same method/order for EVERYgalaxy/model and futurestart; segments depend onexternalgeometry only; targetphysicalonly unchanged',no_finite_tail_cutoff=True))
+  # GateC mathematical correctness was PASS; now full91×7 atsamefixed policy regardless pilot convergence.
+  surrogate=pd.read_csv(C/'full_sample_v1/per_galaxy.csv').set_index(['model','galaxy']);full=[];results_cache={}
+  for m,p in pars.items():
+   for gi,g in enumerate(gs):
+    vals={}
+    for order in [coarse,fine]:vals[order]=evaluate('full_sample',g,m,p,gi,method,order)
+    results_cache[(m,g.name)]=vals[fine]['logL']
+    old=surrogate.loc[(m,g.name)]
+    for floor in ['B0','B1']:
+     hi=vals[fine]['logL'][floor];lo=vals[coarse]['logL'][floor];U=p['U'][gi];ub=min(abs(U-.05),abs(U-1.5))<=1e-4*1.45;hb=bool(m=='nfw1p' and min(abs(p['logM'][gi]-9),abs(p['logM'][gi]-13))<=1e-4*4)
+     full.append(dict(label='FIXED_HISTORICAL_PARAMETER_POINT',model=m,galaxy=g.name,floor=floor,explicit_logL=hi,coarse_logL=lo,refinement_delta=hi-lo,passes_1e_4=abs(hi-lo)<=tol['per_galaxy_refinement_abs_logL'],surrogate_B0_logL=float(old.corrected_logL),explicit_minus_surrogate_B0=hi-float(old.corrected_logL),ZD=vals[fine]['ZD'],Zi=vals[fine]['Zi'],prior_weight_sum=vals[fine]['weight_sum'],D_nodes=vals[fine]['D_nodes'],i_nodes=vals[fine]['i_nodes'],sigma_sys=p['sigma'],U_boundary=bool(ub),halo_boundary=hb,n=len(g.y),relD=g.sD/g.D,i_deg=float(np.rad2deg(g.inc)),i_err_deg=float(np.rad2deg(g.si)),physical_boundary_3sigma=bool(min(g.inc,np.pi/2-g.inc)<=3*g.si),seconds_both_floors=vals[fine]['seconds']))
+   print('FULL_SAMPLE',m,'nodes',ex.NODE_EVALUATIONS,'elapsed',time.monotonic()-start,flush=True)
+  fdf=pd.DataFrame(full);assert len(fdf)==1274 and not fdf.duplicated(['model','galaxy','floor']).any();assert np.isfinite(fdf.select_dtypes(include='number').to_numpy()).all();fdf.to_csv(out/'full_sample_all1274.csv',index=False)
+  totals=[]
+  for (m,floor),s in fdf.groupby(['model','floor'],sort=False):totals.append(dict(label='FIXED_HISTORICAL_PARAMETER_POINT',model=m,floor=floor,galaxies=len(s),explicit_logL=float(s.explicit_logL.sum()),coarse_logL=float(s.coarse_logL.sum()),signed_refinement=float(s.refinement_delta.sum()),sum_abs_refinement=float(abs(s.refinement_delta).sum()),max_abs_galaxy_refinement=float(abs(s.refinement_delta).max()),pergal_failures=int((~s.passes_1e_4).sum()),explicit_minus_surrogate=float(s.explicit_minus_surrogate_B0.sum()),seconds_full91_bothfloors=float(s.seconds_both_floors.sum())))
+  td=pd.DataFrame(totals);td.to_csv(out/'totals.csv',index=False)
+  # Native mappings are recomputed; target theta decoded afresh.
+  maps=[]
+  for source,target in [('mond','ptq-nu'),('ptq-nu','mond'),('mond-screen','ptq-screen'),('ptq-screen','mond-screen')]:
+   t=vectors[source].copy();t[0]=10**t[0]/(laws.C_LIGHT*laws.H0) if target.startswith('ptq') else np.log10(t[0]*laws.C_LIGHT*laws.H0);p=laws.decode(target,t,91)
+   for gi,g in enumerate(gs):
+    r=evaluate('native_mapping',g,target,p,gi,method,fine,point='mapped_from_'+source)
+    for floor,v in r['logL'].items():maps.append(dict(source=source,target=target,galaxy=g.name,floor=floor,delta_logL=v-results_cache[(source,g.name)][floor],passes_1e_8=abs(v-results_cache[(source,g.name)][floor])<=tol['native_identity_logL_abs']))
+   print('MAPPING',source,target,'nodes',ex.NODE_EVALUATIONS,flush=True)
+  pd.DataFrame(maps).to_csv(out/'native_matched_all728.csv',index=False);assert len(maps)==728 and all(x['passes_1e_8'] for x in maps)
+  # B1 scope isidentical all637,not favorable subset.
+  floors=fdf.pivot(index=['model','galaxy'],columns='floor',values='explicit_logL');floors['B1_minus_B0']=floors.B1-floors.B0;floors.reset_index().to_csv(out/'B1_B0_full637.csv',index=False)
+  # P1DfiniteT crosscheck,using ONLY correctedv2 derived values.
+  prior=pd.read_csv(P/'postprocessing_v2/decomposition.csv');prior=prior[(prior.point=='historical')&(prior['T']==5.)];cross=[]
+  for _,r in prior.iterrows():
+   for floor,col in [('B0','nonlinear_B0'),('B1','nonlinear_B1')]:cross.append(dict(galaxy=r.galaxy,model=r.model,floor=floor,full_physical_logL=results_cache[(r.model,r.galaxy)][floor],P1D_T5_logL=float(r[col]),full_minus_finite_T5=results_cache[(r.model,r.galaxy)][floor]-float(r[col])))
+  pd.DataFrame(cross).to_csv(out/'P1D_finite_T5_crosscheck.csv',index=False)
+  # Samephysical prior linearconditional mean onthepredeclared pilot toseparate nonlinearfromtruncation.
+  linear=[]
+  for name in protocol['pilot_galaxies']:
+   gi=names.index(name);g=gs[gi]
+   for m,p in pars.items():
+    r=evaluate('physical_linear_crosscheck',g,m,p,gi,method,fine,linear=True)
+    for floor,v in r['logL'].items():linear.append(dict(galaxy=name,model=m,floor=floor,physical_linear_logL=v,physical_full_logL=results_cache[(m,name)][floor],nonlinear_minus_linear=results_cache[(m,name)][floor]-v,surrogate_B0_logL=float(surrogate.loc[(m,name)].corrected_logL)))
+  pd.DataFrame(linear).to_csv(out/'same_physical_prior_linear_pilot.csv',index=False)
+  # ALL66 already frozen points plus6declarednearhardfloorbounds.
+  meta=json.loads((P/'boundary_v1/parameter_points.json').read_text());points=[]
+  for r in meta:
+   t=vectors[r['model']].copy()
+   for c in r['coordinates']:assert t[c['index']]==c['old'];t[c['index']]=c['new']
+   assert hashlib.sha256(t.astype('<f8').tobytes()).hexdigest()==r['theta_float64_sha256'];points.append((r['galaxy'],r['model'],r['point'],t))
+  for supp in protocol['neighborhood']['near_bound_supplement']:
+   val=.001001 if supp['galaxy']=='IC4202' else 199.999
+   for m in supp['models']:
+    t=vectors[m].copy();t[-1]=np.log(val);points.append((supp['galaxy'],m,'floor_bound_'+str(val),t))
+  nearby=[]
+  for name,m,point,t in points:
+   gi=names.index(name);g=gs[gi];p=laws.decode(m,t,91);lo=evaluate('neighborhood',g,m,p,gi,method,coarse,point);hi=evaluate('neighborhood',g,m,p,gi,method,fine,point)
+   for floor in ['B0','B1']:nearby.append(dict(label='FIXED_PARAMETER_POINT',galaxy=name,model=m,point=point,floor=floor,explicit_logL=hi['logL'][floor],refinement_delta=hi['logL'][floor]-lo['logL'][floor],passes_1e_4=abs(hi['logL'][floor]-lo['logL'][floor])<=1e-4,source_theta_float64_sha256=hashlib.sha256(t.astype('<f8').tobytes()).hexdigest()))
+  pd.DataFrame(nearby).to_csv(out/'neighborhood_all144.csv',index=False)
+  # Objectivecontinuity fixed probes,not profile/search/derivativeparameterestimation.
+  probe=protocol['neighborhood']['smoothness_probe'];name=probe['galaxy'];m=probe['model'];gi=names.index(name);g=gs[gi];smooth=[]
+  for offset in probe['relative_offsets']:
+   t=vectors[m].copy();t[1]+=np.log1p(offset);p=laws.decode(m,t,91);r=evaluate('smoothness_probe',g,m,p,gi,method,fine,point=str(offset));repeat=evaluate('smoothness_repeat',g,m,p,gi,method,fine,point=str(offset))
+   for floor,v in r['logL'].items():smooth.append(dict(model=m,galaxy=name,q_relative_offset=offset,floor=floor,logL=v,repeat_delta=repeat['logL'][floor]-v))
+  pd.DataFrame(smooth).to_csv(out/'smoothness_repeatability.csv',index=False)
+  # Two repeat whole91galNFW objectives onexactsame nodes,pluscost ofall7full passes alreadyrecorded.
+  reps=[]
+  for rep in range(2):
+   startrep=time.perf_counter();rvals={'B0':0.,'B1':0.}
+   for gi,g in enumerate(gs):
+    r=evaluate('full91_repeat',g,'nfw1p',pars['nfw1p'],gi,method,fine,point='repeat'+str(rep))
+    for floor,value in r['logL'].items():rvals[floor]+=value
+   for floor,value in rvals.items():
+    expect=float(td[(td.model=='nfw1p')&(td.floor==floor)].explicit_logL.iloc[0]);reps.append(dict(repetition=rep,model='nfw1p',floor=floor,total_logL=value,reference_total=expect,delta=value-expect,seconds_both_floors=time.perf_counter()-startrep))
+  pd.DataFrame(reps).to_csv(out/'full91_repeat_cost.csv',index=False)
+  # Errorbudgetmodeldifference conservativeestimate = sumofindividualmodel sumabs refinements.
+  pair=[]
+  for floor,s in td.groupby('floor'):
+   for j,a in s.iterrows():
+    for k,b in s.iterrows():
+     if a.model<b.model:pair.append(dict(floor=floor,model_a=a.model,model_b=b.model,error_estimate_sum=float(a.sum_abs_refinement+b.sum_abs_refinement)))
+  pd.DataFrame(pair).to_csv(out/'model_difference_numerical_error_estimates.csv',index=False)
+  summary=dict(method=method,fine_order=fine,coarse_order=coarse,full_rows=1274,galaxies=91,native_parameterizations=7,full_B0_and_B1=True,pergal_failures=int((~fdf.passes_1e_4).sum()),max_pergal_refinement=float(abs(fdf.refinement_delta).max()),max_model_sumabs_refinement=float(td.sum_abs_refinement.max()),max_model_signed_refinement=float(abs(td.signed_refinement).max()),max_model_difference_error_estimate=max(x['error_estimate_sum'] for x in pair),native_mapping_rows=len(maps),max_native_mapping_delta=max(abs(x['delta_logL']) for x in maps),neighborhood_points=len(points),neighborhood_rows=len(nearby),neighborhood_failures=sum(not x['passes_1e_4'] for x in nearby),max_neighborhood_refinement=max(abs(x['refinement_delta']) for x in nearby),repeat_max_abs=max(abs(x['delta']) for x in reps),repeat_smooth_max_abs=max(abs(x['repeat_delta']) for x in smooth),density_node_evaluations=ex.NODE_EVALUATIONS,elapsed_seconds=time.monotonic()-start,max_process_RSS_bytes=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,exceptions=len(exceptions),optimization=False)
+  accepted=summary['pergal_failures']==0 and summary['max_model_sumabs_refinement']<=.01 and summary['max_model_signed_refinement']<=.01 and summary['max_model_difference_error_estimate']<=.02 and summary['neighborhood_failures']==0 and summary['repeat_max_abs']<=1e-12 and summary['repeat_smooth_max_abs']<=1e-12 and summary['max_process_RSS_bytes']<=512*1024**2
+  summary['explicit_numerical_acceptance']=bool(accepted);summary['target_recommendation']='UNIFORM_EXPLICIT_B0_READY_FOR_FIT_REVIEW' if accepted else 'GAUSSIAN_SURROGATE_PRIMARY_WITH_EXPLICIT_SENSITIVITY';js(out/'ACCEPTANCE_SUMMARY.json',summary);save_attempts();print(json.dumps(summary,indent=2),flush=True)
+ except Exception as exc:
+  save_attempts();js(out/'TERMINAL_FAILURE.json',dict(error=repr(exc),traceback=traceback.format_exc(),density_nodes=ex.NODE_EVALUATIONS,elapsed=time.monotonic()-start,target_not_changed=True));raise
+if __name__=='__main__':main()

@@ -2,7 +2,7 @@
 
 **Public posture:** this repository is a **SPARC weak-field identifiability and diagnostic pipeline**, not a PTQ model-ranking scoreboard.
 
-It accompanies the manuscript *SPARC Diagnostics of MOND-like Weak-Field Dictionaries with a Projected Scalar-Sector Interpretation* (Frontiers / Preprints.org Version‑5 release candidate).
+It accompanies the manuscript *SPARC Diagnostics of MOND-like Weak-Field Dictionaries with a Projected Scalar-Sector Interpretation* (Frontiers journal submission; Preprints.org Version 5, doi:[10.20944/preprints202503.2052.v5](https://doi.org/10.20944/preprints202503.2052.v5)).
 
 ## What this code establishes
 
@@ -17,16 +17,15 @@ It accompanies the manuscript *SPARC Diagnostics of MOND-like Weak-Field Diction
 - **Strict selected cross-scale equality fails** under the adopted \(\Omega_\Lambda(\varepsilon)\) diagnostic map; the numerical reconciliation factor \(\kappa_{\rm req}\equiv\varepsilon_{\rm RC}/\varepsilon_{\rm cos}\) is bookkeeping only, not evidence for closure.
 - Open-source value is **auditability of both positive and negative results**, not advertisement of a model winner.
 
-## Immutable release (planned)
+## Immutable reproducibility release
 
 | Item | Value |
 |------|-------|
-| Proposed tag | `sparc-frontiers-v1.0.0` |
+| Immutable tag | [`sparc-frontiers-v1.0.0`](https://github.com/ice91/PTQ-Quaternionic-RC/releases/tag/sparc-frontiers-v1.0.0) |
+| Preprints.org Version 5 | doi:[10.20944/preprints202503.2052.v5](https://doi.org/10.20944/preprints202503.2052.v5) |
 | Paper reproduction guide | [`REPRODUCE_PAPER.md`](REPRODUCE_PAPER.md) |
 | Paper evidence bundle (companion paper repo) | `paper_release/frontiers_sparc_v1/` |
 | Citation metadata | [`CITATION.cff`](CITATION.cff) |
-
-Public push / preprint upload / DOI minting require **separate Human Arbiter authorization**.
 
 ## Install
 

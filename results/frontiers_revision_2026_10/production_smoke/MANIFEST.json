@@ -1,0 +1,87 @@
+{
+  "task": "REV26-P1F",
+  "label": "ENGINEERING_SMOKE_ONLY \u2014 NOT CORRECTED MLE",
+  "verdict": {
+    "PRODUCTION_PARITY": "PASS",
+    "DRIVER_SMOKE": "BUDGET_LIMITED",
+    "NUMERICAL_OBJECTIVE": "ACCEPTABLE_FOR_BOUNDED_MLE",
+    "CAMPAIGN_READINESS": "ENGINEERING_REPAIR_REQUIRED"
+  },
+  "numerical_root": "/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/production_smoke",
+  "docs_root": "/Users/rocky/ptq-mond/docs/frontiers_major_revision_2026_10/rev26_p1f_production_smoke",
+  "source_manifest": "SOURCE_MANIFEST.json",
+  "source_unchanged": 2025,
+  "canonical_installed": false,
+  "scientific_fit": false,
+  "isolated_changes": [
+    {
+      "file": "scripts/run_uniform_explicit_smoke.py",
+      "original_sha256": null,
+      "candidate_sha256": "de83465436ca67f031c4f50203e8f6226049e90f00ab4b667c37ae26c4e6b38c"
+    },
+    {
+      "file": "src/ptquat/bounded_driver.py",
+      "original_sha256": null,
+      "candidate_sha256": "2698e033ea51a1e1ed3016520a2856c94617bf2edfa5aaae1a0612163f96db2e"
+    },
+    {
+      "file": "src/ptquat/experiments.py",
+      "original_sha256": "cc88339fcd5f470ebd3f2d57df6a792e11bae3465c819355706a57512238cef6",
+      "candidate_sha256": "2ad00e74f2f11c64db757ec07c20427e9b26c1bf5dfee340b07220f40aa75e0c"
+    },
+    {
+      "file": "src/ptquat/fit_global.py",
+      "original_sha256": "a41da2fd2fe62e15f1cd13ce441c99b30f1c3dcbbb1975f2966be1d055785f3c",
+      "candidate_sha256": "2e220bb5a29dac97b1e6ab9e279e0560f4573746e4acadfab22a8f0376ff4831"
+    },
+    {
+      "file": "src/ptquat/likelihood.py",
+      "original_sha256": "4c642ae1ad2f011a9649bdd9b9104731b06e9403012ca2b5ce30fc134a6dc7ba",
+      "candidate_sha256": "8206105d8c00603970c87754f5219bfccbe21d096bfd8b309bc08556b00579ef"
+    },
+    {
+      "file": "src/ptquat/marginal_likelihood.py",
+      "original_sha256": null,
+      "candidate_sha256": "af165fcf8da89cc06402dc9e63075ea50b96240af4848f67109a79fb268b5ee3"
+    },
+    {
+      "file": "src/ptquat/mle.py",
+      "original_sha256": "5ae179fe567094eb22f17cefc121a18fbdadfbfc6d06a697b88d02c689da78ef",
+      "candidate_sha256": "ef1b1352e147b0aa9a115e7b5af33e591c933ce629c24f2ac5be3c9802d2755b"
+    },
+    {
+      "file": "src/ptquat/models.py",
+      "original_sha256": "1c81fdc86882fc78a384f68102eb6c589e32d9878f8981430ea6d294d9f42248",
+      "candidate_sha256": "cba208085f4e5e6373fe3b1bd5b862e9be66a6d1412a6a7750c4c4b053bbc952"
+    },
+    {
+      "file": "tests/test_uniform_target.py",
+      "original_sha256": null,
+      "candidate_sha256": "1a6580a80f001fd454697b41a590c49da122a37773bc24209dde0aaa823471ef"
+    }
+  ],
+  "reports": [
+    "/Users/rocky/ptq-mond/docs/frontiers_major_revision_2026_10/rev26_p1f_production_smoke/00_EXECUTIVE_VERDICT.md",
+    "/Users/rocky/ptq-mond/docs/frontiers_major_revision_2026_10/rev26_p1f_production_smoke/01_INTEGRATION_DIFF_AND_CALL_GRAPH.md",
+    "/Users/rocky/ptq-mond/docs/frontiers_major_revision_2026_10/rev26_p1f_production_smoke/02_FIXED_POINT_PARITY.md",
+    "/Users/rocky/ptq-mond/docs/frontiers_major_revision_2026_10/rev26_p1f_production_smoke/03_LIKELIHOOD_VERSION_AND_DIAGNOSTIC_FIREWALL.md",
+    "/Users/rocky/ptq-mond/docs/frontiers_major_revision_2026_10/rev26_p1f_production_smoke/04_FROZEN_SMOKE_PROTOCOL.md",
+    "/Users/rocky/ptq-mond/docs/frontiers_major_revision_2026_10/rev26_p1f_production_smoke/05_REAL_DRIVER_SMOKE_RESULTS.md",
+    "/Users/rocky/ptq-mond/docs/frontiers_major_revision_2026_10/rev26_p1f_production_smoke/06_PRECISION_AND_GRADIENT_AUDIT.md",
+    "/Users/rocky/ptq-mond/docs/frontiers_major_revision_2026_10/rev26_p1f_production_smoke/07_RUNTIME_AND_FIT_BUDGET.md",
+    "/Users/rocky/ptq-mond/docs/frontiers_major_revision_2026_10/rev26_p1f_production_smoke/08_INDEPENDENT_REVIEW.md",
+    "/Users/rocky/ptq-mond/docs/frontiers_major_revision_2026_10/rev26_p1f_production_smoke/09_INACTIVE_SEVEN_MODEL_CAMPAIGN.md",
+    "/Users/rocky/ptq-mond/docs/frontiers_major_revision_2026_10/rev26_p1f_production_smoke/10_NEXT_EXECUTION_PROMPT.md",
+    "/Users/rocky/ptq-mond/docs/frontiers_major_revision_2026_10/rev26_p1f_production_smoke/SOURCE_PRESERVATION.md"
+  ],
+  "checksums": {
+    "numerical": "SHA256SUMS",
+    "reports": "/Users/rocky/ptq-mond/docs/frontiers_major_revision_2026_10/rev26_p1f_production_smoke/SHA256SUMS"
+  },
+  "incidents": "FAILURE_AND_EXCEPTION_MANIFEST.json",
+  "execution": "EXECUTION_INDEX.json",
+  "independent_reviews": [
+    "INDEPENDENT_REVIEW_RAW.md",
+    "INDEPENDENT_REVIEW_SMOKE_ADDENDUM.md"
+  ]
+}

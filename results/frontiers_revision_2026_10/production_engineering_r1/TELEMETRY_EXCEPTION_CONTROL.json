@@ -1,0 +1,34 @@
+{
+  "status": "PASS",
+  "exception_propagated": true,
+  "synthetic_only": true,
+  "collector": {
+    "total_events": 17,
+    "distinct_keys": 1,
+    "records": [
+      {
+        "category": "RuntimeWarning",
+        "normalized_message": "failure-path telemetry control",
+        "source_file": "<stdin>",
+        "line": 10,
+        "model": "synthetic_failure_control",
+        "likelihood_version": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+        "count": 17,
+        "first_occurrence_utc": "2026-10-28T23:12:17Z",
+        "representative_parameter_hash": "e839d2cbbd704bbf854d9620a4ff2ee077e430e0fd18ba29e310e3fe03f1a8ea",
+        "numerical_validity_status": "FINITE_OUTPUT_AUDIT_REQUIRED",
+        "classification": "UNRESOLVED_WARNING_ROOT_CAUSE"
+      }
+    ],
+    "exceptions": [
+      {
+        "model": "synthetic_failure_control",
+        "likelihood_version": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+        "parameter_hash": "e839d2cbbd704bbf854d9620a4ff2ee077e430e0fd18ba29e310e3fe03f1a8ea",
+        "error": "FloatingPointError('deliberate failure control, no real likelihood evaluated')",
+        "classification": "NUMERICAL_CALL_FAILED"
+      }
+    ],
+    "storage": "bounded one representative/key, exact counts"
+  }
+}

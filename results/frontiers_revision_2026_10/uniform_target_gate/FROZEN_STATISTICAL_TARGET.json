@@ -1,0 +1,9 @@
+{
+  "target_identifier": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+  "target": "fixed y0 normalized Gaussian conditional; independent physical-truncated normal D/i conditional nuisance distributions; all91/all7 same definition",
+  "interpretation": "external error kernels treated as normalized conditional nuisance distributions centered reported D0/i0; assumes Gaussian measurement kernels and chosen locally flat D/i prior/conditioning interpretation; not raw empirically-established posterior or independence",
+  "conditional_B0": "diag(e0^2+sigma_sys^2)",
+  "conditional_B1": "diag(e0^2+(sin(i)/sin(i0)*sigma_sys)^2)",
+  "domains": "D>0;0<i<pi/2; normal kernels renormalized physical only; no finiteT target cutoff,no cos(i)prior",
+  "primary_measure": "nominal catalog deprojected y0 (km/s),fixed observations/template angular shapes; full sqrtD templates and radiusD; NFW halo changedradius fixedM/c"
+}

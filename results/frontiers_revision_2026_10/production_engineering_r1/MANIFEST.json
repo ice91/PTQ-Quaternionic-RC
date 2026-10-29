@@ -1,0 +1,42 @@
+{
+  "task": "REV26-P1F-R1",
+  "verdicts": {
+    "ENGINEERING_CONTRACT": "CONDITIONAL",
+    "DEPENDENCY_GRADIENT": "PASS",
+    "DIRECTIONAL_PRECISION": "PASS",
+    "NEXT_DRIVER_SMOKE": "READY_FOR_AUTHORIZATION"
+  },
+  "numerical_root": "/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/production_engineering_r1",
+  "docs_root": "/Users/rocky/ptq-mond/docs/frontiers_major_revision_2026_10/rev26_p1f_r1_engineering",
+  "reports": [
+    "00_EXECUTIVE_VERDICT.md",
+    "01_EVALUATOR_AND_BOUNDS_CONTRACT.md",
+    "02_PARAMETER_DEPENDENCY_LEDGER.md",
+    "03_DEPENDENCY_AWARE_GRADIENT.md",
+    "04_FIXED_DIRECTION_PRECISION.md",
+    "05_WARNING_TELEMETRY.md",
+    "06_FULL_PARITY_RESULTS.md",
+    "07_COST_AND_SPEEDUP.md",
+    "08_INDEPENDENT_REVIEW.md",
+    "09_NEXT_SMOKE_AUTHORIZATION_PACKET.md",
+    "10_NEXT_EXECUTION_PROMPT.md",
+    "SOURCE_PRESERVATION.md"
+  ],
+  "isolated_candidate": "candidate",
+  "patch": "integration_from_P1F.diff",
+  "source_manifest": "SOURCE_MANIFEST.json",
+  "failure_manifest": "FAILURE_MANIFEST.json",
+  "execution": "EXECUTION_INDEX.json",
+  "checksums": "SHA256SUMS",
+  "dependency_ledger": "PARAMETER_DEPENDENCY_LEDGER.json",
+  "parameter_count": 742,
+  "local_parameter_count": 728,
+  "native_models": 7,
+  "full_parity": "parity_v1/PARITY_GATE.json",
+  "directions": "directions_v1/DIRECTION_GATE.json",
+  "complete_gradient": "BENCHMARK_SUMMARY.json",
+  "inactive_next_smoke": "NEXT_SMOKE_PROPOSAL.json",
+  "optimizer_calls": 0,
+  "scientific_fitting": false,
+  "canonical_installation": false
+}

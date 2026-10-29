@@ -1,0 +1,42 @@
+{
+  "repositories": {
+    "outer": {
+      "root": "/Users/rocky/ptq-mond\n",
+      "HEAD": "3eb302666da7eccca19c5843f729e98126d68977\n",
+      "status": " M PTQ-Quaternionic-RC\n?? docs/frontiers_major_revision_2026_10/rev26_p1a_mle_recovery/\n?? docs/frontiers_major_revision_2026_10/rev26_p1b_covariance_gate/\n?? docs/frontiers_major_revision_2026_10/rev26_p1c_covariance_reference/\n?? docs/frontiers_major_revision_2026_10/rev26_p1d_patch_boundary/\n?? docs/frontiers_major_revision_2026_10/rev26_p1e_uniform_target/\n?? docs/frontiers_major_revision_2026_10/rev26_p1f_production_smoke/\n?? docs/frontiers_major_revision_2026_10/rev26_p1f_r1_engineering/\n",
+      "worktrees": "worktree /Users/rocky/ptq-mond\nHEAD 3eb302666da7eccca19c5843f729e98126d68977\nbranch refs/heads/main\n\n"
+    },
+    "implementation": {
+      "root": "/Users/rocky/ptq-mond/PTQ-Quaternionic-RC\n",
+      "HEAD": "5a8dca57f0fc3484387c643b51e22c7e10d024a8\n",
+      "status": " M .DS_Store\n M CITATION.cff\n M README.md\n M REPRODUCE_PAPER.md\n?? results/frontiers_revision_2026_10/\n",
+      "worktrees": "worktree /Users/rocky/ptq-mond/PTQ-Quaternionic-RC\nHEAD 5a8dca57f0fc3484387c643b51e22c7e10d024a8\nbranch refs/heads/main\n\n"
+    }
+  },
+  "inputs": "INPUT_MANIFEST.json",
+  "baseline": "SOURCE_HASHES_BEFORE.json",
+  "frozen_contract": "PREDECLARED_CONTRACT.json",
+  "direction_protocol": "DIRECTION_PROTOCOL.json",
+  "source_changes": "INTEGRATION_FILES.json",
+  "candidate_hashes": "CANDIDATE_TESTED_HASHES.json",
+  "scientific_model_laws": "bytewiseequal P1F",
+  "likelihood": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+  "source_identity": "uncommitted isolatedcopy; baselineHEAD+SHA256 authoritative, HEADalone insufficient",
+  "environment": [
+    "parity_v1/environment.json",
+    "parity_v1/environment_freeze.txt"
+  ],
+  "receipt_chain": [
+    "dependency_v1/VERIFIED_DEPENDENCIES.json",
+    "dependency_v1/SEALED_VERIFIED_DEPENDENCIES.json",
+    "dependency_v1/CURRENT_VERIFIED_DEPENDENCIES.json"
+  ],
+  "snapshot_provenance": [
+    "DEPENDENCY_PRE_REVIEW_LOGIC_HASHES.json",
+    "LEGACY_CLOSURE_AST_PROOF.json",
+    "fit_global_before_legacy_closure.py.txt",
+    "run_directions_executed_v1.py.txt",
+    "run_benchmark_executed_v1.py.txt",
+    "run_benchmark_executed_v2.py.txt"
+  ]
+}

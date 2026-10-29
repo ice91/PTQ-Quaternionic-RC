@@ -1,0 +1,67 @@
+{
+  "status": "INACTIVE_REQUIRES_HUMAN_AUTHORIZATION",
+  "task": "REV26-P1G boundedseven-native B0 re-estimation",
+  "target": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+  "canonical_installation": false,
+  "source": "new isolatedcopy of verifiedR2 code; new scientificdriver shares verifiedsameF/nativeG callable; no model/nuisance/quadrature edits",
+  "native_models": {
+    "baryon": 92,
+    "mond": 93,
+    "ptq": 93,
+    "ptq_nu": 93,
+    "ptq_screen": 94,
+    "mond_screen": 94,
+    "nfw1p": 183
+  },
+  "sample": {
+    "galaxies": 91,
+    "points": 1782
+  },
+  "starts": {
+    "per_model": 3,
+    "warmstart": "one ORIGINAL P1A recoveredtheta; neverR2smoketerminal asunlabeledscientificstart",
+    "independent_seeds": [
+      260601,
+      260602
+    ],
+    "construction": "fixedseed uniform in central20..80percent of original nativebounds; ln/log parameter nativecoordinates; matchedphysicalfamilies bijectivelymapped sharedstartpoints; all7nativeoutputs retained",
+    "no_unbudgeted_replacements": true
+  },
+  "budget": {
+    "nonNFW_perstart_equivalents": 20000,
+    "nonNFW_perstart_wall_hours": 8,
+    "NFW_perstart_equivalents": 40000,
+    "NFW_perstart_wall_hours": 16,
+    "total_equivalents": 480000,
+    "total_wall_hours": 192,
+    "nonNFW_perstart_gradient_requests": 2500,
+    "NFW_perstart_gradient_requests": 5000,
+    "stop_at_any_limit": true,
+    "retry": false
+  },
+  "optimizer": {
+    "method": "L-BFGS-B",
+    "jac": true,
+    "maxiter": 500,
+    "maxls": 20,
+    "maxcor": 10,
+    "ftol": 1e-12,
+    "gtol": 1e-06,
+    "gradient": "native boundspan1e-4 centralelseinward; fixed192primary/96diagnostic"
+  },
+  "acceptance": {
+    "before_first_fit": "freeze numericalstationarity/KKT acceptance andgradient-uncertainty criteria independentofdesiredresults; copiedfunction parityall7; eachstart192/96precision mustpass else recordBLOCKEDstartwithoutreplacement",
+    "terminal": "completeF/pergal/gradient/bounds + projectedscalednativegradient/KKT + independenth1e-4/5e-5 fine/coarsechecks; numericalnoise/unresolvedstationarity meansPROVISIONAL_TERMINAL_NOT_VALIDATED_MLE; nevercertifyMLEsolelySciPysuccess orftol/gtol",
+    "NFW": "separate independentconvergence/multistart review; boundary/halo degeneracy diagnostics; no hiddenchange toc(M)",
+    "identity": "allnative initialandterminalmapped PTQ-nu/MOND andsharednu-q fixedpoint identity to1e-8"
+  },
+  "B1": {
+    "plan_frozen_before_B0rankings": true,
+    "scope": "all7full91endpoints fixedphysical B1sensitivity usingunchangedpureAPI",
+    "B1_optimization": "NOT_AUTHORIZED_BY_THIS_PLAN; verifiedgradientcurrentlyB0-only; separatereview andauthorizationrequired"
+  },
+  "uncertainty_profiles_MCMC": false,
+  "manuscript_updates": false,
+  "IC_policy": "only ifvalidatedscientificmaxima available andseparatelyapproved; neverusingR2fixed/smokepoints; point-countBICdescriptive underwithin-gal correlations",
+  "public_Git_or_journal": false
+}

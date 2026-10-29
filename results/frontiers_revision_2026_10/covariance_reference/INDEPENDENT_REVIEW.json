@@ -1,0 +1,33 @@
+{
+  "reviewer": "collaboration agent /root/independent_reference_review",
+  "independence": "second agent; read-only source and numerical checks after implementation/local tests; no file modifications, fitting or optimizer calls",
+  "proof_authority": false,
+  "recommendations": {
+    "STATISTICAL_SPECIFICATION": "ACCEPTABLE_WITH_DECLARED_LIMITATIONS",
+    "REFERENCE_IMPLEMENTATION": "PASS",
+    "REFIT_READINESS": "READY_FOR_PRODUCTION_PATCH_REVIEW"
+  },
+  "checks": {
+    "finite_unique_complete_galaxy_model_rows": 637,
+    "independent_logdet_max_abs": 2.2737367544323206e-13,
+    "independent_quadratic_max_abs": 1.4210854715202004e-13,
+    "slogdet_warning_matrices_reported": 91,
+    "all_slogdet_outputs_finite": true,
+    "native_theta_mapping_checks": 364,
+    "mapped_logL_max_abs": 8.526512829121202e-14,
+    "mapped_covariance_relative_max": 5.261812269188418e-16,
+    "delta_components_identity_max_abs": 2.5579538487363607e-13,
+    "conditional_normalization_and_no_double_counting": true,
+    "distance_and_fixed_halo_derivatives_consistent": true
+  },
+  "objections": [
+    {"severity": "major_scientific_limitation_not_code_error", "issue": "A_corr is a nominal-width normalized local Gaussian surrogate, not exact physical-truncated nuisance marginal", "disposition": "Accepted as explicit limitation already frozen in spec; do not expand PASS claim"},
+    {"severity": "major_operating_regime_limitation", "issue": "22 galaxies within3sigma inclination boundary,7 at90deg; first derivative nearzero does not remove second-order uncertainty", "evidence": "predeclared synthetic_i90 nonlinear-minus-matched-linear approx -0.296842; not an effect estimate for real1/3deg edge-on cases", "disposition": "Retain all rows; real boundary sensitivity protocol required before fit launch"},
+    {"severity": "major_model_assumption_limitation", "issue": "B1 minus B0 floor logL sensitivity max abs1.1714023431765384; B0 not uniquely data-supported", "disposition": "B0 chosen before results for coordinate continuity; preserve B1 and require author decision"},
+    {"severity": "limited_positive_approximation_evidence", "issue": "three-galaxy nonlinear-minus-matched-linear max0.0828921501052804 and tail T5-T4 max0.0001252889561556; no uniform bound over91 or optimizer domain", "disposition": "Explicit conditional interpretation only"},
+    {"severity": "low_test_strength_resolved", "issue": "local shared-a0 helper identity alone is partly by construction", "disposition": "Separate preexisting run_effects native-vector remap/fresh decode364 checks resolves identity evidence; no numerical target change"}
+  ],
+  "selection_review": "No evidence B0 selected from favorable rankings, no invented corrected MLE, no adverse-case deletion or parameter-count changes",
+  "unresolved_before_fit": ["author choice of likelihood/floor target", "acceptance of surrogate interpretation", "edge-on operating regime", "floor sensitivity protocol", "separate optimizer and NFW convergence authorization"],
+  "parent_response": "All objections retained. No numerical reference/contract/production change made to satisfy reviewer. Added verify_outputs finite assertions address test-strength concern without changing target. Readiness limited to patch review, not fit authorization."
+}

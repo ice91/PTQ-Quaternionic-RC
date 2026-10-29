@@ -1,0 +1,21 @@
+{
+  "verdicts": {
+    "ENGINEERING_CONTRACT": "CONDITIONAL",
+    "DEPENDENCY_GRADIENT": "PASS",
+    "DIRECTIONAL_PRECISION": "PASS",
+    "NEXT_DRIVER_SMOKE": "READY_FOR_AUTHORIZATION"
+  },
+  "reason_for_contract_conditional": "current evaluator/telemetry APIs PASS; failed initial NFW comparison harness did not persist exactwall andwarningcount; preserved metadata gap, no invented reconstruction",
+  "source_preserved": true,
+  "optimizer_invocations": 0,
+  "canonical_installed": false,
+  "scientific_fitting": false,
+  "primary_target": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+  "direction_budget": {
+    "actual_galaxy_evaluations": 9116,
+    "proxy_equivalent_work": 64.26640124933355,
+    "wall_seconds": 88.276265667
+  },
+  "dependency_scope": "all7 localcoords fullrecomputed; fullgradients andprecision onlyptq-screen/NFW fixedoriginaltheta",
+  "next_stage": "new jac=True, aggregatedtelemetry bounded engineering driver, notscientificMLE"
+}

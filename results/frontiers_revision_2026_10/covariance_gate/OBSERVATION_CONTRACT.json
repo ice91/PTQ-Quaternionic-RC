@@ -1,0 +1,12 @@
+{
+  "source": "Li et al 2018 arXiv:1803.00022v2 sec2.1 Eqs4,5; SPARC Table2 definitions",
+  "radius": "r(D)=r0 D/D0 at fixed angular sample",
+  "templates": "v_k(D)=v_k0 sqrt(D/D0) for disk,bulge,gas; fixed angular shape; Upsilon held fixed",
+  "observations": "y(i)=y0 sin(i0)/sin(i); e(i)=e0 sin(i0)/sin(i)",
+  "template_inclination": "standard catalog-level transform keeps templates fixed under global i; rephotometry/warped-disk geometry not recoverable",
+  "residual": "r_trans=y(i)-vm(D); JD=-dvm/dD; Ji=-y0 cot(i0) per rad",
+  "fixed_frame_residual": "r_nom=y0-vm(D) sin(i)/sin(i0); JD=-dvm/dD; Ji=-vm0 cot(i0) per rad",
+  "dist_cross_covariance": "D/i independent; correlation unknown, set zero only as declared sensitivity assumption",
+  "sigma_sys": "B0 nominal-frame additive floor; B1 intrinsic deprojected floor projected with sin(i)/sin(i0); neither choice claimed original documented nuisance generative law",
+  "data_dependent_vs_model_jacobian": "propagating transformed observations uses y; marginalizing a fixed-data mean uses vm. Distinguish; signs kept in output."
+}

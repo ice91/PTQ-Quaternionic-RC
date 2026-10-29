@@ -3,7 +3,8 @@
 This guide maps the public repository to the frozen manuscript claims.
 It does **not** authorize new scientific campaigns.
 
-**Release candidate tag (planned):** `sparc-frontiers-v1.0.0`  
+**Immutable reproducibility release tag:** `sparc-frontiers-v1.0.0`
+**Preprints.org Version 5:** doi:10.20944/preprints202503.2052.v5
 **Companion paper evidence bundle:** `../paper_release/frontiers_sparc_v1/` (in the paper workspace) or the mirrored bundle shipped with the release.
 
 ---
@@ -127,7 +128,7 @@ ptquat exp compare --help
 ptquat exp loo --help
 ```
 
-**Classification:** `LEGACY_DIAGONALIZED_SENSITIVITY`.  
+**Classification:** `LEGACY_DIAGONALIZED_SENSITIVITY`.
 Archived radius-level WAIC/LOO is **not** the canonical headline ranking layer for the current manuscript. Multi-seed tables are reproducibility records only.
 
 ---

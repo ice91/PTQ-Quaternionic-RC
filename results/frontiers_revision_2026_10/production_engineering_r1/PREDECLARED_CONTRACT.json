@@ -1,0 +1,99 @@
+{
+  "frozen_utc": "2026-10-28T22:56:54.480265Z",
+  "target": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+  "orders": [
+    192,
+    96
+  ],
+  "optimizer_allowed": false,
+  "dependency": {
+    "all7models": true,
+    "all728localcoordinates": true,
+    "perturbation": "nativeboundspan*1e-4 inward if needed; noresidualselection",
+    "full_recomputation_order": 96,
+    "unaffected_absolute_tolerance": 1e-12,
+    "local_vs_full_absolute_tolerance": 1e-10,
+    "code_law_AST_unchanged": true,
+    "unexpectedcoupling": "FAIL_CLOSED",
+    "wall_cap_seconds": 900
+  },
+  "directions": {
+    "models": [
+      "ptq-screen",
+      "nfw1p"
+    ],
+    "roles": [
+      "ptq-screen:epsilon",
+      "ptq-screen:lnq",
+      "ptq-screen:lnsigma",
+      "ptq-screen:U(F574-1)",
+      "nfw1p:lnsigma",
+      "nfw1p:U(firstnativeboundcontact)",
+      "nfw1p:logM(firstnativehalo)"
+    ],
+    "count": 7,
+    "steps_boundspan": [
+      0.0001,
+      5e-05
+    ],
+    "scheme": "central if bothpointsinsidebounds elseone-sided inward; baseline cached exactthetapolicy",
+    "parity_scaled_abs": 2e-05,
+    "parity_relative": 1e-06,
+    "precision_scaled_abs": 0.001,
+    "precision_relative": 0.001,
+    "noise_unresolved_ratio": 0.1,
+    "noise_model": "sumabsolute affected-galaxy fine/coarseerrors at stencilpoints /abs fine stencilnumerator; unchangedterms cancel exactly afterverified dependency; record full objective common offsets separately",
+    "max_equivalent_work": 96,
+    "max_seconds": 300,
+    "repeatability_abs": 1e-12,
+    "extra_directions": false
+  },
+  "work_equivalents": {
+    "formula": "pergal proxy=nD*nI*(2*nobs+10)+model_factor*nD*nobs, model_factor100NFWelse30; equivalent=sumactual proxies /sum91fine192proxies same model",
+    "all_galaxy_costs_equal": false,
+    "order96_counts_actualnodes": true,
+    "measured_wall_reported_separately": true
+  },
+  "gradient": {
+    "native_coordinates": true,
+    "sign": "negative logmarginal derivative",
+    "verifiedledger_required": true,
+    "full_initialgradients_models": [
+      "ptq-screen",
+      "nfw1p"
+    ],
+    "comparator": "reuse archived P1F initial denseFD vectors at same1e-8step; no repeateddense95/184passes",
+    "no_search": true
+  },
+  "warning_representatives": {
+    "galaxies": [
+      "F574-1",
+      "IC4202"
+    ],
+    "models": [
+      "ptq-screen",
+      "nfw1p"
+    ],
+    "floors": [
+      "B0",
+      "B1"
+    ],
+    "order": 192,
+    "direct_residual_squared": true,
+    "max_examples_per_key": 1,
+    "classification": [
+      "UNRESOLVED_WARNING_ROOT_CAUSE",
+      "NUMERICAL_RESULT_CORRUPTION_CONFIRMED"
+    ]
+  },
+  "regression": {
+    "originalP1Fthresholds": true,
+    "B0": 637,
+    "B1": 637,
+    "mappings": 728,
+    "neighborhood": 144,
+    "abs_logL": 1e-08,
+    "pergal_refinement": 0.0001,
+    "sample_sumabs": 0.01
+  }
+}

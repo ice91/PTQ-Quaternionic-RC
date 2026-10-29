@@ -1,0 +1,32 @@
+{
+  "status": "REVIEWABLE_PROPOSAL_ONLY_NOT_IMPLEMENTED",
+  "version": "REV26-P1D-UNIFORM-EXPLICIT-PROPOSAL-v1",
+  "scope": "apply same per-galaxy normalized likelihood definition to ALL91 galaxies and all7 parameterizations; no residual-based target switching",
+  "primary_candidate": "B0 explicit physical-truncated D/i marginal in fixed y0",
+  "mean": "mu=sin(i)/sin(i0)*v(s*r0,sqrt(s)*disk0,sqrt(s)*bulge0,sqrt(s)*gas0;theta)",
+  "conditional_B0": "N(y0;mu,diag(e0^2+sigma_sys^2))",
+  "conditional_B1_sensitivity": "N(y0;mu,diag(e0^2+(sigma_sys*sin(i)/sin(i0))^2))",
+  "prior": "independent normalized Gaussian kernels D0/i0 with original widths,physical D>0 and0<i<pi/2; no extra fitted parameters orcos(i)prior",
+  "likelihood": "product over91 of integral conditional*p_D*p_i dD di;equivalently sum galaxy log marginals",
+  "normalization": "fullGaussian quadratic/logdet/nlog2pi and physical prior normalization in fixednominal velocity measure; no propagated covariance terms conditional",
+  "numerical_acceptance_pending": "global algorithm/tail/quadrature policy must be predeclared and verified onall91 before production or optimization; refinement by numerical error,never fit improvement",
+  "parameter_counts_preserved": {
+    "baryon": 92,
+    "mond": 93,
+    "ptq": 93,
+    "ptq-nu": 93,
+    "ptq-screen": 94,
+    "mond-screen": 94,
+    "nfw1p": 183
+  },
+  "new_free_nuisance_parameters": 0,
+  "no_hybrid_switch": true,
+  "unresolved": [
+    "Human choice surrogatevsphysical marginal",
+    "floor coordinate modeluncertainty",
+    "D/i independence/image-level limitations",
+    "physical-only prior tailnumerics beyondpresentT5",
+    "compute budget beforefitting"
+  ],
+  "current_patch": "unchanged isolatedB0Gaussian candidate; this proposal is a separate target,not silently substituted"
+}

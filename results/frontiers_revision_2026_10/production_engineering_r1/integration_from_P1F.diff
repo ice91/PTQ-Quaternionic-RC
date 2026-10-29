@@ -1,0 +1,413 @@
+--- a/src/ptquat/bounded_driver.py
++++ b/src/ptquat/bounded_driver.py
+@@ -13,6 +13,7 @@
+     path.write_text(json.dumps(dict(label=LABEL,**record),indent=2,allow_nan=False)+'\n')
+ 
+ def run_bounded_smoke(galaxies,vectors,protocol,out):
++    raise RuntimeError("P1F-R1: optimizer execution disabled; next smoke requires separate authorization")
+     out=Path(out);out.mkdir(exist_ok=False)
+     cfg=protocol['smoke'];started=time.monotonic();aggregate=0;results=[]
+     def clockguard():
+--- /dev/null
++++ b/src/ptquat/dependency_gradient.py
+@@ -0,0 +1,93 @@
++"""Exact galaxy dependency decomposition; numerical finite differences in native units.
++No optimizer, no analytic/AD derivative, no persistent parameter-valued cache.
++"""
++from pathlib import Path
++import hashlib,json,time
++import numpy as np
++from .constants import H0_SI
++from .fit_global import _layout,_unpack
++from .marginal_likelihood import PRIMARY_B0,galaxy_log_marginal,nuisance_nodes
++from .evaluation_contract import validate_native
++from .mle import theta_bounds
++
++def source_hashes():
++    S=Path(__file__).resolve().parent
++    return {n:hashlib.sha256((S/n).read_bytes()).hexdigest() for n in ['models.py','fit_global.py','mle.py','marginal_likelihood.py','evaluation_contract.py','dependency_gradient.py']}
++def sample_hash(galaxies):
++    h=hashlib.sha256()
++    for g in galaxies:
++        h.update(g.name.encode())
++        for n in ['r_kpc','v_obs','v_err','v_disk','v_bulge','v_gas','D_Mpc','D_err_Mpc','i_deg','i_err_deg']:
++            h.update(n.encode());h.update(np.asarray(getattr(g,n),dtype='<f8').tobytes())
++    return h.hexdigest()
++def ledger(model,galaxies):
++    L=_layout(model,len(galaxies),True,None);bounds=theta_bounds(model,len(galaxies));rows=[]
++    for j in range(L['k']):
++        if L['sl_U'].start<=j<L['sl_U'].stop:
++            gi=j-L['sl_U'].start;name='Upsilon_'+galaxies[gi].name;kind='galaxy_local';affected=[gi];transform='identity'
++        elif 'sl_lM' in L and L['sl_lM'].start<=j<L['sl_lM'].stop:
++            gi=j-L['sl_lM'].start;name='log10_M200_'+galaxies[gi].name;kind='galaxy_local';affected=[gi];transform='M200=10**native; c(M200) fixed prescription'
++        else:
++            globalkeys=[(key,L[key]) for key in ['i_eps','i_log10a0','i_lq','i_lnsig'] if key in L and L[key]==j]
++            if len(globalkeys)!=1:raise ValueError('Unknown dependency slot; fail closed')
++            key=globalkeys[0][0];name={'i_eps':'epsilon','i_log10a0':'log10_a0','i_lq':'ln_q','i_lnsig':'ln_sigma_sys'}[key]
++            transform={'i_eps':'identity','i_log10a0':'a0=10**native','i_lq':'q=exp(native)','i_lnsig':'sigma=exp(native)'}[key]
++            kind='global';affected=list(range(len(galaxies)))
++        rows.append(dict(model=model,index=j,name=name,scope=kind,native_transform=transform,bounds=list(bounds[j]),affected_indices=affected,affected_galaxies=[galaxies[i].name for i in affected],cache_invalidation='recompute every affected conditional mean/variance/marginal; geometry-only nodes reusable',source_reason='actual _unpack slice/scalar and catalog_velocity_at_distance U[gi]/lM[gi] indexing; global sigma conditional variance; verified by full recomputation'))
++    return rows
++
++def step_stencil(x,bound,relative_step,absolute_step=None,scheme='auto'):
++    lo,hi=bound;h=(hi-lo)*relative_step if absolute_step is None else float(absolute_step)
++    if not (np.isfinite(h) and h>0 and lo<=x<=hi):raise ValueError('Invalid differentiation step/domain')
++    if scheme=='auto' and x-h>=lo and x+h<=hi:return [('minus',x-h),('plus',x+h)],'central'
++    if scheme not in ('auto','forward'):raise ValueError('Unsupported difference scheme')
++    if x+h<=hi:return [('base',x),('plus',x+h)],'forward_inward'
++    if x-h>=lo:return [('minus',x-h),('base',x)],'backward_inward'
++    raise ValueError('Step does not fit original bounds; no silent adjustment')
++
++class DependencyGradient:
++    def __init__(self,galaxies,model,receipt,*,likelihood_version=PRIMARY_B0,H0_si=H0_SI,c0=10.,c_slope=-.1):
++        from .marginal_likelihood import require_version
++        require_version(likelihood_version)
++        if likelihood_version!=PRIMARY_B0:raise ValueError('Only B0 dependency gradient path is verified; B1 pure evaluators remain supported')
++        receipt=json.loads(Path(receipt).read_text()) if not isinstance(receipt,dict) else receipt
++        if receipt.get('status')!='PASS' or receipt.get('source_hashes')!=source_hashes() or receipt.get('sample_hash')!=sample_hash(galaxies):raise ValueError('Unverified dependency path/source/sample')
++        self.gs=galaxies;self.model=model;self.rows=ledger(model,galaxies)
++        if receipt['verified_local_counts'].get(model)!=sum(r['scope']=='galaxy_local' for r in self.rows):raise ValueError('Model dependency coverage missing')
++        self.receipt=receipt;self.sample=receipt['sample_hash'];self.version=likelihood_version;self.H0=H0_si;self.c0=c0;self.c_slope=c_slope
++    def evaluate(self,theta,*,relative_step=1e-4,absolute_step=None,scheme='auto',order=192,indices=None,full_recompute=False,work_callback=None):
++        t,L=validate_native(theta,self.gs,self.model,likelihood_version=self.version,hard_bounds=True,H0_si=self.H0)
++        if sample_hash(self.gs)!=self.sample or source_hashes()!=self.receipt['source_hashes']:raise ValueError('Input/source changed after dependency validation')
++        requested=list(range(L['k'])) if indices is None else list(indices)
++        if len(set(requested))!=len(requested) or any(isinstance(i,bool) or not isinstance(i,(int,np.integer)) or not 0<=i<L['k'] for i in requested):raise ValueError('Invalid requested native indices')
++        begin=time.perf_counter();evaluations=[]
++        def evaluate_subset(x,ids):
++            p=_unpack(x,L);vals=[]
++            for gi in ids:
++                if work_callback is not None:work_callback(self.model,gi,order)
++                r=galaxy_log_marginal(self.gs[gi],p,gi,self.model,likelihood_version=self.version,H0_si=self.H0,c0=self.c0,c_slope=self.c_slope,order=order)
++                vals.append(r['log_marginal']);evaluations.append(dict(galaxy=gi,order=order,seconds=r['seconds'],density_nodes=r['density_nodes']))
++            return np.array(vals)
++        base=evaluate_subset(t,list(range(len(self.gs))));components=[]
++        for j in requested:
++            row=self.rows[j];ids=list(range(len(self.gs))) if full_recompute else row['affected_indices']
++            stencil,kind=step_stencil(t[j],row['bounds'],relative_step,absolute_step,scheme)
++            f=[]
++            for label,value in stencil:
++                if label=='base':values=base[ids]
++                else:
++                    x=t.copy();x[j]=value;values=evaluate_subset(x,ids)
++                f.append(-float(np.sum(values)))
++            denom=stencil[1][1]-stencil[0][1];g=(f[1]-f[0])/denom
++            if not np.isfinite(g):raise FloatingPointError('Nonfinite native numerical gradient')
++            components.append(dict(index=j,name=row['name'],native_gradient=float(g),scaled_gradient=float(g*(row['bounds'][1]-row['bounds'][0])),scheme=kind,native_step=abs(denom)/(2 if kind=='central' else 1),stencil_values=f,denominator=denom,affected_indices=ids))
++        return dict(objective=-float(np.sum(base)),baseline_log_marginals=base.tolist(),components=components,
++            gradient_native=[v['native_gradient'] for v in components] if requested==list(range(L['k'])) else None,
++            requested_indices=requested,model=self.model,likelihood_version=self.version,order=order,scheme=scheme,
++            theta_sha256=hashlib.sha256(t.astype('<f8').tobytes()).hexdigest(),source_hashes=self.receipt['source_hashes'],receipt_sample_hash=self.sample,
++            actual_galaxy_evaluations=len(evaluations),evaluations=evaluations,wall_seconds=time.perf_counter()-begin,
++            cache_policy='baseline only inside this singlecall, exact theta/sample/target/order; no parameter-valued cache survivescall',full_recompute=full_recompute)
++    def scipy_value_and_gradient(self,theta,**kwargs):
++        if kwargs.get('indices') is not None:raise ValueError('SciPy requires complete native gradient')
++        result=self.evaluate(theta,**kwargs)
++        return result['objective'],np.asarray(result['gradient_native'],float)
+--- /dev/null
++++ b/src/ptquat/evaluation_contract.py
+@@ -0,0 +1,52 @@
++"""Separate pure-evaluation, hard-bound objective and decoded-local contracts."""
++import numpy as np
++MODELS=('baryon','mond','ptq','ptq-nu','ptq-screen','mond-screen','nfw1p')
++def resolve_galaxy(galaxies,galaxy_id):
++    if isinstance(galaxy_id,str):
++        ids=[i for i,g in enumerate(galaxies) if g.name==galaxy_id]
++        if len(ids)!=1:raise ValueError('Unknown or nonunique galaxy ID')
++        return ids[0]
++    if isinstance(galaxy_id,(bool,np.bool_)) or not isinstance(galaxy_id,(int,np.integer)) or not 0<=galaxy_id<len(galaxies):
++        raise ValueError('Galaxy index outside declared sample')
++    return int(galaxy_id)
++def validate_galaxy(g):
++    arrays=[np.asarray(getattr(g,n),float) for n in ['r_kpc','v_obs','v_err','v_disk','v_bulge','v_gas']]
++    if not arrays[0].size or any(a.ndim!=1 or a.shape!=arrays[0].shape or not np.isfinite(a).all() for a in arrays):raise ValueError('Invalid catalog array shape/value')
++    geo=np.array([g.D_Mpc,g.D_err_Mpc,g.i_deg,g.i_err_deg],float)
++    if not np.isfinite(geo).all() or not (g.D_Mpc>0 and g.D_err_Mpc>=0 and 0<g.i_deg<=90 and g.i_err_deg>=0) or np.any(arrays[2]<0):raise ValueError('Invalid catalog geometry/errors')
++def validate_native(theta,galaxies,model,*,likelihood_version,hard_bounds=False,H0_si=None,layout=None):
++    from .marginal_likelihood import require_version
++    from .fit_global import _layout
++    require_version(likelihood_version)
++    if model not in MODELS or not len(galaxies):raise ValueError('Unsupported model or empty sample')
++    if len({g.name for g in galaxies})!=len(galaxies):raise ValueError('Duplicate galaxy IDs')
++    L=_layout(model,len(galaxies),True,None) if layout is None else layout
++    expected=_layout(model,len(galaxies),L['sigma_learn'],L['a0_fixed'])
++    if L!=expected:raise ValueError('Layout does not match native sample/model contract')
++    t=np.asarray(theta,float)
++    if t.shape!=(L['k'],) or not np.isfinite(t).all():raise ValueError('Invalid finite native theta shape')
++    if hard_bounds:
++        from .mle import theta_bounds
++        from .constants import H0_SI
++        if layout is not None and L!=_layout(model,len(galaxies),True,None):raise ValueError('Optimizer requires original learned-sigma native layout')
++        bounds=np.asarray(theta_bounds(model,len(galaxies),H0_SI if H0_si is None else H0_si))
++        if np.any(t<bounds[:,0]) or np.any(t>bounds[:,1]):raise ValueError('Native theta outside original hard bounds')
++    return t,L
++
++def validate_decoded(p,gi,model):
++    if model not in MODELS or p.get('model',model)!=model:raise ValueError('Decoded model mismatch')
++    U=np.asarray(p.get('U'),float)
++    if U.ndim!=1 or U.size==0 or not np.isfinite(U).all():raise ValueError('Invalid decoded stellar vector')
++    if isinstance(gi,(bool,np.bool_)) or not isinstance(gi,(int,np.integer)) or not 0<=gi<len(U):raise ValueError('Invalid decoded local index')
++    keys=['sigma']
++    if model in ('ptq','ptq-nu','ptq-screen'):keys+=['eps']
++    if model in ('mond','mond-screen'):
++        keys+=['log10a0'] if p.get('a0_fixed') is None else ['a0_fixed']
++    if model in ('ptq-screen','mond-screen'):keys+=['lq']
++    for key in keys:
++        a=np.asarray(p.get(key),float)
++        if a.shape!=() or not np.isfinite(a):raise ValueError('Invalid decoded scalar '+key)
++    if p['sigma']<=0:raise ValueError('Nonpositive systematic floor')
++    if model=='nfw1p':
++        a=np.asarray(p.get('lM'),float)
++        if a.shape!=U.shape or not np.isfinite(a).all():raise ValueError('Invalid decoded halo vector')
+--- a/src/ptquat/experiments.py
++++ b/src/ptquat/experiments.py
+@@ -2567,33 +2567,17 @@
+     return out
+ 
+ 
+-# Primary predictive firewall: no radius-level marginal factorization or ranking.
++# Explicit disabled registry. No runtime AST, no implicit legacy version fallback.
++from .marginal_likelihood import PRIMARY_B0, LEGACY_DIAGONALIZED_SENSITIVITY
+ from functools import wraps as _wraps
+-from .marginal_likelihood import PRIMARY_B0, LEGACY_DIAGONALIZED_SENSITIVITY
+-
+-def _legacy_diagnostic_only(fn):
+-    if getattr(fn,"_legacy_guarded",False): return fn
++DISABLED_LEGACY_DIAGNOSTICS = ('_call_fit', '_write_pwaic_diagnostics', 'compare_models_waic', 'kappa_geom_per_galaxy', 'kappa_per_galaxy', 'kappa_radius_resolved', 'kappa_radius_resolved_geom', 'loo_compare_models', 'ppc_check', 'z_per_galaxy', 'z_profile')
++def _disabled_legacy(fn):
+     @_wraps(fn)
+-    def guarded(*args, likelihood_version=PRIMARY_B0, **kwargs):
+-        if likelihood_version != LEGACY_DIAGONALIZED_SENSITIVITY:
+-            raise ValueError("LEGACY_DIAGONALIZED_SENSITIVITY only; unsupported for explicit primary target")
+-        return fn(*args, **kwargs)
+-    guarded._legacy_guarded = True
+-    return guarded
+-
+-for _name in ("_call_fit", "ppc_check", "kappa_per_galaxy", "kappa_radius_resolved",
+-              "kappa_geom_per_galaxy", "kappa_radius_resolved_geom", "compare_models_waic",
+-              "loo_compare_models", "_write_pwaic_diagnostics"):
+-    if _name in globals(): globals()[_name] = _legacy_diagnostic_only(globals()[_name])
+-# Every function containing a historical covariance call is explicitly legacy-only.
+-import ast as _ast
+-from pathlib import Path as _Path
+-_tree = _ast.parse(_Path(__file__).read_text())
+-for _node in _tree.body:
+-    if isinstance(_node, _ast.FunctionDef) and any(
+-        isinstance(x, _ast.Call) and isinstance(x.func, _ast.Name)
+-        and x.func.id == "build_covariance" for x in _ast.walk(_node)):
+-        globals()[_node.name] = _legacy_diagnostic_only(globals()[_node.name])
++    def disabled(*args, **kwargs):
++        raise ValueError("Disabled legacy diagonalized sensitivity: unavailable for physical marginal target")
++    return disabled
++for _name in DISABLED_LEGACY_DIAGNOSTICS:
++    if _name in globals(): globals()[_name]=_disabled_legacy(globals()[_name])
+ 
+ def per_galaxy_log_marginals(theta, galaxies, model, *, likelihood_version=PRIMARY_B0):
+     from .fit_global import _layout, log_likelihood_full_per_galaxy
+@@ -2605,7 +2589,9 @@
+     from .marginal_likelihood import galaxy_log_marginal
+     from types import SimpleNamespace
+     from .models import catalog_velocity_at_distance
+-    p=_unpack(theta,_layout(model,len(galaxies),True,None));rows=[]
++    from .evaluation_contract import validate_native
++    theta,L=validate_native(theta,galaxies,model,likelihood_version=PRIMARY_B0)
++    p=_unpack(theta,L);rows=[]
+     for gi,g in enumerate(galaxies):
+         view=SimpleNamespace(r=g.r_kpc,disk=g.v_disk,bulge=g.v_bulge,gas=g.v_gas,D=g.D_Mpc)
+         v=catalog_velocity_at_distance(view,p,gi,model,g.D_Mpc)
+--- a/src/ptquat/fit_global.py
++++ b/src/ptquat/fit_global.py
+@@ -292,12 +292,9 @@
+     return np.concatenate(ll_list)
+ 
+ 
+-def log_likelihood_per_galaxy(theta, galaxies, sigma_sys_fixed, H0_si, L, c0, c_slope, a0_fixed, like_kind, t_dof):
+-    from .marginal_likelihood import LEGACY_DIAGONALIZED_SENSITIVITY
+-    if like_kind != LEGACY_DIAGONALIZED_SENSITIVITY:
+-        raise ValueError("Explicit nuisance marginal is NOT a per-radius likelihood; use full per-galaxy log-marginals")
+-    return _legacy_log_likelihood_per_galaxy(theta, galaxies, sigma_sys_fixed, H0_si,
+-        L, c0, c_slope, a0_fixed, "gauss", t_dof)
++def log_likelihood_per_galaxy(*args, **kwargs):
++    """Disabled legacy radius-wise diagnostic for every likelihood version."""
++    raise ValueError("Radius-wise factorized likelihood disabled; use full per-galaxy marginal")
+ 
+ 
+ def _legacy_log_likelihood_full_per_galaxy(theta: np.ndarray,
+@@ -364,10 +361,9 @@
+ 
+ 
+ def log_likelihood_full_per_galaxy(theta, galaxies, sigma_sys_fixed, H0_si, L, c0, c_slope, a0_fixed, like_kind, t_dof):
+-    from .marginal_likelihood import require_version, galaxy_log_marginal
+-    require_version(like_kind)
+-    if np.asarray(theta).shape != (L["k"],) or not np.all(np.isfinite(theta)):
+-        raise ValueError("Invalid native theta")
++    from .marginal_likelihood import galaxy_log_marginal
++    from .evaluation_contract import validate_native
++    theta,_ = validate_native(theta,galaxies,L["model"],likelihood_version=like_kind,layout=L)
+     pars = _unpack(theta, L)
+     pars["sigma"] = pars.get("sigma", sigma_sys_fixed)
+     pars["a0_fixed"] = a0_fixed
+--- a/src/ptquat/marginal_likelihood.py
++++ b/src/ptquat/marginal_likelihood.py
+@@ -1,6 +1,6 @@
+ """Uniform physical-domain B0/B1 target. No optimization; same target for all galaxies.
+ Node policy is a separate numerical choice. No finite-tail target truncation.
+-Frozen P1C law equations are reused read-only; propagated covariance is never added.
++Candidate production model laws are preserved; propagated covariance is never added.
+ """
+ from pathlib import Path
+ from functools import lru_cache
+@@ -100,7 +100,8 @@
+    tolerance=64*np.finfo(float).eps*np.maximum(scale,1.)
+    if np.any(Q < -tolerance):raise FloatingPointError('Quadratic cancellation outside roundoff bound')
+    max_roundoff=max(max_roundoff,float(np.max(tolerance)))
+-   ll=-.5*(Q+norm[None,:]);assert np.isfinite(ll).all()
++   ll=-.5*(Q+norm[None,:])
++   if not np.isfinite(ll).all():raise FloatingPointError('Nonfinite conditional Gaussian density')
+    value=float(logsumexp(ll+np.log(wd[start:end,None])+np.log(wi)[None,:]));accum[floor]=float(np.logaddexp(accum[floor],value))
+  for value in accum.values():
+   if not np.isfinite(value):raise FloatingPointError('Non-finite marginal logL')
+@@ -110,7 +111,13 @@
+ 
+ def galaxy_log_marginal(galaxy, pars, gi, model, *, likelihood_version=PRIMARY_B0,
+                         H0_si=H0_SI, c0=10.0, c_slope=-0.1, order=ORDER_FINE):
++    from .evaluation_contract import validate_decoded,validate_galaxy
++    from .warning_telemetry import WarningContext
+     floor = require_version(likelihood_version)
++    validate_decoded(pars,gi,model)
++    validate_galaxy(galaxy)
++    if not (np.isfinite(H0_si) and H0_si>0 and np.isfinite(c0) and c0>0 and np.isfinite(c_slope)):
++        raise ValueError("Invalid fixed cosmology/halo configuration")
+     if order not in (ORDER_FINE, ORDER_COARSE):
+         raise ValueError("Only frozen fine/coarse quadrature orders are supported")
+     g = SimpleNamespace(name=galaxy.name, r=galaxy.r_kpc, y=galaxy.v_obs,
+@@ -118,7 +125,8 @@
+         gas=galaxy.v_gas, D=float(galaxy.D_Mpc), sD=float(galaxy.D_err_Mpc),
+         inc=float(np.deg2rad(galaxy.i_deg)), si=float(np.deg2rad(galaxy.i_err_deg)))
+     p = dict(pars, model=model, _H0=H0_si, _c0=c0, _c_slope=c_slope)
+-    record = integrate(g, p, gi, "segmented_quantile", order, floors=(floor,))
++    with WarningContext(model,likelihood_version,pars,gi):
++        record = integrate(g, p, gi, "segmented_quantile", order, floors=(floor,))
+     record["likelihood_version"] = likelihood_version
+     record["galaxy"] = galaxy.name
+     record["log_marginal"] = record["logL"][floor]
+--- a/src/ptquat/mle.py
++++ b/src/ptquat/mle.py
+@@ -1,8 +1,6 @@
+-"""True maximum-likelihood layer for scientific hardening R1B.
+-
+-Objective: maximize log L(theta) with the production full-covariance Gaussian
+-likelihood. Priors never enter the objective. Hard physical domains may be
+-enforced as optimizer bounds only.
++"""Versioned physical-domain marginal likelihood evaluators; no priors in MLE.
++Pure evaluators validate native shape/finite values; optimizer objectives additionally
++enforce the original hard bounds. Legacy unbudgeted fit drivers remain disabled.
+ """
+ from __future__ import annotations
+ 
+@@ -18,6 +16,7 @@
+ from scipy.optimize import minimize
+ 
+ from .marginal_likelihood import PRIMARY_B0, SENSITIVITY_B1
++from .evaluation_contract import validate_native, resolve_galaxy
+ from .constants import C_LIGHT, H0_SI
+ from .data import GalaxyData, load_tidy_sparc
+ from .fit_global import _layout, _unpack, log_likelihood
+@@ -105,15 +104,8 @@
+ 
+ 
+ def objective_neg_loglike(theta, galaxies, model, H0_si, c0=10.0, c_slope=-0.1, *, likelihood_version=PRIMARY_B0):
+-    from .marginal_likelihood import require_version
+-    require_version(likelihood_version)
+-    t = np.asarray(theta, float)
+-    bounds = theta_bounds(model, len(galaxies), H0_si)
+-    if t.shape != (len(bounds),) or not np.all(np.isfinite(t)):
+-        raise ValueError("Invalid native parameter vector")
+-    if not all(lo <= v <= hi for v, (lo, hi) in zip(t, bounds)):
+-        raise ValueError("Native parameters outside hard bounds")
+-    return -evaluate_loglike(t, galaxies, model, H0_si, c0, c_slope, likelihood_version=likelihood_version)
++    t, _ = validate_native(theta, galaxies, model, likelihood_version=likelihood_version, hard_bounds=True,H0_si=H0_si)
++    return -evaluate_loglike(t,galaxies,model,H0_si,c0,c_slope,likelihood_version=likelihood_version)
+ 
+ 
+ def evaluate_loglike(theta, galaxies, model, H0_si=H0_SI, c0=10.0, c_slope=-0.1, *, likelihood_version=PRIMARY_B0):
+@@ -124,10 +116,11 @@
+ 
+ def galaxy_loglike(theta, galaxies, gi, model, H0_si=H0_SI, c0=10.0, c_slope=-0.1, *, likelihood_version=PRIMARY_B0):
+     from .marginal_likelihood import galaxy_log_marginal
+-    L = _layout(model, len(galaxies), True, None)
+-    p = _unpack(np.asarray(theta, float), L)
+-    return float(galaxy_log_marginal(galaxies[gi], p, gi, model, likelihood_version=likelihood_version,
+-        H0_si=H0_si, c0=c0, c_slope=c_slope)["log_marginal"])
++    t,L=validate_native(theta,galaxies,model,likelihood_version=likelihood_version)
++    gi=resolve_galaxy(galaxies,gi)
++    p=_unpack(t,L)
++    return float(galaxy_log_marginal(galaxies[gi],p,gi,model,likelihood_version=likelihood_version,
++        H0_si=H0_si,c0=c0,c_slope=c_slope)["log_marginal"])
+ 
+ 
+ def map_theta_ptqnu_to_mond(theta_ptqnu: np.ndarray, G: int, H0_si: float = H0_SI) -> np.ndarray:
+@@ -460,12 +453,8 @@
+ def evaluate_loglike_components(theta, galaxies, model, H0_si=H0_SI,
+                                 c0=10.0, c_slope=-0.1, *,
+                                 likelihood_version=PRIMARY_B0, order=192, tick=None):
+-    from .marginal_likelihood import require_version, galaxy_log_marginal
+-    require_version(likelihood_version)
+-    t = np.asarray(theta, float)
+-    L = _layout(model, len(galaxies), True, None)
+-    if t.shape != (L["k"],) or not np.all(np.isfinite(t)):
+-        raise ValueError("Invalid native theta shape/value")
++    from .marginal_likelihood import galaxy_log_marginal
++    t,L=validate_native(theta,galaxies,model,likelihood_version=likelihood_version)
+     p = _unpack(t, L)
+     vals=[];records=[]
+     for gi,g in enumerate(galaxies):
+--- /dev/null
++++ b/src/ptquat/warning_telemetry.py
+@@ -0,0 +1,46 @@
++"""Bounded warning telemetry: counts+one example/key, never a list/event."""
++import warnings,hashlib,time,re
++from contextvars import ContextVar
++from contextlib import contextmanager
++import numpy as np
++ACTIVE=ContextVar('ptquat_warning_collector',default=None)
++class WarningCollector:
++    def __init__(self,max_keys=256):self.records={};self.max_keys=max_keys;self.exceptions=[]
++    def capture(self,message,category,filename,lineno,model,version,point_hash):
++        normalized=re.sub(r'\s+',' ',str(message)).strip()
++        key=(category.__name__,normalized,str(filename),int(lineno),model,version)
++        if key not in self.records:
++            if len(self.records)>=self.max_keys:raise RuntimeError('Warning telemetry distinct-key limit; fail closed')
++            self.records[key]=dict(category=category.__name__,normalized_message=normalized,source_file=str(filename),line=int(lineno),model=model,likelihood_version=version,count=0,first_occurrence_utc=time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),representative_parameter_hash=point_hash,numerical_validity_status='FINITE_OUTPUT_AUDIT_REQUIRED',classification='UNRESOLVED_WARNING_ROOT_CAUSE')
++        self.records[key]['count']+=1
++    def as_dict(self):return dict(total_events=sum(r['count'] for r in self.records.values()),distinct_keys=len(self.records),records=list(self.records.values()),exceptions=list(self.exceptions),storage='bounded one representative/key, exact counts')
++@contextmanager
++def collect_warnings(collector):
++    token=ACTIVE.set(collector)
++    try:yield collector
++    finally:ACTIVE.reset(token)
++class WarningContext:
++    def __init__(self,model,version,p,gi):
++        self.collector=ACTIVE.get();self.model=model;self.version=version
++        # Hash every decoded input, not merely galaxy-local values, for forensic provenance.
++        h=hashlib.sha256()
++        for k in sorted(p):
++            v=p[k];h.update(k.encode());h.update(str(v).encode() if isinstance(v,str) or v is None else np.asarray(v).tobytes())
++        h.update(str(gi).encode());self.hash=h.hexdigest()
++    def __enter__(self):
++        if self.collector is None:return self
++        import threading
++        if threading.current_thread() is not threading.main_thread():raise RuntimeError("Warning aggregation requires serial Python main thread")
++        self.scope=warnings.catch_warnings();self.scope.__enter__();warnings.simplefilter('always')
++        def handler(message,category,filename,lineno,file=None,line=None):
++            self.collector.capture(message,category,filename,lineno,self.model,self.version,self.hash)
++        warnings.showwarning=handler
++        return self
++    def __exit__(self,kind,value,tb):
++        if self.collector is None:return False
++        if kind is not None:self.collector.exceptions.append(dict(model=self.model,likelihood_version=self.version,parameter_hash=self.hash,error=repr(value),classification='NUMERICAL_CALL_FAILED' if issubclass(kind,FloatingPointError) else 'EXCEPTION_PROPAGATED'))
++        if kind is None:
++            for r in self.collector.records.values():
++                if r["model"]==self.model and r["likelihood_version"]==self.version:r["numerical_validity_status"]="FINITE_OUTPUT_ONLY_NOT_A_HARMLESSNESS_PROOF"
++        self.scope.__exit__(kind,value,tb)
++        return False

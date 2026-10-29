@@ -1,0 +1,13 @@
+# REV26-P1E uniform explicit target numerical acceptance
+
+Unique recommendation: UNIFORM_EXPLICIT_B0_READY_FOR_FIT_REVIEW. New target ID REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1; B1 separate alternativefloor under identicalphysicalprior. No fit/canonicalchange/manuscriptreplacement.
+
+PREDECLARED_PROTOCOL/FROZEN_STATISTICAL_TARGET precede allnumeric work. explicit_reference.py implementsphysical-truncatednormalquantile andexactnormalizedconditionalGaussian; it reusesfrozenP1Claws read-only. All91/all7 useone globallyselected segmentedquantile192,96refinement; fullprobabilitydomain, nofiniteTtargetcutoff. Ordinaryquantilepilot failure ispreserved, nothidden.
+
+Run order:bootstrap.py -> test_local.py -> run_acceptance.py -> verify_and_cost.py -> write_reports.py -> finalize.py. Everyoutputrun-ID refusesoverwrite. Forreproductioncopyonlysource/protocol/inputauthoritytoNEWsiblingrun-IDatsamedepthandrunexistingtemporaryPythonenvironmentfromlocal_v1/environment_freeze; sourcepaths pointtoimmutableprojectinputs. Do notcopycompletedoutputfolders or rerunoriginalbootstrap/freeze. Commandprefix PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OMP_NUM_THREADS=1 /tmp/rev26-p1a-env/bin/python.
+
+Complete logs local_execution.log/acceptance_execution.log/verification_execution.log. Firstpre-executiondriver syntaxerror preserved asrun_acceptance_syntax_failure_v0.txt andacceptance_syntax_failure_v0.log; fixedonlywhitespacebeforeacceptance_v1, no scientificcontractchange.
+
+acceptance_v1 savesallpilotorders/methods,1274fullrows(B0/B1each637),14totals,728nativecomparisons,144neighborhoodrows,physical-linear/pastfiniteTcrosschecks,smoothness/repeats/costs,attempts andexceptions. Numericalerrorrows areestimates, notrigorousbounds. Fixedhistoricalpoints areNOTcorrectedMLE ornewAIC/BICrankings.
+
+verification_v1 recomputesfinite/unique/count/sum/errorchecks fromsavedoutputs andtimesGaussian-onlyreference(noextraexplicitnodes). INDEPENDENT_REVIEW retainsseparateagentcritique. TARGET_DECISION andINACTIVE_INTEGRATION_AND_REFIT_PLAN distinguishreviewreadinessfromauthorization. Source/inputhashesandtwoSHA256SUMS/ASSET_MANIFEST preserveallpriorfailedP1Doutputs; onlypostprocessing_v2used.

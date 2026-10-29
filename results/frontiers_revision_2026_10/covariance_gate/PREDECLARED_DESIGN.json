@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "stage": "FROZEN_BEFORE_NUMERICAL_MODEL_COMPARISONS",
+  "selected": [
+    {
+      "galaxy": "ESO444-G084",
+      "i_deg": 32.0,
+      "relD": 0.09937888198757763,
+      "i_err_deg": 6.0,
+      "inc_fraction": 0.16758663999071488,
+      "n": 7,
+      "observed_log_slope": 0.4469798058076802,
+      "abs_slope": 0.4469798058076802,
+      "selection_rule": "lowest inclination"
+    },
+    {
+      "galaxy": "UGC03205",
+      "i_deg": 67.0,
+      "relD": 0.2,
+      "i_err_deg": 4.0,
+      "inc_fraction": 0.029633932538621593,
+      "n": 48,
+      "observed_log_slope": 0.11075106992524934,
+      "abs_slope": 0.11075106992524934,
+      "selection_rule": "largest fractional distance uncertainty"
+    },
+    {
+      "galaxy": "UGC06614",
+      "i_deg": 36.0,
+      "relD": 0.09999999999999999,
+      "i_err_deg": 10.0,
+      "inc_fraction": 0.2402239627714472,
+      "n": 13,
+      "observed_log_slope": 0.06093032235869629,
+      "abs_slope": 0.06093032235869629,
+      "selection_rule": "largest linear inclination fraction"
+    },
+    {
+      "galaxy": "NGC6789",
+      "i_deg": 43.0,
+      "relD": 0.05113636363636363,
+      "i_err_deg": 7.0,
+      "inc_fraction": 0.13101455349706523,
+      "n": 4,
+      "observed_log_slope": 0.7494943635323257,
+      "abs_slope": 0.7494943635323257,
+      "selection_rule": "smallest point count"
+    },
+    {
+      "galaxy": "NGC2403",
+      "i_deg": 63.0,
+      "relD": 0.05063291139240506,
+      "i_err_deg": 3.0,
+      "inc_fraction": 0.02667869014914558,
+      "n": 73,
+      "observed_log_slope": 0.25326471427202896,
+      "abs_slope": 0.25326471427202896,
+      "selection_rule": "largest point count"
+    },
+    {
+      "galaxy": "CamB",
+      "i_deg": 65.0,
+      "relD": 0.07738095238095238,
+      "i_err_deg": 5.0,
+      "inc_fraction": 0.04069301981034456,
+      "n": 9,
+      "observed_log_slope": 0.9717415099129593,
+      "abs_slope": 0.9717415099129593,
+      "selection_rule": "largest absolute observed log slope"
+    }
+  ],
+  "selection_uses": "data geometry, uncertainties, point count, observed slope only; no residuals",
+  "models": [
+    "baryon",
+    "mond",
+    "ptq",
+    "ptq-nu",
+    "ptq-screen",
+    "mond-screen",
+    "nfw1p"
+  ],
+  "vectors": "recovered original binary MLE; SHA256 in INPUT_AUTHORITY.json",
+  "synthetic": [
+    {
+      "name": "synthetic_flat",
+      "beta": 0.0,
+      "i_deg": 35
+    },
+    {
+      "name": "synthetic_rising",
+      "beta": 0.5,
+      "i_deg": 60
+    },
+    {
+      "name": "synthetic_falling",
+      "beta": -0.25,
+      "i_deg": 85
+    }
+  ],
+  "synthetic_model": "baryon only, n=8, D0=10, sigmaD=1, sigmai=3deg, U=1, sigma_sys=3, r=linspace(1,8),vd=80*r**beta,y=vd+3,e=2",
+  "fd_relative_steps": [
+    0.001,
+    0.0001,
+    1e-05
+  ],
+  "fd_inclination_step": "relative step * max(i0 radians,0.5)",
+  "analytic_reference": "nonhalo dvm/dD=vm/(2D); NFW analytic halo radial derivative plus baryon amplitude; Ji=-y cot for transformed residual; -vm cot for fixed frame",
+  "tolerances": {
+    "fd_absolute_kms_per_unit": 1e-05,
+    "fd_relative_norm": 1e-06,
+    "likelihood_abs": 1e-08,
+    "covariance_relative_frobenius": 1e-09,
+    "mapped_identity_abs": 1e-07,
+    "quadrature_logL_medium_high": 0.001
+  },
+  "materiality_flags": {
+    "abs_delta_logL": 1.0,
+    "relative_covariance_frobenius": 0.01,
+    "interpretation": "diagnostic flags, not universal scientific validity thresholds; no post-refit prediction"
+  },
+  "parameter_points": [
+    "original",
+    "scale*1.01 where available",
+    "q*1.01 where available",
+    "selected U +0.01 if within bounds else -0.01",
+    "sigma_sys*1.01"
+  ],
+  "callback_design": "static source call trace plus execute source AST nested optimizer callbacks with prescribed inputs only; no optimizer driver or optimize routine is called",
+  "nuisance_galaxies": [
+    "ESO444-G084",
+    "UGC03205",
+    "UGC06614"
+  ],
+  "quadrature_orders": [
+    16,
+    32,
+    64,
+    128
+  ],
+  "quadrature_bounds": "independent normalized Gaussian weights on zD,zi within +/-3, truncated D>0 and 0<i<90deg; no cos(i) prior; Gauss-Legendre products",
+  "conditional": "fixed nominal y0; mu=vm(D)*sin(i)/sin(i0); diag e0^2+sigma_sys^2 (B0), diag e0^2+(sigma_sys*sin(i)/sin(i0))^2 (B1); no propagated terms",
+  "linear_references": [
+    "A production",
+    "A_Donly replaces JD with full distance derivative, retains model inclination",
+    "A_full_transformed uses full residual y-based Ji",
+    "A_fixed_frame uses full distance and model-based Ji"
+  ],
+  "budget": "6 real galaxies *7 models;3 synthetic baryon controls;3 nuisance galaxies *7 models*2 floor conventions*4 orders <= 1e6 node-model evaluations; time limit 15min; no extra adaptive cases",
+  "stop_rules": [
+    "retain all nonconvergence and exceptions",
+    "no higher grid beyond128",
+    "if convention unsupported mark affected test BLOCKED_BY_CONVENTION; run only explicit conditional source-backed catalog transform",
+    "no refit or production changes even after failure"
+  ]
+}

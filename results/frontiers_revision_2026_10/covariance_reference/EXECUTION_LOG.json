@@ -1,0 +1,38 @@
+{
+  "sequence": [
+    {
+      "stage": "A",
+      "command": "/usr/bin/python3 bootstrap.py",
+      "status": "PASS",
+      "old_sources_verified": 1807,
+      "PDF_path": "/Users/rocky/Downloads/1964512reviewsupportingfile1349389.PDF"
+    },
+    {
+      "stage": "C",
+      "command": "PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OMP_NUM_THREADS=1 /tmp/rev26-p1a-env/bin/python test_reference.py",
+      "console": "local_tests_console.log",
+      "status": "PASS",
+      "hard_tests": 11
+    },
+    {
+      "stage": "E_then_D",
+      "command": "same thread environment /tmp/rev26-p1a-env/bin/python run_effects.py",
+      "console": "effects_execution.log",
+      "status": "PASS",
+      "full_rows": 637,
+      "integral_rows": 585
+    },
+    {
+      "stage": "independent_output_check",
+      "command": "same environment /tmp/rev26-p1a-env/bin/python verify_outputs.py",
+      "console": "output_validation.log",
+      "status": "PASS"
+    }
+  ],
+  "independent_agent": "collaboration agent independent_reference_review, read-only critique",
+  "new_outputs_only": [
+    "/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/covariance_reference",
+    "/Users/rocky/ptq-mond/docs/frontiers_major_revision_2026_10/rev26_p1c_covariance_reference"
+  ],
+  "no_optimization": true
+}

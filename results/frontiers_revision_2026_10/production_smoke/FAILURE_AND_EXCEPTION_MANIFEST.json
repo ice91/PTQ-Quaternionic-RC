@@ -1,0 +1,52 @@
+{
+  "engineering_smoke_label": "ENGINEERING_SMOKE_ONLY \u2014 NOT CORRECTED MLE",
+  "numerical_unit_failures": [],
+  "parity_failures": [],
+  "nonfinite_objective_calls": [],
+  "expected_budget_exceptions": [
+    {
+      "model": "ptq-screen",
+      "stage": "optimizer",
+      "error": "DriverBudgetLimit: optimizer count cap; validation reserve retained",
+      "optimizer_evaluations": 190,
+      "accepted_iterations": 0,
+      "retry": false
+    },
+    {
+      "model": "nfw1p",
+      "stage": "optimizer",
+      "error": "DriverBudgetLimit: optimizer count cap; validation reserve retained",
+      "optimizer_evaluations": 190,
+      "accepted_iterations": 0,
+      "retry": false
+    }
+  ],
+  "assembly_incident": {
+    "stage": "before any numeric test or optimizer",
+    "artifact": "build_candidate_assembly_failure_v0.txt",
+    "cause": "generated indentation string assembling independent numeric kernel; repaired in new candidate before testing",
+    "canonical_affected": false
+  },
+  "reporting_incident": {
+    "stage": "after all numerical work",
+    "artifacts": [
+      "report_generator_encoding_failure_v0.txt",
+      "report_generation_failure_v0.log"
+    ],
+    "description": "Python3.9 source-reading error on long UTF8 report lines; triple quoted bodies rendered actual newlines; original bytes decodeUTF8; exact parser root cause unknown",
+    "scientific_outputs_affected": false
+  },
+  "warnings": {
+    "categories": [
+      "RuntimeWarning: divide by zero encountered in matmul",
+      "RuntimeWarning: overflow encountered in matmul",
+      "RuntimeWarning: invalid value encountered in matmul"
+    ],
+    "count_per_model": 1291386,
+    "total": 2582772,
+    "root_cause": "UNRESOLVED; warnings retained not suppressed",
+    "direct_full192_checks": 182,
+    "max_direct_logL_delta": 8.526512829121202e-13,
+    "scope": "all91 original baryon fixedpoints bothfloors; not allfuturetheta"
+  }
+}

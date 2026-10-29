@@ -1,0 +1,76 @@
+{
+  "modified_files": [
+    "src/ptquat/likelihood.py",
+    "src/ptquat/models.py",
+    "src/ptquat/fit_global.py",
+    "src/ptquat/mle.py",
+    "src/ptquat/experiments.py",
+    "tests/test_covariance.py"
+  ],
+  "source_covariance_calls": [
+    {
+      "file": "src/ptquat/experiments.py",
+      "line": 148,
+      "explicit_full_distance_keyword": true
+    },
+    {
+      "file": "src/ptquat/experiments.py",
+      "line": 875,
+      "explicit_full_distance_keyword": true
+    },
+    {
+      "file": "src/ptquat/experiments.py",
+      "line": 1442,
+      "explicit_full_distance_keyword": true
+    },
+    {
+      "file": "src/ptquat/experiments.py",
+      "line": 2307,
+      "explicit_full_distance_keyword": true
+    },
+    {
+      "file": "src/ptquat/experiments.py",
+      "line": 729,
+      "explicit_full_distance_keyword": true
+    },
+    {
+      "file": "src/ptquat/experiments.py",
+      "line": 1304,
+      "explicit_full_distance_keyword": true
+    },
+    {
+      "file": "src/ptquat/experiments.py",
+      "line": 2466,
+      "explicit_full_distance_keyword": true
+    },
+    {
+      "file": "src/ptquat/fit_global.py",
+      "line": 204,
+      "explicit_full_distance_keyword": true
+    },
+    {
+      "file": "src/ptquat/fit_global.py",
+      "line": 263,
+      "explicit_full_distance_keyword": true
+    },
+    {
+      "file": "src/ptquat/fit_global.py",
+      "line": 347,
+      "explicit_full_distance_keyword": true
+    },
+    {
+      "file": "src/ptquat/fit_global.py",
+      "line": 623,
+      "explicit_full_distance_keyword": true
+    },
+    {
+      "file": "src/ptquat/mle.py",
+      "line": 189,
+      "explicit_full_distance_keyword": true
+    }
+  ],
+  "all_original_model_law_bodies_unchanged": true,
+  "canonical_untouched": true,
+  "additional_dependency_reason": "experiments.py has7 verified direct covariance callers; legacy covariance test must supply new required full-JD keyword",
+  "likelihood_version": "REV26-P1D-B0-FULLD-GAUSS-CANDIDATE-v1"
+}

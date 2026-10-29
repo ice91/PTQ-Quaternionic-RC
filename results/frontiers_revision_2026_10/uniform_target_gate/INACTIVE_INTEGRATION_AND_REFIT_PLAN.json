@@ -1,0 +1,44 @@
+{
+  "status": "INACTIVE_HUMAN_APPROVAL_REQUIRED",
+  "target_identifier": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+  "canonical_integration": false,
+  "optimizer_calls_authorized_in_P1E": 0,
+  "new_likelihood_module_proposal": "src/ptquat/marginal_likelihood.py;unit-square physicalpriornodes,normalized conditionalB0/B1,cache,budget/accuracychecks",
+  "files_to_review": [
+    "src/ptquat/likelihood.py",
+    "src/ptquat/models.py",
+    "src/ptquat/fit_global.py",
+    "src/ptquat/mle.py",
+    "src/ptquat/experiments.py"
+  ],
+  "primary_objective": "sum91 logmarginals,notGaussianpropagatedC;nohybridgalaxyswitch",
+  "Gaussian_role": "diagnostic surrogateonly,distinctversion",
+  "native_parameter_counts": {
+    "baryon": 92,
+    "mond": 93,
+    "ptq": 93,
+    "ptq-nu": 93,
+    "ptq-screen": 94,
+    "mond-screen": 94,
+    "nfw1p": 183
+  },
+  "bounds": "frozenoriginalparameter_domain_manifest;noextraD/i fittedparameters;noMLprioronphysicaltheta",
+  "must_before_MLE": [
+    "canonical/isolatedintegrationreview",
+    "637B0/B1fixedpointparity728nativeidentity",
+    "trueoptimizerdriversmoketest ONLYwhenexplicitlyauthorized",
+    "predeclaredmultistartcostbudgetandcompleteallstarttheta/provenance",
+    "bound/KKTconvergencediagnostics",
+    "separateNFWoptimizationreview",
+    "B1refit-sensitivityplan",
+    "precisionchecksatsmokepoints/authorizedterminalfits"
+  ],
+  "starts": "historicalbestpossiblewarmstartonly;independentseededstarts needseparatebudget;nonegenerated",
+  "future_paths": "reestimated/REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1/<run-id>",
+  "B1_identifier": "REV26-P1E-UNIFORM-EXPLICIT-B1-PHYSICAL-v1",
+  "information_criteria": "onlyfromactuallyoptimizedlikelihoodafternewfit;BIC_NPOINTS1782descriptiveunderwithin-galaxycorrelation,noNeffproof",
+  "cost_upper_bound_seconds_per_full91_B0_call": 2.6,
+  "hypothetical_4000_full91_calls_hours_upper_estimate": 2.888888888888889,
+  "cost_scope": "observedB0+B1combinedruntimeusedconservatively;notoptimizerbenchmarkorpromise",
+  "no_open_ended_new_methods_stage": true
+}

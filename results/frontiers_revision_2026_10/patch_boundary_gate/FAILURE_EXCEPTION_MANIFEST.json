@@ -1,0 +1,20 @@
+{
+  "parity_failures": [],
+  "numerical_integration_exceptions": [],
+  "quadrature_nonconvergence": [],
+  "derived_failures": [
+    {
+      "run": "boundary_v1",
+      "script": "run_boundary.py",
+      "files": [
+        "neighborhood_effect_changes.csv",
+        "decomposition.csv convergence metadata"
+      ],
+      "issue": "pandas .T vs ['T']",
+      "preserved": true,
+      "resolution": "postprocessing_v2 without numerical rerun"
+    }
+  ],
+  "scientific_flags": "postprocessing_v2/materiality_flags.csv; all retained",
+  "no_failure_hidden": true
+}

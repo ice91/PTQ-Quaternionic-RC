@@ -1,0 +1,102 @@
+{
+  "verdicts": {
+    "DRIVER_WIRING": "PASS",
+    "PTQ_SCREEN_STEP": "ACCEPTED_AND_NUMERICALLY_VALIDATED",
+    "NFW_STEP": "ACCEPTED_AND_NUMERICALLY_VALIDATED",
+    "SCIENTIFIC_CAMPAIGN_READINESS": "READY_FOR_BOUNDED_P1G_AUTHORIZATION"
+  },
+  "models": [
+    {
+      "model": "ptq-screen",
+      "status": "ACCEPTED_AND_NUMERICALLY_VALIDATED",
+      "accepted_iterations": 1,
+      "optimizer_gradient_batches": 4,
+      "rejected_linesearch_trials": 2,
+      "optimizer_actual_galaxy_calls": 2886,
+      "optimizer_fullsample_equivalents": 31.86927523780832,
+      "optimizer_density_nodes": 5703081984,
+      "optimizer_wall_seconds": 45.503830166,
+      "optimizer_mean_gradient_seconds": 11.31391497925,
+      "all_model_actual_galaxy_calls": 10060,
+      "all_model_equivalents": 85.33981204980023,
+      "preflight_wall_seconds": 44.763671875,
+      "terminal_precision_wall_seconds": 33.12107024999999,
+      "objective_improvement": 4.443505160977111,
+      "numerical_error_estimate": 3.961072071327537e-08,
+      "improvement_threshold": 3.9610720713275367e-07,
+      "improvement_over_threshold": 11217935.652172793,
+      "claimed_fun_error": 0.0,
+      "max_candidate_independent_scaled_difference": 2.5224267119483557e-09,
+      "max_direction_step_difference": 0.004422367965162266,
+      "max_precision_error_over_limit": 0.05976004969319458,
+      "max_numerator_noise_ratio": 6.360278683265566e-06,
+      "initial_precision": {
+        "max_pergal_refinement": 1.5049383961240892e-08,
+        "sumabs_refinement": 2.370220286707081e-08,
+        "repeat_max": 0.0,
+        "claimed_objective_error": 0.0,
+        "decomposition_error": 0.0
+      },
+      "terminal_precision": {
+        "max_pergal_refinement": 7.569688875719294e-09,
+        "sumabs_refinement": 1.5860891267038824e-08,
+        "repeat_max": 0.0,
+        "claimed_objective_error": 0.0,
+        "decomposition_error": 0.0
+      },
+      "projected_gradient_inf_norm": 545.4470324933989,
+      "scipy_status": 1,
+      "scipy_message": "STOP: TOTAL NO. of ITERATIONS REACHED LIMIT",
+      "new_scientific_MLE": false
+    },
+    {
+      "model": "nfw1p",
+      "status": "ACCEPTED_AND_NUMERICALLY_VALIDATED",
+      "accepted_iterations": 1,
+      "optimizer_gradient_batches": 4,
+      "rejected_linesearch_trials": 2,
+      "optimizer_actual_galaxy_calls": 2231,
+      "optimizer_fullsample_equivalents": 24.79163288746946,
+      "optimizer_density_nodes": 4411219968,
+      "optimizer_wall_seconds": 35.77005458300002,
+      "optimizer_mean_gradient_seconds": 8.806967166500002,
+      "all_model_actual_galaxy_calls": 6284,
+      "all_model_equivalents": 56.06521260641705,
+      "preflight_wall_seconds": 27.770390042000002,
+      "terminal_precision_wall_seconds": 18.532877208000002,
+      "objective_improvement": 2.1201596614992013,
+      "numerical_error_estimate": 1.3977977304991763e-07,
+      "improvement_threshold": 1.3977977304991764e-06,
+      "improvement_over_threshold": 1516785.737477237,
+      "claimed_fun_error": 0.0,
+      "max_candidate_independent_scaled_difference": 1.3145040611561853e-08,
+      "max_direction_step_difference": 0.0045229883133046656,
+      "max_precision_error_over_limit": 0.11286287624662829,
+      "max_numerator_noise_ratio": 4.807668149399694e-05,
+      "initial_precision": {
+        "max_pergal_refinement": 4.500698480569554e-08,
+        "sumabs_refinement": 7.031519722033863e-08,
+        "repeat_max": 0.0,
+        "claimed_objective_error": 0.0,
+        "decomposition_error": 0.0
+      },
+      "terminal_precision": {
+        "max_pergal_refinement": 4.8146802100745845e-08,
+        "sumabs_refinement": 6.941805885674057e-08,
+        "repeat_max": 0.0,
+        "claimed_objective_error": 0.0,
+        "decomposition_error": 0.0
+      },
+      "projected_gradient_inf_norm": 24.454350502352334,
+      "scipy_status": 1,
+      "scipy_message": "STOP: TOTAL NO. of ITERATIONS REACHED LIMIT",
+      "new_scientific_MLE": false
+    }
+  ],
+  "total_galaxy_calls": 16344,
+  "equivalents": 141.40502465621523,
+  "density_nodes": 25286344704,
+  "wall": 205.47037904200002
+}
+
+ENGINEERING_SMOKE_ONLY — NOT CORRECTED MLE

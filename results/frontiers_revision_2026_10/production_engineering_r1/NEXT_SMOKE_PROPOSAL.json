@@ -1,0 +1,67 @@
+{
+  "status": "INACTIVE_REQUIRES_HUMAN_AUTHORIZATION",
+  "task": "REV26-P1F-R2 repaired-gradient optimizer-driver smoke",
+  "label": "ENGINEERING_SMOKE_ONLY \u2014 NOT CORRECTED MLE",
+  "models": [
+    "ptq-screen",
+    "nfw1p"
+  ],
+  "starts": "one original P1A native vector/model, no new orstochasticstarts",
+  "optimizer": "scipy L-BFGS-B jac=True; fun returns same-call native F,gradient tuple via verified DependencyGradient",
+  "gradient_policy": {
+    "boundspan_relative_step": 0.0001,
+    "scheme": "central if inbounds elseinward",
+    "order": 192,
+    "coarse_precision": 96,
+    "independent_archive_step1e_8_only_validation_not_primary": true
+  },
+  "max_accepted_iterations_per_model": 1,
+  "maxls": 20,
+  "max_gradient_batches_optimizer_per_model": 21,
+  "max_total_fullsample_equivalents": 600,
+  "max_total_actual_galaxy_marginals": 60000,
+  "max_wall_seconds": 1800,
+  "max_parameterizations": 2,
+  "retry": false,
+  "precision": {
+    "initial_terminal": "192/96/repeat normalizedobjective and gradients; reportscaledgradient refinement atpredeclaredsame7roles",
+    "likelihood_tolerances": "unchanged P1F",
+    "gradient_tolerances": "unchanged R1; numericalnoise unresolved -> stopnotadjusttarget"
+  },
+  "budget_rationale": "onecentralgradient <=9equivq/7equivNFW; 21optimizer batches plus <=6precisionbatches/model gives <=432equiv and39312gal calls underdeclaredcaps; wall measured separately; sufficientforcompletefirstiteration throughmaxls ornonbudgetABNORMAL termination, notpromiseacceptance",
+  "source_conditions": [
+    "fresh isolatedcopy",
+    "regression parity beforeoptimizer",
+    "sameB0target and7native models",
+    "explicitversion/receipt/sample/codehash checks",
+    "fullwarningaggregation",
+    "no canonical installation"
+  ],
+  "required_output": [
+    "allobjective+gradient requests actualwork",
+    "acceptedcallback vectors",
+    "initialandterminal precision",
+    "native decoding/bounds",
+    "warnings exceptions andfailuremanifest",
+    "ENGINEERING_SMOKE_ONLY labels"
+  ],
+  "not_authorized": [
+    "scientificMLE",
+    "sevenmodelcampaign",
+    "NFWmultistart",
+    "MCMC",
+    "profiles",
+    "newIC",
+    "canonical installation",
+    "publicGit"
+  ],
+  "driver_implementation": "NEW isolated driver REQUIRED: old P1F bounded_driver disabled in R1; must use jac=True and collect_warnings(WarningCollector), no event lists or jac=None",
+  "optimizer_options": {
+    "ftol": 1e-12,
+    "gtol": 1e-06,
+    "maxcor": 10,
+    "maxiter": 1,
+    "maxls": 20
+  },
+  "gradient_precision_scope": "supports tested engineering advancement only, notstationarity atgtol1e-6 or scientificMLE"
+}

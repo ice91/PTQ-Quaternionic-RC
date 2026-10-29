@@ -1,0 +1,17 @@
+ENGINEERING_SMOKE_ONLY — NOT CORRECTED MLE
+AUDIT PASS ptq-screen initial eq 31.181 wall 44.76
+AUDIT PASS nfw1p initial eq 50.137 wall 72.53
+OPTIMIZER G ptq-screen 1 eq 59.029 wall 85.19
+OPTIMIZER G ptq-screen 2 eq 64.222 wall 92.73
+OPTIMIZER G ptq-screen 3 eq 73.114 wall 105.36
+OPTIMIZER G ptq-screen 4 eq 82.006 wall 118.04
+ACCEPTED CALLBACK ptq-screen advanced True
+AUDIT PASS ptq-screen terminal eq 104.296 wall 151.16
+RUN RESULT ptq-screen ACCEPTED_AND_NUMERICALLY_VALIDATED
+OPTIMIZER G nfw1p 1 eq 110.933 wall 160.61
+OPTIMIZER G nfw1p 2 eq 115.811 wall 167.82
+OPTIMIZER G nfw1p 3 eq 122.449 wall 177.4
+OPTIMIZER G nfw1p 4 eq 129.087 wall 186.93
+ACCEPTED CALLBACK nfw1p advanced True
+AUDIT PASS nfw1p terminal eq 141.405 wall 205.47
+RUN RESULT nfw1p ACCEPTED_AND_NUMERICALLY_VALIDATED

@@ -1,0 +1,46 @@
+{
+  "label": "ENGINEERING_SMOKE_ONLY \u2014 NOT CORRECTED MLE",
+  "actual_entrypoint": "candidate/scripts/run_repaired_gradient_smoke.py",
+  "actual_command": "PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OMP_NUM_THREADS=1 /tmp/rev26-p1a-env/bin/python -u <newCLI> --bundle <thisroot>",
+  "stages": [
+    {
+      "stage": "bootstrap source/data/previousmanifest verification",
+      "status": "PASS",
+      "record": "AUTHORITY.json/INPUT_MANIFEST.json"
+    },
+    {
+      "stage": "unitcontrols beforepostwallguard",
+      "status": "PASS_SYNTHETIC_ONLY",
+      "log": "unit_execution.log"
+    },
+    {
+      "stage": "unitcontrols finalfrozen source",
+      "status": "PASS_SYNTHETIC_ONLY",
+      "log": "unit_execution_v2.log"
+    },
+    {
+      "stage": "actualinitialpreflight+twooptimizers+terminalprecision",
+      "status": "PASS",
+      "log": "ENGINEERING_SMOKE_ONLY_execution.log",
+      "records": "execution_v1",
+      "actual_galaxy_calls": 16344,
+      "equivalents": 141.40502465621523,
+      "wall_seconds": 205.47037904200002
+    },
+    {
+      "stage": "readonly postprocessing",
+      "status": "PASS",
+      "log": "ENGINEERING_SMOKE_ONLY_analysis.log",
+      "records": "analysis_v1"
+    },
+    {
+      "stage": "independentreview",
+      "status": "COMPLETE_WITH_LIMITATIONS",
+      "records": [
+        "INDEPENDENT_REVIEW_RAW.md",
+        "INDEPENDENT_REVIEW_NUMERICAL_ADDENDUM.md"
+      ]
+    }
+  ],
+  "no_extra_optimizer_or_numerical_calls": true
+}

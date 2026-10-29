@@ -1,0 +1,16 @@
+{
+  "parent_case": "synthetic_flat",
+  "subset": "first distance variance element; same declared synthetic control",
+  "Upsilon": 1.0,
+  "D0_Mpc": 10.0,
+  "r0_kpc": 1.0,
+  "v_disk0_kms": 80.0,
+  "sigmaD_Mpc": 1.0,
+  "production_dv_dD": 0.0,
+  "full_dv_dD_kms_per_Mpc": 4.0,
+  "full_residual_dD": -4.0,
+  "omitted_distance_variance_kms2": 16.0,
+  "derivation": "r and all templates scale with D; baryon vm=80 sqrt(D/10); production vfun ignores radius when templates frozen",
+  "reproduce_command": "PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OMP_NUM_THREADS=1 /tmp/rev26-p1a-env/bin/python run_gate.py",
+  "note": "run_v1 must not exist; use a separate copied gate directory under authorized output root for a replay; no production edit"
+}

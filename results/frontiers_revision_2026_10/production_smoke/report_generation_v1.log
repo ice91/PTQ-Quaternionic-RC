@@ -1,0 +1,39 @@
+{
+  "verdicts": {
+    "PRODUCTION_PARITY": "PASS",
+    "DRIVER_SMOKE": "BUDGET_LIMITED",
+    "NUMERICAL_OBJECTIVE": "ACCEPTABLE_FOR_BOUNDED_MLE",
+    "CAMPAIGN_READINESS": "ENGINEERING_REPAIR_REQUIRED"
+  },
+  "engineering_smoke_label": "ENGINEERING_SMOKE_ONLY \u2014 NOT CORRECTED MLE",
+  "fullsample_evaluations": 398,
+  "model_wall_sum_seconds": 545.982204291,
+  "parity": {
+    "status": "PASS",
+    "native_B0": 637,
+    "native_B1": 637,
+    "native_fine_coarse_rows": 2548,
+    "native_matched": 728,
+    "neighborhood": 144,
+    "actual_public_paths": 35,
+    "max_native_parity": 8.810729923425242e-13,
+    "max_mapping_delta": 9.094947017729282e-13,
+    "max_neighborhood_parity": 1.0231815394945443e-12,
+    "max_refinement_pergal": 8.988752242089504e-06,
+    "max_refinement_sumabs": 9.88420881853358e-06,
+    "repeat_pergal_max": 0.0,
+    "elapsed_seconds": 94.4650885,
+    "source_unchanged": 2025
+  },
+  "all_initial_terminal_precision_pass": true,
+  "canonical_installed": false,
+  "scientific_refit": false,
+  "next_task": "P1F-R1 engineering closure fixed-direction audit, NO OPTIMIZER",
+  "limitations": [
+    "gradient accuracy not established",
+    "NFW driver accepted advance limited by frozenbudget",
+    "independent external kernels assumed",
+    "B0/B1 floor scientific sensitivity",
+    "matmul warning root cause unresolved; tested outputs directchecked"
+  ]
+}

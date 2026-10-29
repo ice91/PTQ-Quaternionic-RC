@@ -1,0 +1,41 @@
+{
+  "actual_scientific_likelihood_failures": [],
+  "unexplained_nonfinite_results": [],
+  "expected_contract_negative_controls": 51,
+  "directional_failures": 0,
+  "dependency_failures": 0,
+  "regression_failures": 0,
+  "engineering_incidents": [
+    {
+      "incident": "benchmark_v1 signed-step harness assertion",
+      "type": "COMPARATOR_HARNESS_FAILURE_NOT_GRADIENT",
+      "models": {
+        "ptq_screen": "successful455gal/5eq preserved and reused",
+        "nfw1p": "complete364gal/4eq beforeassert; v2correctcomparisonpassed"
+      },
+      "artifacts": [
+        "benchmark_execution.log",
+        "run_benchmark_executed_v1.py.txt",
+        "benchmark_v1/ptq_screen_complete_gradient.json",
+        "ARCHIVED_BACKWARD_STENCIL_PROOF.json"
+      ],
+      "missing": [
+        "failedNFWexactwall",
+        "v1percategorywarningtelemetry",
+        "failedNFWaggregatewarningcount"
+      ],
+      "disposition": "UNKNOWN retained; no inventedmeasurements; currentharnessfinallypersistsfuturefailures",
+      "old_tolerances_changed": false
+    }
+  ],
+  "metadata_only_repairs": [
+    "binddependencygradientmodulehash withunchangedledger/step/sampleAST",
+    "B0-onlygradient verification",
+    "disablepubliclegacyradius withallotherFGfuncASTidentical; olddirectionexecution snapshotpreserved"
+  ],
+  "warning_classification": "UNRESOLVED_WARNING_ROOT_CAUSE",
+  "numerical_corruption_confirmed": false,
+  "raw_P1F_eventlogs": "UNCHANGED",
+  "future_failure_control": "TELEMETRY_EXCEPTION_CONTROL.json",
+  "optimizer_executed": false
+}

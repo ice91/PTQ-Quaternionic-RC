@@ -1,0 +1,110 @@
+[
+  {
+    "test": "source_and_input_immutability_before",
+    "status": "PASS",
+    "hard": true,
+    "detail": {
+      "files": 1807,
+      "changed": 0
+    }
+  },
+  {
+    "test": "minimal_baryon_counterexample",
+    "status": "PASS",
+    "hard": true,
+    "detail": {
+      "full_mean_derivative": 4.0,
+      "omitted_variance": 16.0,
+      "production_baryon_radius_only_derivative": 0.0
+    }
+  },
+  {
+    "test": "parameter_layout_accounting",
+    "status": "PASS",
+    "hard": true,
+    "detail": {
+      "baryon": 92,
+      "mond": 93,
+      "ptq": 93,
+      "ptq-nu": 93,
+      "ptq-screen": 94,
+      "mond-screen": 94,
+      "nfw1p": 183
+    }
+  },
+  {
+    "test": "analytic_distance_inclination_FD_and_independent_laws",
+    "status": "PASS",
+    "hard": true,
+    "detail": {
+      "rows": 126,
+      "coarse_threshold_failures": 0,
+      "finest_threshold_failures": 0
+    }
+  },
+  {
+    "test": "distance_and_angle_units",
+    "status": "PASS",
+    "hard": true,
+    "detail": {
+      "distance_Mpc_to_kpc": true,
+      "angle_rad_to_degree": true
+    }
+  },
+  {
+    "test": "SPD_full_Gaussian_normalization_and_independent_solve",
+    "status": "PASS",
+    "hard": true,
+    "detail": {
+      "max_independent_logL_error": 8.526512829121202e-14,
+      "min_eigenvalue": 43.9437412319048,
+      "one_dimensional_density_integral": 0.9999999999999999
+    }
+  },
+  {
+    "test": "parameter_dependent_reference_C_recalculation",
+    "status": "PASS",
+    "hard": true,
+    "detail": {
+      "a0": 0.0026300772337277045,
+      "q": 0.002181258716675251,
+      "U": 0.008918610013725455,
+      "sigma": 0.00024398796993999264
+    }
+  },
+  {
+    "test": "matched_PTQ_MOND_corrected_identity",
+    "status": "PASS",
+    "hard": true,
+    "detail": {
+      "max_delta": 0.0,
+      "matched_galaxy_checks": 12
+    }
+  },
+  {
+    "test": "restricted_NFW_radius_derivative",
+    "status": "PASS",
+    "hard": true,
+    "detail": {
+      "NFW_analytic_FD_rel_error": 1.0162254951743475e-10,
+      "forcing_sqrt_D_rel_error": 1.731318442422114
+    }
+  },
+  {
+    "test": "nominal_measure_change_of_variable_Jacobian",
+    "status": "PASS",
+    "hard": true,
+    "detail": {
+      "coordinate_log_density_delta": -8.881784197001252e-16
+    }
+  },
+  {
+    "test": "source_and_input_immutability_after",
+    "status": "PASS",
+    "hard": true,
+    "detail": {
+      "files": 1807,
+      "changed": 0
+    }
+  }
+]

@@ -1,0 +1,50 @@
+{
+  "PATCH_PARITY": "PASS",
+  "BOUNDARY_APPROXIMATION": "MATERIAL_SENSITIVITY_REQUIRES_NEW_SPEC",
+  "FLOOR_SENSITIVITY": "MATERIAL_MODEL_UNCERTAINTY",
+  "REFIT_LAUNCH": "REQUIRES_STATISTICAL_SPECIFICATION_DECISION",
+  "real_edge_on_galaxies": 7,
+  "edge_on_model_points": 49,
+  "all_boundary_tier1_galaxies": 22,
+  "boundary_galaxies_with_full_integrals": 9,
+  "boundary_galaxies_Tier1_only": 13,
+  "interior_control_galaxies": 2,
+  "full_historical_model_points": 77,
+  "parameter_neighborhood_points": 66,
+  "integrals": 3300,
+  "all_integrals_finite": true,
+  "convergence_cases": 1188,
+  "nonconverged": 0,
+  "max_quad_error": 7.495443071547925e-06,
+  "edge_on_max_abs": {
+    "full_nonlinear_minus_linear": 0.14158406860678951,
+    "inclination_nonlinear_minus_linear": 0.04385957808289476,
+    "distance_remainder_nonlinear_minus_ionly": 0.1394297633441397,
+    "linear_trunc_minus_A": 2.4419315423074295e-06,
+    "floor_B1_minus_B0": 0.026134972362683584,
+    "total_nonlinear_minus_A": 0.1415834953034789
+  },
+  "all11_historical_max_abs": {
+    "full_nonlinear_minus_linear": 0.3112765009312142,
+    "inclination_nonlinear_minus_linear": 0.2858452726614331,
+    "distance_remainder_nonlinear_minus_ionly": 0.1394297633441397,
+    "linear_trunc_minus_A": 0.059646724890697556,
+    "floor_B1_minus_B0": 3.829766864872937,
+    "total_nonlinear_minus_A": 0.37092322582191173
+  },
+  "neighborhood_effect_changes_max_abs": {
+    "nonlinear_effect_change": 0.09709603062498218,
+    "inclination_effect_change": 0.020046813831093857,
+    "floor_effect_change": 0.03334394687792752,
+    "total_effect_change": 0.09709603062498218
+  },
+  "tail_max_abs": {
+    "B0_T5_T4": 0.002362831261791598,
+    "B1_T5_T4": 0.011051993252515047,
+    "linear_T5_T4": 0.0021545713231532204
+  },
+  "scientific_scope": "no all91 or optimizer-domain bound; realedge total Taylor effects are predominantly distance, not inclination; material wider-error boundary/control results preserved",
+  "decision": "new uniform likelihood/spec sensitivity policy requires Human Arbiter decision; no fits",
+  "v1_postprocess_failure_preserved": true,
+  "raw_integrals_sha256": "8a264294ccb016e9869955f6b53ddb17dbc503df4f97dbdce4bf9cfabf2de924"
+}

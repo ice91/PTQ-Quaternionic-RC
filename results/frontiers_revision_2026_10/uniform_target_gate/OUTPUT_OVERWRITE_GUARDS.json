@@ -1,0 +1,20 @@
+[
+  {
+    "script": "test_local.py",
+    "existing_outputs_refused": true,
+    "exitcode": 1,
+    "console": "Traceback (most recent call last):\n  File \"/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/uniform_target_gate/test_local.py\", line 75, in <module>\n    if __name__=='__main__':main()\n  File \"/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/uniform_target_gate/test_local.py\", line 13, in main\n    out=B/'local_v1';out.mkdir(exist_ok=False);gs=laws.load_sample(I/'dataset/sparc_tidy.csv');names=[g.name for g in gs];ct=json.loads((B/'PREDECLARED_PROTOCOL.json').read_text());tests=[]\n  File \"/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py\", line 1313, in mkdir\n    self._accessor.mkdir(self, mode)\nFileExistsError: [Errno 17] File exists: '/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/uniform_target_gate/local_v1'\n"
+  },
+  {
+    "script": "run_acceptance.py",
+    "existing_outputs_refused": true,
+    "exitcode": 1,
+    "console": "Traceback (most recent call last):\n  File \"/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/uniform_target_gate/run_acceptance.py\", line 131, in <module>\n    if __name__=='__main__':main()\n  File \"/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/uniform_target_gate/run_acceptance.py\", line 12, in main\n    out=B/'acceptance_v1';out.mkdir(exist_ok=False);protocol=json.loads((B/'PREDECLARED_PROTOCOL.json').read_text());tol=protocol['tolerances'];gs=laws.load_sample(I/'dataset/sparc_tidy.csv');names=[g.name for g in gs];assert len(gs)==91 and sum(len(g.y) for g in gs)==1782\n  File \"/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py\", line 1313, in mkdir\n    self._accessor.mkdir(self, mode)\nFileExistsError: [Errno 17] File exists: '/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/uniform_target_gate/acceptance_v1'\n"
+  },
+  {
+    "script": "verify_and_cost.py",
+    "existing_outputs_refused": true,
+    "exitcode": 1,
+    "console": "Traceback (most recent call last):\n  File \"/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/uniform_target_gate/verify_and_cost.py\", line 35, in <module>\n    if __name__=='__main__':main()\n  File \"/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/uniform_target_gate/verify_and_cost.py\", line 9, in main\n    out=B/'verification_v1';out.mkdir(exist_ok=False);f=pd.read_csv(A/'full_sample_all1274.csv');t=pd.read_csv(A/'totals.csv');n=pd.read_csv(A/'neighborhood_all144.csv');maps=pd.read_csv(A/'native_matched_all728.csv');attempts=json.loads((A/'attempts.json').read_text());assert len(f)==1274 and len(n)==144 and len(maps)==728\n  File \"/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py\", line 1313, in mkdir\n    self._accessor.mkdir(self, mode)\nFileExistsError: [Errno 17] File exists: '/Users/rocky/ptq-mond/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/uniform_target_gate/verification_v1'\n"
+  }
+]
