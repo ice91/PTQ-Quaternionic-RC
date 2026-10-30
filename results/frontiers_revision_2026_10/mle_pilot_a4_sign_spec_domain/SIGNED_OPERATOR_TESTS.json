@@ -1,0 +1,249 @@
+{
+  "task": "REV26-P1G-A4-SIGN-SPEC-DOMAIN",
+  "likelihood_evaluations": 0,
+  "optimizer_calls": 0,
+  "reconciliation_pass": true,
+  "mismatched_rows": [],
+  "n_mismatch": 0,
+  "counts": {
+    "galaxies": 91,
+    "radii": 1782,
+    "negative_gas_galaxies": 18,
+    "negative_gas_radii": 111,
+    "positive_gas_radii": 1590,
+    "zero_gas_radii": 81,
+    "disk_negative_radii": 0,
+    "bulge_negative_radii": 0,
+    "max_old_minus_signed": 527.4752000000008,
+    "sum_old_minus_signed": 11050.037799999931,
+    "max_abs_diff_outside_negative_gas": 0.0,
+    "max_abs_residual_versus_2_vgas2": 9.50706180447014e-12
+  },
+  "distance_scaling_pass": true,
+  "distance_scaling_rows": [
+    {
+      "component": "positive",
+      "scale": 0.25,
+      "max_abs_gap": 0.0
+    },
+    {
+      "component": "positive",
+      "scale": 1.0,
+      "max_abs_gap": 0.0
+    },
+    {
+      "component": "positive",
+      "scale": 4.0,
+      "max_abs_gap": 0.0
+    },
+    {
+      "component": "zero",
+      "scale": 0.25,
+      "max_abs_gap": 0.0
+    },
+    {
+      "component": "zero",
+      "scale": 1.0,
+      "max_abs_gap": 0.0
+    },
+    {
+      "component": "zero",
+      "scale": 4.0,
+      "max_abs_gap": 0.0
+    },
+    {
+      "component": "negative",
+      "scale": 0.25,
+      "max_abs_gap": 0.0
+    },
+    {
+      "component": "negative",
+      "scale": 1.0,
+      "max_abs_gap": 0.0
+    },
+    {
+      "component": "negative",
+      "scale": 4.0,
+      "max_abs_gap": 0.0
+    }
+  ],
+  "catalog_scale_gap": 2.842170943040401e-14,
+  "domain_counts": {
+    "negative_at_0.05": {
+      "radii": 13,
+      "galaxies": 5
+    },
+    "zero_at_0.05": {
+      "radii": 0,
+      "galaxies": 0
+    },
+    "positive_at_0.05": {
+      "radii": 1769,
+      "galaxies": 91
+    },
+    "negative_at_0.5": {
+      "radii": 2,
+      "galaxies": 1
+    },
+    "negative_at_1.5": {
+      "radii": 2,
+      "galaxies": 1
+    },
+    "entire_interval_negative": {
+      "radii": 2,
+      "galaxies": 1
+    },
+    "subinterval_negative": {
+      "radii": 11,
+      "galaxies": 5
+    },
+    "nonegative_interval": {
+      "radii": 1769,
+      "galaxies": 91
+    }
+  },
+  "ugc01281": [
+    {
+      "galaxy": "UGC01281",
+      "r_kpc": 0.08,
+      "stellar_signed_v2": 2.25,
+      "gas_signed_v2": -34.2225,
+      "B_at_U_0.05": -34.11,
+      "B_at_U_0.5": -33.0975,
+      "B_at_U_1.5": -30.847499999999997,
+      "sign_at_U_0.05": "B_signed<0",
+      "sign_at_U_0.5": "B_signed<0",
+      "sign_at_U_1.5": "B_signed<0",
+      "zero_crossing_upsilon": 15.209999999999999,
+      "interval_class": "NEGATIVE_ON_ENTIRE_ADMISSIBLE_INTERVAL",
+      "U_baryon": 1.5,
+      "B_baryon": -30.847499999999997,
+      "U_mond": 0.34701153559418735,
+      "B_mond": -33.44172404491307,
+      "U_ptq": 0.05,
+      "B_ptq": -34.11,
+      "U_ptq-nu": 0.3477469058053136,
+      "B_ptq-nu": -33.44006946193804,
+      "U_ptq-screen": 0.3664233596505117,
+      "B_ptq-screen": -33.39804744078634,
+      "U_mond-screen": 0.36585364213968213,
+      "B_mond-screen": -33.39932930518571,
+      "U_nfw1p": 0.05,
+      "B_nfw1p": -34.11
+    },
+    {
+      "galaxy": "UGC01281",
+      "r_kpc": 0.23,
+      "stellar_signed_v2": 12.6025,
+      "gas_signed_v2": -34.2225,
+      "B_at_U_0.05": -33.592375,
+      "B_at_U_0.5": -27.921249999999997,
+      "B_at_U_1.5": -15.318749999999998,
+      "sign_at_U_0.05": "B_signed<0",
+      "sign_at_U_0.5": "B_signed<0",
+      "sign_at_U_1.5": "B_signed<0",
+      "zero_crossing_upsilon": 2.7155326324142033,
+      "interval_class": "NEGATIVE_ON_ENTIRE_ADMISSIBLE_INTERVAL",
+      "U_baryon": 1.5,
+      "B_baryon": -15.318749999999998,
+      "U_mond": 0.34701153559418735,
+      "B_mond": -29.84928712267425,
+      "U_ptq": 0.05,
+      "B_ptq": -33.592375,
+      "U_ptq-nu": 0.3477469058053136,
+      "B_ptq-nu": -29.84001961958853,
+      "U_ptq-screen": 0.3664233596505117,
+      "B_ptq-screen": -29.604649610004422,
+      "U_mond-screen": 0.36585364213968213,
+      "B_mond-screen": -29.611829474934652,
+      "U_nfw1p": 0.05,
+      "B_nfw1p": -33.592375
+    }
+  ],
+  "linear_ptq": {
+    "epsilon_bounds": [
+      1e-06,
+      3.999
+    ],
+    "radii_defined_at_U0.05_eps_min": 1769,
+    "radii_defined_at_U0.05_eps_max": 1782,
+    "radii_defined_at_U1.5_eps_max": 1782,
+    "radii_invalid_for_every_admissible_U_and_epsilon": 0
+  },
+  "nfw": {
+    "log10_M200_bounds": [
+      9.0,
+      13.0
+    ],
+    "radii_defined_for_every_admissible_U_and_M": 1782,
+    "radii_defined_for_some_but_not_all": 0,
+    "radii_invalid_for_every_admissible_U_and_M": 0,
+    "halo_grid": [
+      9.0,
+      9.5,
+      10.0,
+      10.5,
+      11.0,
+      11.5,
+      12.0,
+      12.5,
+      13.0
+    ],
+    "minimum_B_at_U0.05_plus_grid_min_halo_v2": 32.32611977618453
+  },
+  "nu_like_nowhere_defined_radii": {
+    "radii": 2,
+    "galaxies": 1
+  },
+  "galaxies_with_any_negative_B_inside_bounds": 5,
+  "archived_theta_files_present": {
+    "baryon": true,
+    "mond": true,
+    "ptq": true,
+    "ptq-nu": true,
+    "ptq-screen": true,
+    "mond-screen": true,
+    "nfw1p": true
+  },
+  "circular_speed_status_labels": [
+    "DEFINED_ON_FROZEN_DICTIONARY",
+    "INVALID_REAL_CIRCULAR_SPEED"
+  ],
+  "archived_signed_B": {
+    "baryon": {
+      "present": true,
+      "negative_radii": 2,
+      "negative_galaxies": 1
+    },
+    "mond": {
+      "present": true,
+      "negative_radii": 7,
+      "negative_galaxies": 4
+    },
+    "ptq": {
+      "present": true,
+      "negative_radii": 12,
+      "negative_galaxies": 4
+    },
+    "ptq-nu": {
+      "present": true,
+      "negative_radii": 7,
+      "negative_galaxies": 4
+    },
+    "ptq-screen": {
+      "present": true,
+      "negative_radii": 7,
+      "negative_galaxies": 4
+    },
+    "mond-screen": {
+      "present": true,
+      "negative_radii": 7,
+      "negative_galaxies": 4
+    },
+    "nfw1p": {
+      "present": true,
+      "negative_radii": 10,
+      "negative_galaxies": 3
+    }
+  }
+}

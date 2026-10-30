@@ -1,0 +1,35 @@
+{
+  "task": "REV26-P1G-A4-SIGN-SPEC-DOMAIN",
+  "human_decision": "AUTHORIZE_SIGNED_SPARC_REBASE_CANDIDATE",
+  "old_target": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+  "new_proposed_target": "REV26-P1E-UNIFORM-EXPLICIT-B0-SIGNED-SPARC-CANDIDATE-v2",
+  "new_target_activated": false,
+  "galaxy_marginal_evaluations": 0,
+  "optimizer_calls": 0,
+  "sources_read_only": {
+    "models.py": "cba208085f4e5e6373fe3b1bd5b862e9be66a6d1412a6a7750c4c4b053bbc952",
+    "marginal_likelihood.py": "3766ef2c1385316d1825ea62d72979829e00267f09e951644c58760783b6cbb7",
+    "data.py": "9056351ffac767208bb90c998769d53dc89f522a238067dc0569f4e024672c93",
+    "preprocess.py": "dd16a2603661ee6d6fc1a255afc0fead07c29a74cbc08b1f721fb31a1cef2910",
+    "sparc_tidy.csv": "3ab1c3c2b110c1e48680ebae77c1ceefaa4f778f81119dcf04881b630b274cbb",
+    "vizier_table2.csv": "9542e3537c81ab88c2d7b872ada772d1653a50a703309e608f4cb21234317f1b",
+    "SPARC_GAS_SIGN_AUDIT.json": "bfa30b4a6907e7fa04c311ee4ff96b9f73ef4dbdf6bc8b5b9f1cba26b777c024"
+  },
+  "comparison_upsilon": 0.5,
+  "reconciliation_pass": true,
+  "distance_scaling_pass": true,
+  "counts": {
+    "galaxies": 91,
+    "radii": 1782,
+    "negative_gas_galaxies": 18,
+    "negative_gas_radii": 111,
+    "positive_gas_radii": 1590,
+    "zero_gas_radii": 81,
+    "disk_negative_radii": 0,
+    "bulge_negative_radii": 0,
+    "max_old_minus_signed": 527.4752000000008,
+    "sum_old_minus_signed": 11050.037799999931,
+    "max_abs_diff_outside_negative_gas": 0.0,
+    "max_abs_residual_versus_2_vgas2": 9.50706180447014e-12
+  }
+}

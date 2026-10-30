@@ -1,0 +1,135 @@
+{
+  "task": "REV26-P1G-A4-SIGN-SPEC-DOMAIN",
+  "new_target_status": "CANDIDATE_ONLY",
+  "upsilon_bounds": [
+    0.05,
+    1.5
+  ],
+  "rows": [
+    {
+      "family": "baryon-only",
+      "native": "baryon",
+      "classification": "INVALID_REAL_CIRCULAR_SPEED",
+      "parameter_dependence": "CONDITIONAL",
+      "formula": "v=sqrt(B), B=Upsilon*(Vdisk*|Vdisk|+Vbulge*|Vbulge|)+Vgas*|Vgas|",
+      "obstruction": "sqrt is not real when B<0. Two UGC01281 radii stay negative for every Upsilon in [0.05,1.5]. Eleven other radii are negative only below a zero crossing inside the interval.",
+      "evidence": {
+        "negative_at_0.05": {
+          "radii": 13,
+          "galaxies": 5
+        },
+        "zero_at_0.05": {
+          "radii": 0,
+          "galaxies": 0
+        },
+        "positive_at_0.05": {
+          "radii": 1769,
+          "galaxies": 91
+        },
+        "negative_at_0.5": {
+          "radii": 2,
+          "galaxies": 1
+        },
+        "negative_at_1.5": {
+          "radii": 2,
+          "galaxies": 1
+        },
+        "entire_interval_negative": {
+          "radii": 2,
+          "galaxies": 1
+        },
+        "subinterval_negative": {
+          "radii": 11,
+          "galaxies": 5
+        },
+        "nonegative_interval": {
+          "radii": 1769,
+          "galaxies": 91
+        }
+      }
+    },
+    {
+      "family": "MOND/simple-nu",
+      "native": "mond",
+      "classification": "INVALID_REAL_CIRCULAR_SPEED",
+      "parameter_dependence": "CONDITIONAL",
+      "formula": "v^2=B*nu(y), nu=0.5+sqrt(0.25+1/y), y=max(gN/a0,1e-12)",
+      "obstruction": "nu stays positive, so sign(v^2)=sign(B). The y floor does not produce a real speed when B<0. a0 cannot flip the sign.",
+      "same_B_domain_as_baryon": true
+    },
+    {
+      "family": "PTQ-nu",
+      "native": "ptq-nu",
+      "classification": "INVALID_REAL_CIRCULAR_SPEED",
+      "parameter_dependence": "CONDITIONAL",
+      "formula": "same simple-nu with a0=max(epsilon*c*H0,1e-30)",
+      "obstruction": "epsilon and the a0 floor do not change sign(B*nu).",
+      "same_B_domain_as_baryon": true
+    },
+    {
+      "family": "linear PTQ",
+      "native": "ptq",
+      "classification": "DEFINED_ON_FROZEN_DICTIONARY",
+      "parameter_dependence": "CONDITIONAL",
+      "formula": "v^2=B+(epsilon*c*H0*r) in (km/s)^2, epsilon in (1e-6,3.999)",
+      "obstruction": "At epsilon=1e-6 and Upsilon=0.05, 13 radii remain negative. At epsilon=3.999 every radius is nonnegative even at Upsilon=0.05. No radius is negative for every admissible pair. UGC01281 at 0.08 kpc needs epsilon>=0.01908 when Upsilon=1.5.",
+      "evidence": {
+        "epsilon_bounds": [
+          1e-06,
+          3.999
+        ],
+        "radii_defined_at_U0.05_eps_min": 1769,
+        "radii_defined_at_U0.05_eps_max": 1782,
+        "radii_defined_at_U1.5_eps_max": 1782,
+        "radii_invalid_for_every_admissible_U_and_epsilon": 0
+      }
+    },
+    {
+      "family": "MOND-screen",
+      "native": "mond-screen",
+      "classification": "INVALID_REAL_CIRCULAR_SPEED",
+      "parameter_dependence": "CONDITIONAL",
+      "formula": "v^2=B*nu_q(y), nu_q=0.5+sqrt(0.25+y^(-q)) after y=max(gN/a0,1e-12)",
+      "obstruction": "The code never evaluates a negative y. Fractional q of a negative y is not used, and the floor still leaves v^2 with the sign of B. No signed continuation is defined here.",
+      "same_B_domain_as_baryon": true
+    },
+    {
+      "family": "PTQ-screen",
+      "native": "ptq-screen",
+      "classification": "INVALID_REAL_CIRCULAR_SPEED",
+      "parameter_dependence": "CONDITIONAL",
+      "formula": "same nu_q with a0=epsilon*c*H0",
+      "same_B_domain_as_baryon": true,
+      "obstruction": "q and epsilon do not rescue B<0."
+    },
+    {
+      "family": "restricted NFW-1p",
+      "native": "nfw1p",
+      "classification": "DEFINED_ON_FROZEN_DICTIONARY",
+      "parameter_dependence": "SAMPLE_SPECIFIC",
+      "formula": "v^2=B+v_nfw(M200,c(M200))^2, log10 M200 in [9,13], c=10*(M/1e12)^(-0.1)",
+      "obstruction": "On the nine-point mass grid, B at Upsilon=0.05 plus the smallest halo v^2 is at least 32.326 (km/s)^2. At UGC01281 0.08 kpc the halo term increases from 66.436 at 1e9 Msun to 400.381 at 1e13 Msun. This is a property of this sample and these bounds, not a general theorem.",
+      "evidence": {
+        "log10_M200_bounds": [
+          9.0,
+          13.0
+        ],
+        "radii_defined_for_every_admissible_U_and_M": 1782,
+        "radii_defined_for_some_but_not_all": 0,
+        "radii_invalid_for_every_admissible_U_and_M": 0,
+        "halo_grid": [
+          9.0,
+          9.5,
+          10.0,
+          10.5,
+          11.0,
+          11.5,
+          12.0,
+          12.5,
+          13.0
+        ],
+        "minimum_B_at_U0.05_plus_grid_min_halo_v2": 32.32611977618453
+      }
+    }
+  ]
+}
