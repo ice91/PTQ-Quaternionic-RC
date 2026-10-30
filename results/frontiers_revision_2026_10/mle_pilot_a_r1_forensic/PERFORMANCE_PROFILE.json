@@ -1,0 +1,20 @@
+{
+  "host": "Intel Core i7-8700T, 12 threads visible, BLAS/OMP pinned to 1",
+  "r2_host": "macOS-26.6.2-arm64, Python 3.9.6, numpy 2.0.2, scipy 1.13.1",
+  "this_host_stack": "Linux, Python 3.12.3, numpy 2.4.2, scipy 1.17.1",
+  "measured_raw_integrate_median_seconds": 0.1428306356538087,
+  "measured_wrapped_marginal_median_seconds": 0.14215175155550241,
+  "measured_baryon_full91_fine192_seconds": 13.000952360220253,
+  "campaign_ledger_seconds_per_galaxy": 0.23,
+  "campaign_calls": 193597,
+  "campaign_wall_seconds": 43200.48611089215,
+  "campaign_equivalents": 2118.359724782509,
+  "pure_galaxies_per_second": 7.001299094010816,
+  "checkpoint_overhead": "ledger 0.23s versus raw 0.143s; about 35 percent, not the dominant term",
+  "r2_comparison": "R2 reported 16344 marginals in 205s on arm64 macOS. That is a different CPU, Python and NumPy. The difference is not attributed to SciPy.",
+  "semantic_preserving_candidates": [
+    "batch the per-galaxy JSON fsync",
+    "do not recompute unchanged geometry nodes; lru_cache already does this",
+    "vectorized multi-galaxy evaluation was not benchmarked and has no estimated speedup"
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "families": {
+    "F1_baryon": [
+      "baryon"
+    ],
+    "F2_mond_ptqnu": [
+      "mond",
+      "ptq-nu"
+    ],
+    "F3_ptq_linear": [
+      "ptq"
+    ],
+    "F4_screen": [
+      "mond-screen",
+      "ptq-screen"
+    ],
+    "F5_nfw": [
+      "nfw1p"
+    ]
+  },
+  "map": "a0 = epsilon * c * H0; q = exp(ln q); shared U and ln sigma",
+  "evidence": {
+    "ptqnu_interior_max_per_galaxy": 7.048583938740194e-12,
+    "ptqnu_terminal_mapped_max_per_galaxy": 1.8758328224066645e-12,
+    "screen_interior_max_per_galaxy": 1.4551915228366852e-11,
+    "screen_at_ptq_screen_accepted_mapped_max_per_galaxy": 2.3305801732931286e-12
+  },
+  "tolerance": 1e-08,
+  "do_not_compare_distinct_optimizer_terminals": true,
+  "linear_ptq_is_not_a_mond_reparameterization": true,
+  "new_family_runs_not_executed": true
+}

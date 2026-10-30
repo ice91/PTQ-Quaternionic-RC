@@ -1,0 +1,18 @@
+{
+  "why_nfw_did_not_run": "Five native models each consumed a 7200s optimizer cap before mond-screen hit the 43200s aggregate cap. nfw1p then stopped in 0.016s with zero gradient batches. Equivalents used were 2118 of 25000, so wall time, not the work unit, was binding.",
+  "p1g_a_budget_not_extended": true,
+  "proposed_p1g_a2_not_authorized": true,
+  "measured_full_sample_seconds": 13.000952360220253,
+  "proposed": {
+    "host_assumption": "this i7-8700T, one BLAS thread, current checkpoint driver",
+    "aggregate_wall_hours": 11,
+    "nfw_reserved_hours": 3,
+    "non_nfw_family_optimizer_minutes": 90,
+    "families": 5,
+    "terminal_validation_reserve_minutes_per_family": 15,
+    "matched_pair_verification": "two full samples per matched pair after the optimized member, about 30s each on this host",
+    "serial": true,
+    "expected_galaxy_calls_order": 200000,
+    "note": "90 minutes is about 40 gradient batches at the measured baryon rate. Baryon had already flattened near iteration 30 while the projected gradient remained far above 1e-6, so a longer cap does not by itself create stationarity."
+  }
+}
