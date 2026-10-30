@@ -1,0 +1,316 @@
+{
+  "task": "REV26-P1G-A4-JAC-ENG",
+  "objective_sign": "dF = -d log L of the owning galaxy",
+  "locality": {
+    "model": "ptq-nu",
+    "perturbed_galaxy": "F574-1",
+    "observed_galaxy": "CamB",
+    "base_logL": -32.514406333552785,
+    "perturbed_logL": -32.514406333552785,
+    "abs_difference": 0.0,
+    "pass": true,
+    "reason": "catalog_velocity_at_distance reads U[gi] only; nodes do not depend on Upsilon"
+  },
+  "gtol_flag_means": "True only means the tested finite-difference truncation is at or below 1e-6. It does not mean the coordinate or the model is stationary.",
+  "cases": [
+    {
+      "model": "ptq-nu",
+      "galaxy": "F574-1",
+      "gi": 9,
+      "coordinate": "upsilon",
+      "native_index": 10,
+      "definition": "stellar mass-to-light; v_bar^2 = U*(v_disk^2+v_bulge^2)+v_gas^2",
+      "parameter_value": 0.9499353954084917,
+      "bounds": [
+        0.05,
+        1.5
+      ],
+      "owning_galaxy_official_logL": -47.52246001154469,
+      "rederived_logL": -47.522460011544695,
+      "abs_gap": 7.105427357601002e-15,
+      "identity_pass": true,
+      "analytic_dF": 0.03490705753188983,
+      "analytic_equals_negative_owning_dlogL": true,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "finite_differences": [
+        {
+          "relative_step": 0.0001,
+          "scheme": "central",
+          "native_step": 0.00014499999999995072,
+          "finite_difference_dF": 0.034906944044878346,
+          "order": 192,
+          "stencil_objectives": [
+            47.522455024570064,
+            47.52246514758384
+          ],
+          "abs_difference": 1.1348701148272688e-07,
+          "consistent": true,
+          "consistency_tolerance": 0.0001
+        },
+        {
+          "relative_step": 5e-05,
+          "scheme": "central",
+          "native_step": 7.250000000003087e-05,
+          "finite_difference_dF": 0.034907029138469596,
+          "order": 192,
+          "stencil_objectives": [
+            47.522457499418124,
+            47.52246256093735
+          ],
+          "abs_difference": 2.8393420233030486e-08,
+          "consistent": true,
+          "consistency_tolerance": 0.0001
+        }
+      ],
+      "kkt": {
+        "bound_status": "interior",
+        "unprojected_analytic": 0.03490705753188983,
+        "projected_kkt_component": 0.03490705753188983,
+        "sign_condition_holds": null,
+        "active_bound_direction": "free",
+        "gap_to_lower": 0.8999353954084917,
+        "gap_to_upper": 0.5500646045915083
+      },
+      "step_to_step": 8.50935912496964e-08,
+      "classification": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "gtol_resolvable": true,
+      "theta_sha256": "7abded50306ec11a32380f1ae85c555faef1d2d9318f39c673b691ae974473b2"
+    },
+    {
+      "model": "ptq",
+      "galaxy": "F574-1",
+      "gi": 9,
+      "coordinate": "upsilon",
+      "native_index": 10,
+      "definition": "stellar mass-to-light; v_bar^2 = U*(v_disk^2+v_bulge^2)+v_gas^2",
+      "parameter_value": 1.5,
+      "bounds": [
+        0.05,
+        1.5
+      ],
+      "owning_galaxy_official_logL": -50.3626574932979,
+      "rederived_logL": -50.362657493297895,
+      "abs_gap": 7.105427357601002e-15,
+      "identity_pass": true,
+      "analytic_dF": -0.11643371866776256,
+      "analytic_equals_negative_owning_dlogL": true,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "finite_differences": [
+        {
+          "relative_step": 0.0001,
+          "scheme": "backward_inward",
+          "native_step": 0.00014500000000006175,
+          "finite_difference_dF": -0.11657968692466267,
+          "order": 192,
+          "stencil_objectives": [
+            50.36267439735251,
+            50.3626574932979
+          ],
+          "abs_difference": 0.00014596825690010862,
+          "consistent": false,
+          "consistency_tolerance": 0.00011643371866776256
+        },
+        {
+          "relative_step": 5e-05,
+          "scheme": "backward_inward",
+          "native_step": 7.249999999991985e-05,
+          "finite_difference_dF": -0.11650669987701794,
+          "order": 192,
+          "stencil_objectives": [
+            50.362665940033644,
+            50.3626574932979
+          ],
+          "abs_difference": 7.298120925537666e-05,
+          "consistent": true,
+          "consistency_tolerance": 0.00011643371866776256
+        }
+      ],
+      "kkt": {
+        "bound_status": "upper",
+        "unprojected_analytic": -0.11643371866776256,
+        "projected_kkt_component": 0.0,
+        "sign_condition_holds": true,
+        "active_bound_direction": "outward",
+        "gap_to_lower": 1.45,
+        "gap_to_upper": 0.0
+      },
+      "step_to_step": 7.298704764473196e-05,
+      "classification": "BOUNDARY_ONE_SIDED_REQUIRED",
+      "gtol_resolvable": false,
+      "theta_sha256": "96ac8469398b416aa0740522da74c844c12ea8e95364d69f3920f2df460fd6c4"
+    },
+    {
+      "model": "ptq-nu",
+      "galaxy": "NGC0801",
+      "gi": 16,
+      "coordinate": "upsilon",
+      "native_index": 17,
+      "definition": "stellar mass-to-light; v_bar^2 = U*(v_disk^2+v_bulge^2)+v_gas^2",
+      "parameter_value": 1.0918259586839263,
+      "bounds": [
+        0.05,
+        1.5
+      ],
+      "owning_galaxy_official_logL": -72.71574451231675,
+      "rederived_logL": -72.71574451231616,
+      "abs_gap": 5.826450433232822e-13,
+      "identity_pass": true,
+      "analytic_dF": -0.16314857145815143,
+      "analytic_equals_negative_owning_dlogL": true,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "finite_differences": [
+        {
+          "relative_step": 0.0001,
+          "scheme": "central",
+          "native_step": 0.00014500000000006175,
+          "finite_difference_dF": -0.1631489783056351,
+          "order": 192,
+          "stencil_objectives": [
+            72.71576855381629,
+            72.71572124061258
+          ],
+          "abs_difference": 4.068474836749214e-07,
+          "consistent": true,
+          "consistency_tolerance": 0.00016314857145815142
+        },
+        {
+          "relative_step": 5e-05,
+          "scheme": "central",
+          "native_step": 7.249999999991985e-05,
+          "finite_difference_dF": -0.16314867262549973,
+          "order": 192,
+          "stencil_objectives": [
+            72.71575643681973,
+            72.7157327802622
+          ],
+          "abs_difference": 1.0116734830423191e-07,
+          "consistent": true,
+          "consistency_tolerance": 0.00016314857145815142
+        }
+      ],
+      "kkt": {
+        "bound_status": "interior",
+        "unprojected_analytic": -0.16314857145815143,
+        "projected_kkt_component": -0.16314857145815143,
+        "sign_condition_holds": null,
+        "active_bound_direction": "free",
+        "gap_to_lower": 1.0418259586839262,
+        "gap_to_upper": 0.4081740413160737
+      },
+      "step_to_step": 3.056801353706895e-07,
+      "classification": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "gtol_resolvable": true,
+      "theta_sha256": "7abded50306ec11a32380f1ae85c555faef1d2d9318f39c673b691ae974473b2",
+      "selection_rule": "Predeclared additional fixture: NGC0801 is the archived coarse-grid outlier of the matched mond family. The direction audit itself only differentiated F574-1."
+    },
+    {
+      "model": "ptq-screen",
+      "galaxy": "F574-1",
+      "gi": 9,
+      "coordinate": "upsilon",
+      "native_index": 11,
+      "definition": "screen chain: Upsilon changes v_N^2 and therefore y inside nu_q",
+      "parameter_value": 0.939730638942954,
+      "bounds": [
+        0.05,
+        1.5
+      ],
+      "analytic_dF": 0.09652626272436632,
+      "abs_gap": 7.105427357601002e-15,
+      "identity_pass": true,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "kkt": {
+        "bound_status": "interior",
+        "unprojected_analytic": 0.09652626272436632,
+        "projected_kkt_component": 0.09652626272436632,
+        "sign_condition_holds": null,
+        "active_bound_direction": "free",
+        "gap_to_lower": 0.889730638942954,
+        "gap_to_upper": 0.560269361057046
+      },
+      "finite_differences": [
+        {
+          "relative_step": 0.0001,
+          "scheme": "central",
+          "native_step": 0.00014499999999995072,
+          "finite_difference_dF": 0.09652614131752407,
+          "order": 192,
+          "stencil_objectives": [
+            47.490569690731256,
+            47.49059768331224
+          ],
+          "abs_difference": 1.2140684224615228e-07,
+          "consistent": true,
+          "consistency_tolerance": 0.0001
+        },
+        {
+          "relative_step": 5e-05,
+          "scheme": "central",
+          "native_step": 7.250000000003087e-05,
+          "finite_difference_dF": 0.09652623231592329,
+          "order": 192,
+          "stencil_objectives": [
+            47.49057663061958,
+            47.490590626923264
+          ],
+          "abs_difference": 3.0408443027485355e-08,
+          "consistent": true,
+          "consistency_tolerance": 0.0001
+        }
+      ],
+      "theta_sha256": "b0a24278778944f59b3ae440ba3ae5a63d9dec584c851f93a64fa3e693ff3ab4",
+      "step_to_step": 9.099839921866693e-08,
+      "classification": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE"
+    }
+  ],
+  "prototype_spot_check": [
+    {
+      "model": "ptq-nu",
+      "galaxy": "F574-1",
+      "prototype_dlogL_depsilon": -10.73611660301019,
+      "new_dlogL_depsilon": -10.736116603010199,
+      "epsilon_difference": 8.881784197001252e-15,
+      "prototype_dlogL_dln_sigma": -3.8721667698266486,
+      "new_dlogL_dln_sigma": -3.8721667698266486,
+      "ln_sigma_difference": 0.0,
+      "prototype_gap": 7.105427357601002e-15,
+      "new_gap": 7.105427357601002e-15
+    },
+    {
+      "model": "ptq",
+      "galaxy": "F574-1",
+      "prototype_dlogL_depsilon": -86.48299227950554,
+      "new_dlogL_depsilon": -86.48299227950554,
+      "epsilon_difference": 0.0,
+      "prototype_dlogL_dln_sigma": -7.2474520187707006,
+      "new_dlogL_dln_sigma": -7.2474520187707006,
+      "ln_sigma_difference": 0.0,
+      "prototype_gap": 7.105427357601002e-15,
+      "new_gap": 7.105427357601002e-15
+    }
+  ],
+  "diagnostic384": [
+    {
+      "scope": "local384",
+      "model": "ptq-nu",
+      "galaxy": "F574-1",
+      "analytic_dF": 0.03490705753188983,
+      "relative_step": 0.0001,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "finite_difference_dF": 0.0349069439958754,
+      "order": 384,
+      "stencil_objectives": [
+        47.52245502457019,
+        47.52246514758395
+      ],
+      "abs_difference_vs_analytic": 1.1353601443025996e-07,
+      "note": "384 is diagnostic and does not replace fine192"
+    }
+  ],
+  "formula_self_check_max_rel": 7.417641619564308e-10
+}

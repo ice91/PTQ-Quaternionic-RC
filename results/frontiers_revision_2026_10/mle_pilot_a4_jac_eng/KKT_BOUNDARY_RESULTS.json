@@ -1,0 +1,45 @@
+{
+  "task": "REV26-P1G-A4-JAC-ENG",
+  "case": "linear PTQ F574-1 Upsilon at the original upper bound 1.5",
+  "native_index": 10,
+  "parameter_value": 1.5,
+  "gap_to_upper": 0.0,
+  "unconstrained_analytic_dF": -0.11643371866776256,
+  "inward_one_sided": [
+    {
+      "relative_step": 0.0001,
+      "scheme": "backward_inward",
+      "native_step": 0.00014500000000006175,
+      "finite_difference_dF": -0.11657968692466267,
+      "order": 192,
+      "stencil_objectives": [
+        50.36267439735251,
+        50.3626574932979
+      ],
+      "abs_difference": 0.00014596825690010862,
+      "consistent": false,
+      "consistency_tolerance": 0.00011643371866776256
+    },
+    {
+      "relative_step": 5e-05,
+      "scheme": "backward_inward",
+      "native_step": 7.249999999991985e-05,
+      "finite_difference_dF": -0.11650669987701794,
+      "order": 192,
+      "stencil_objectives": [
+        50.362665940033644,
+        50.3626574932979
+      ],
+      "abs_difference": 7.298120925537666e-05,
+      "consistent": true,
+      "consistency_tolerance": 0.00011643371866776256
+    }
+  ],
+  "active_bound_direction": "outward",
+  "projected_kkt_component": 0.0,
+  "sign_condition_holds": true,
+  "unprojected_nonzero_is_not_a_kkt_violation": true,
+  "one_sided_truncation": "The absolute analytic-minus-FD gaps are 1.4596825690010862e-4 and 7.298120925537666e-5. Their ratio is 2, the signature of an O(h) one-sided difference. Both signs are negative, so the projected component stays 0.",
+  "model_branch": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+  "classification": "BOUNDARY_ONE_SIDED_REQUIRED"
+}

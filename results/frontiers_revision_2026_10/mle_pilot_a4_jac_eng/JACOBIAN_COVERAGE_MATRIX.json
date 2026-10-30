@@ -1,0 +1,168 @@
+{
+  "task": "REV26-P1G-A4-JAC-ENG",
+  "coverage_verdict": "PARTIAL_VERIFIED",
+  "complete_jacobian": false,
+  "rows": [
+    {
+      "model": "baryon",
+      "coordinate": "upsilon",
+      "scope": "local",
+      "label": "UNSUPPORTED",
+      "note": "analytic v_star^2/(2v) is feasible; this task did not implement or test it"
+    },
+    {
+      "model": "baryon",
+      "coordinate": "ln_sigma_sys",
+      "scope": "global",
+      "label": "UNSUPPORTED",
+      "note": "shared B0 formula exists; not retested on baryon"
+    },
+    {
+      "model": "mond",
+      "coordinate": "log10_a0",
+      "scope": "global",
+      "label": "UNSUPPORTED",
+      "note": "simple-nu chain plus a0=10^x not tested"
+    },
+    {
+      "model": "mond",
+      "coordinate": "upsilon",
+      "scope": "local",
+      "label": "UNSUPPORTED",
+      "note": "depends on g_N(Upsilon); not tested"
+    },
+    {
+      "model": "mond",
+      "coordinate": "ln_sigma_sys",
+      "scope": "global",
+      "label": "UNSUPPORTED",
+      "note": "not retested on mond"
+    },
+    {
+      "model": "ptq",
+      "coordinate": "epsilon",
+      "scope": "global",
+      "label": "CONDITIONAL_ANALYTIC",
+      "note": "A3-DERIV full-sample value; this task matched the prototype on F574-1 only. Frozen FD remains biased by 5.699222739931031"
+    },
+    {
+      "model": "ptq",
+      "coordinate": "ln_sigma_sys",
+      "scope": "global",
+      "label": "CONDITIONAL_ANALYTIC",
+      "note": "A3-DERIV full-sample value; F574-1 prototype spot check matched to 0"
+    },
+    {
+      "model": "ptq",
+      "coordinate": "upsilon",
+      "scope": "local",
+      "label": "CONDITIONAL_ANALYTIC",
+      "note": "F574-1 upper bound only. Analytic and inward FD agree in sign; the 1e-4 one-sided step is O(h) biased. Not all galaxies."
+    },
+    {
+      "model": "ptq-nu",
+      "coordinate": "epsilon",
+      "scope": "global",
+      "label": "CONDITIONAL_ANALYTIC",
+      "note": "A3-DERIV; F574-1 spot check matched the prototype to 8.9e-15 in d log L"
+    },
+    {
+      "model": "ptq-nu",
+      "coordinate": "ln_sigma_sys",
+      "scope": "global",
+      "label": "CONDITIONAL_ANALYTIC",
+      "note": "A3-DERIV; F574-1 spot check matched"
+    },
+    {
+      "model": "ptq-nu",
+      "coordinate": "upsilon",
+      "scope": "local",
+      "label": "CONDITIONAL_ANALYTIC",
+      "note": "F574-1 and NGC0801 interior FD agree near 1e-7. Not the other 89 galaxies."
+    },
+    {
+      "model": "ptq-screen",
+      "coordinate": "epsilon",
+      "scope": "global",
+      "label": "CONDITIONAL_ANALYTIC",
+      "note": "One accepted interior point. Two central steps approach the analytic value as O(h^2). Residual 2.06e-5 does not resolve 1e-6."
+    },
+    {
+      "model": "ptq-screen",
+      "coordinate": "ln_q",
+      "scope": "global",
+      "label": "CONDITIONAL_ANALYTIC",
+      "note": "One central step. Absolute gap 0.0018153081639376012. Second step not run."
+    },
+    {
+      "model": "ptq-screen",
+      "coordinate": "upsilon",
+      "scope": "local",
+      "label": "CONDITIONAL_ANALYTIC",
+      "note": "F574-1 only, including the nu_q dependence on g_N. Not all galaxies."
+    },
+    {
+      "model": "ptq-screen",
+      "coordinate": "ln_sigma_sys",
+      "scope": "global",
+      "label": "UNSUPPORTED",
+      "note": "Computed by the shared formula as 0.9196249038415554 and not finite-differenced. Not a verified coordinate."
+    },
+    {
+      "model": "mond-screen",
+      "coordinate": "log10_a0",
+      "scope": "global",
+      "label": "UNRESOLVED_BRANCH",
+      "note": "Mapped pass interrupted before any retained row"
+    },
+    {
+      "model": "mond-screen",
+      "coordinate": "ln_q",
+      "scope": "global",
+      "label": "UNRESOLVED_BRANCH",
+      "note": "Mapped pass interrupted"
+    },
+    {
+      "model": "mond-screen",
+      "coordinate": "upsilon",
+      "scope": "local",
+      "label": "UNRESOLVED_BRANCH",
+      "note": "Mapped pass interrupted"
+    },
+    {
+      "model": "mond-screen",
+      "coordinate": "ln_sigma_sys",
+      "scope": "global",
+      "label": "UNSUPPORTED",
+      "note": "not tested"
+    },
+    {
+      "model": "nfw1p",
+      "coordinate": "upsilon",
+      "scope": "local",
+      "label": "UNSUPPORTED",
+      "note": "not in this derivative module"
+    },
+    {
+      "model": "nfw1p",
+      "coordinate": "log10_M200",
+      "scope": "local",
+      "label": "VERIFIED_NUMERICAL_ONLY",
+      "note": "A3 finite differences at two start-point galaxies only; c(M) analytic derivative not derived here"
+    },
+    {
+      "model": "nfw1p",
+      "coordinate": "ln_sigma_sys",
+      "scope": "global",
+      "label": "VERIFIED_NUMERICAL_ONLY",
+      "note": "A3 one-point finite difference only"
+    },
+    {
+      "model": "screen-family",
+      "coordinate": "clipped nu_q or a0/y/radius floors",
+      "scope": "branch",
+      "label": "UNRESOLVED_BRANCH",
+      "note": "The tested screen point had no active floors. Clipped branches were not differentiated."
+    }
+  ]
+}

@@ -1,0 +1,206 @@
+{
+  "task": "REV26-P1G-A4-JAC-ENG",
+  "primary_objective_order": 192,
+  "predeclared_relative_steps": [
+    0.0001,
+    5e-05
+  ],
+  "records": [
+    {
+      "scope": "local",
+      "model": "ptq-nu",
+      "galaxy": "F574-1",
+      "relative_step": 0.0001,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "finite_difference_dF": 0.034906944044878346,
+      "order": 192,
+      "stencil_objectives": [
+        47.522455024570064,
+        47.52246514758384
+      ],
+      "abs_difference": 1.1348701148272688e-07,
+      "consistent": true,
+      "consistency_tolerance": 0.0001,
+      "analytic_dF": 0.03490705753188983
+    },
+    {
+      "scope": "local",
+      "model": "ptq-nu",
+      "galaxy": "F574-1",
+      "relative_step": 5e-05,
+      "scheme": "central",
+      "native_step": 7.250000000003087e-05,
+      "finite_difference_dF": 0.034907029138469596,
+      "order": 192,
+      "stencil_objectives": [
+        47.522457499418124,
+        47.52246256093735
+      ],
+      "abs_difference": 2.8393420233030486e-08,
+      "consistent": true,
+      "consistency_tolerance": 0.0001,
+      "analytic_dF": 0.03490705753188983
+    },
+    {
+      "scope": "local",
+      "model": "ptq",
+      "galaxy": "F574-1",
+      "relative_step": 0.0001,
+      "scheme": "backward_inward",
+      "native_step": 0.00014500000000006175,
+      "finite_difference_dF": -0.11657968692466267,
+      "order": 192,
+      "stencil_objectives": [
+        50.36267439735251,
+        50.3626574932979
+      ],
+      "abs_difference": 0.00014596825690010862,
+      "consistent": false,
+      "consistency_tolerance": 0.00011643371866776256,
+      "analytic_dF": -0.11643371866776256
+    },
+    {
+      "scope": "local",
+      "model": "ptq",
+      "galaxy": "F574-1",
+      "relative_step": 5e-05,
+      "scheme": "backward_inward",
+      "native_step": 7.249999999991985e-05,
+      "finite_difference_dF": -0.11650669987701794,
+      "order": 192,
+      "stencil_objectives": [
+        50.362665940033644,
+        50.3626574932979
+      ],
+      "abs_difference": 7.298120925537666e-05,
+      "consistent": true,
+      "consistency_tolerance": 0.00011643371866776256,
+      "analytic_dF": -0.11643371866776256
+    },
+    {
+      "scope": "local",
+      "model": "ptq-nu",
+      "galaxy": "NGC0801",
+      "relative_step": 0.0001,
+      "scheme": "central",
+      "native_step": 0.00014500000000006175,
+      "finite_difference_dF": -0.1631489783056351,
+      "order": 192,
+      "stencil_objectives": [
+        72.71576855381629,
+        72.71572124061258
+      ],
+      "abs_difference": 4.068474836749214e-07,
+      "consistent": true,
+      "consistency_tolerance": 0.00016314857145815142,
+      "analytic_dF": -0.16314857145815143
+    },
+    {
+      "scope": "local",
+      "model": "ptq-nu",
+      "galaxy": "NGC0801",
+      "relative_step": 5e-05,
+      "scheme": "central",
+      "native_step": 7.249999999991985e-05,
+      "finite_difference_dF": -0.16314867262549973,
+      "order": 192,
+      "stencil_objectives": [
+        72.71575643681973,
+        72.7157327802622
+      ],
+      "abs_difference": 1.0116734830423191e-07,
+      "consistent": true,
+      "consistency_tolerance": 0.00016314857145815142,
+      "analytic_dF": -0.16314857145815143
+    },
+    {
+      "scope": "local384",
+      "model": "ptq-nu",
+      "galaxy": "F574-1",
+      "analytic_dF": 0.03490705753188983,
+      "relative_step": 0.0001,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "finite_difference_dF": 0.0349069439958754,
+      "order": 384,
+      "stencil_objectives": [
+        47.52245502457019,
+        47.52246514758395
+      ],
+      "abs_difference_vs_analytic": 1.1353601443025996e-07,
+      "note": "384 is diagnostic and does not replace fine192"
+    },
+    {
+      "relative_step": 0.0001,
+      "scheme": "central",
+      "native_step": 2.2906630204960754e-05,
+      "finite_difference_dF": -23.635113136254244,
+      "order": 192,
+      "stencil_objectives": [
+        6657.647184511165,
+        6657.646101709572
+      ],
+      "model": "ptq-screen",
+      "coordinate": "epsilon",
+      "native_index": 0,
+      "analytic_dF": -23.635029912923386,
+      "abs_difference": 8.322333085786227e-05,
+      "consistent": true,
+      "consistency_tolerance": 0.023635029912923388,
+      "seconds": 29.549053505063057,
+      "bound_status": "interior"
+    },
+    {
+      "relative_step": 5e-05,
+      "scheme": "central",
+      "native_step": 1.1453315102494255e-05,
+      "finite_difference_dF": -23.635050562043496,
+      "order": 192,
+      "stencil_objectives": [
+        6657.646903632127,
+        6657.646362232764
+      ],
+      "model": "ptq-screen",
+      "coordinate": "epsilon",
+      "native_index": 0,
+      "analytic_dF": -23.635029912923386,
+      "abs_difference": 2.0649120109794694e-05,
+      "consistent": true,
+      "consistency_tolerance": 0.023635029912923388,
+      "seconds": 29.43155564367771,
+      "bound_status": "interior"
+    },
+    {
+      "relative_step": 0.0001,
+      "scheme": "central",
+      "native_step": 0.00034657359027997353,
+      "finite_difference_dF": -24.063031238903662,
+      "order": 192,
+      "stencil_objectives": [
+        6657.6565904960025,
+        6657.639911273744
+      ],
+      "model": "ptq-screen",
+      "coordinate": "ln_q",
+      "native_index": 1,
+      "analytic_dF": -24.0648465470676,
+      "abs_difference": 0.0018153081639376012,
+      "consistent": true,
+      "consistency_tolerance": 0.0240648465470676,
+      "seconds": 19.53709602402523,
+      "bound_status": "interior"
+    }
+  ],
+  "archived_scaled_fd_reproduced": {
+    "ptq_nu_F574-1_scaled_fd_1e-4": 0.0506150688650736,
+    "ptq_F574-1_scaled_fd_1e-4": -0.16904054604076085,
+    "span": 1.45,
+    "note": "These match the P1G-A direction-audit scaled finite differences. The linear-PTQ upper-bound finite difference remains O(h) biased relative to the analytic derivative."
+  },
+  "linear_epsilon_archive_not_recomputed": {
+    "analytic": 82.52506788569912,
+    "frozen_fd": 76.82584514576808,
+    "difference": 5.699222739931031
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "task": "REV26-P1G-A4-JAC-ENG",
+  "theta_sha256": "b0a24278778944f59b3ae440ba3ae5a63d9dec584c851f93a64fa3e693ff3ab4",
+  "summary": {
+    "theta_sha256": "b0a24278778944f59b3ae440ba3ae5a63d9dec584c851f93a64fa3e693ff3ab4",
+    "objective": 6657.646629539804,
+    "archived_objective": 6657.646629539804,
+    "objective_minus_archived": 0.0,
+    "max_abs_galaxy_logL_gap": 1.2505552149377763e-12,
+    "identity_pass": true,
+    "analytic_dF": {
+      "epsilon": -23.635029912923386,
+      "ln_q": -24.0648465470676,
+      "ln_sigma_sys": 0.9196249038415554
+    },
+    "sum_local_upsilon_dF": 104.05826470801036,
+    "domain_flags_excluding_catalog_sign": [],
+    "n_galaxies_with_floor_flags": 0,
+    "epsilon_value": 0.18314148131846816,
+    "ln_q_value": -0.02986887182600353,
+    "q_value": 0.9705727946428605,
+    "epsilon_bound": "interior",
+    "ln_q_bound": "interior",
+    "weights_depend_on_theta": false,
+    "q_enters_gN": false,
+    "seconds": 46.76306885993108
+  },
+  "ln_sigma_sys_not_independently_finite_differenced": true,
+  "finite_differences": [
+    {
+      "relative_step": 0.0001,
+      "scheme": "central",
+      "native_step": 2.2906630204960754e-05,
+      "finite_difference_dF": -23.635113136254244,
+      "order": 192,
+      "stencil_objectives": [
+        6657.647184511165,
+        6657.646101709572
+      ],
+      "model": "ptq-screen",
+      "coordinate": "epsilon",
+      "native_index": 0,
+      "analytic_dF": -23.635029912923386,
+      "abs_difference": 8.322333085786227e-05,
+      "consistent": true,
+      "consistency_tolerance": 0.023635029912923388,
+      "seconds": 29.549053505063057,
+      "bound_status": "interior"
+    },
+    {
+      "relative_step": 5e-05,
+      "scheme": "central",
+      "native_step": 1.1453315102494255e-05,
+      "finite_difference_dF": -23.635050562043496,
+      "order": 192,
+      "stencil_objectives": [
+        6657.646903632127,
+        6657.646362232764
+      ],
+      "model": "ptq-screen",
+      "coordinate": "epsilon",
+      "native_index": 0,
+      "analytic_dF": -23.635029912923386,
+      "abs_difference": 2.0649120109794694e-05,
+      "consistent": true,
+      "consistency_tolerance": 0.023635029912923388,
+      "seconds": 29.43155564367771,
+      "bound_status": "interior"
+    },
+    {
+      "relative_step": 0.0001,
+      "scheme": "central",
+      "native_step": 0.00034657359027997353,
+      "finite_difference_dF": -24.063031238903662,
+      "order": 192,
+      "stencil_objectives": [
+        6657.6565904960025,
+        6657.639911273744
+      ],
+      "model": "ptq-screen",
+      "coordinate": "ln_q",
+      "native_index": 1,
+      "analytic_dF": -24.0648465470676,
+      "abs_difference": 0.0018153081639376012,
+      "consistent": true,
+      "consistency_tolerance": 0.0240648465470676,
+      "seconds": 19.53709602402523,
+      "bound_status": "interior"
+    }
+  ],
+  "identity_limit": 1e-09,
+  "predeclared_consistency_rule": "abs(analytic-fd) <= max(1e-4, 1e-3*|analytic|). This bar is not a 1e-6 stationarity test.",
+  "second_ln_q_step": "NOT_RUN_BUDGET",
+  "n_galaxies_negative_catalog_gas": 18,
+  "floor_flags_on_accepted_point": []
+}

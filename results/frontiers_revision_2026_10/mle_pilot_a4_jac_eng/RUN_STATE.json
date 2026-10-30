@@ -1,0 +1,1909 @@
+{
+  "task": "REV26-P1G-A4-JAC-ENG",
+  "optimizer_called": false,
+  "activated_as_optimizer_jacobian": false,
+  "phases": [
+    {
+      "phase": "local_upsilon",
+      "seconds": 4.509609600994736,
+      "calls": 17,
+      "equivalents": 0.1391572350968832
+    }
+  ],
+  "local": [
+    {
+      "model": "ptq-nu",
+      "galaxy": "F574-1",
+      "gi": 9,
+      "coordinate": "upsilon",
+      "native_index": 10,
+      "definition": "stellar mass-to-light; v_bar^2 = U*(v_disk^2+v_bulge^2)+v_gas^2",
+      "parameter_value": 0.9499353954084917,
+      "bounds": [
+        0.05,
+        1.5
+      ],
+      "owning_galaxy_official_logL": -47.52246001154469,
+      "rederived_logL": -47.522460011544695,
+      "abs_gap": 7.105427357601002e-15,
+      "identity_pass": true,
+      "analytic_dF": 0.03490705753188983,
+      "analytic_equals_negative_owning_dlogL": true,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "finite_differences": [
+        {
+          "relative_step": 0.0001,
+          "scheme": "central",
+          "native_step": 0.00014499999999995072,
+          "finite_difference_dF": 0.034906944044878346,
+          "order": 192,
+          "stencil_objectives": [
+            47.522455024570064,
+            47.52246514758384
+          ],
+          "abs_difference": 1.1348701148272688e-07,
+          "consistent": true,
+          "consistency_tolerance": 0.0001
+        },
+        {
+          "relative_step": 5e-05,
+          "scheme": "central",
+          "native_step": 7.250000000003087e-05,
+          "finite_difference_dF": 0.034907029138469596,
+          "order": 192,
+          "stencil_objectives": [
+            47.522457499418124,
+            47.52246256093735
+          ],
+          "abs_difference": 2.8393420233030486e-08,
+          "consistent": true,
+          "consistency_tolerance": 0.0001
+        }
+      ],
+      "kkt": {
+        "bound_status": "interior",
+        "unprojected_analytic": 0.03490705753188983,
+        "projected_kkt_component": 0.03490705753188983,
+        "sign_condition_holds": null,
+        "active_bound_direction": "free",
+        "gap_to_lower": 0.8999353954084917,
+        "gap_to_upper": 0.5500646045915083
+      },
+      "step_to_step": 8.50935912496964e-08,
+      "classification": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "gtol_resolvable": true,
+      "theta_sha256": "7abded50306ec11a32380f1ae85c555faef1d2d9318f39c673b691ae974473b2"
+    },
+    {
+      "model": "ptq",
+      "galaxy": "F574-1",
+      "gi": 9,
+      "coordinate": "upsilon",
+      "native_index": 10,
+      "definition": "stellar mass-to-light; v_bar^2 = U*(v_disk^2+v_bulge^2)+v_gas^2",
+      "parameter_value": 1.5,
+      "bounds": [
+        0.05,
+        1.5
+      ],
+      "owning_galaxy_official_logL": -50.3626574932979,
+      "rederived_logL": -50.362657493297895,
+      "abs_gap": 7.105427357601002e-15,
+      "identity_pass": true,
+      "analytic_dF": -0.11643371866776256,
+      "analytic_equals_negative_owning_dlogL": true,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "finite_differences": [
+        {
+          "relative_step": 0.0001,
+          "scheme": "backward_inward",
+          "native_step": 0.00014500000000006175,
+          "finite_difference_dF": -0.11657968692466267,
+          "order": 192,
+          "stencil_objectives": [
+            50.36267439735251,
+            50.3626574932979
+          ],
+          "abs_difference": 0.00014596825690010862,
+          "consistent": false,
+          "consistency_tolerance": 0.00011643371866776256
+        },
+        {
+          "relative_step": 5e-05,
+          "scheme": "backward_inward",
+          "native_step": 7.249999999991985e-05,
+          "finite_difference_dF": -0.11650669987701794,
+          "order": 192,
+          "stencil_objectives": [
+            50.362665940033644,
+            50.3626574932979
+          ],
+          "abs_difference": 7.298120925537666e-05,
+          "consistent": true,
+          "consistency_tolerance": 0.00011643371866776256
+        }
+      ],
+      "kkt": {
+        "bound_status": "upper",
+        "unprojected_analytic": -0.11643371866776256,
+        "projected_kkt_component": 0.0,
+        "sign_condition_holds": true,
+        "active_bound_direction": "outward",
+        "gap_to_lower": 1.45,
+        "gap_to_upper": 0.0
+      },
+      "step_to_step": 7.298704764473196e-05,
+      "classification": "BOUNDARY_ONE_SIDED_REQUIRED",
+      "gtol_resolvable": false,
+      "theta_sha256": "96ac8469398b416aa0740522da74c844c12ea8e95364d69f3920f2df460fd6c4"
+    },
+    {
+      "model": "ptq-nu",
+      "galaxy": "NGC0801",
+      "gi": 16,
+      "coordinate": "upsilon",
+      "native_index": 17,
+      "definition": "stellar mass-to-light; v_bar^2 = U*(v_disk^2+v_bulge^2)+v_gas^2",
+      "parameter_value": 1.0918259586839263,
+      "bounds": [
+        0.05,
+        1.5
+      ],
+      "owning_galaxy_official_logL": -72.71574451231675,
+      "rederived_logL": -72.71574451231616,
+      "abs_gap": 5.826450433232822e-13,
+      "identity_pass": true,
+      "analytic_dF": -0.16314857145815143,
+      "analytic_equals_negative_owning_dlogL": true,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "finite_differences": [
+        {
+          "relative_step": 0.0001,
+          "scheme": "central",
+          "native_step": 0.00014500000000006175,
+          "finite_difference_dF": -0.1631489783056351,
+          "order": 192,
+          "stencil_objectives": [
+            72.71576855381629,
+            72.71572124061258
+          ],
+          "abs_difference": 4.068474836749214e-07,
+          "consistent": true,
+          "consistency_tolerance": 0.00016314857145815142
+        },
+        {
+          "relative_step": 5e-05,
+          "scheme": "central",
+          "native_step": 7.249999999991985e-05,
+          "finite_difference_dF": -0.16314867262549973,
+          "order": 192,
+          "stencil_objectives": [
+            72.71575643681973,
+            72.7157327802622
+          ],
+          "abs_difference": 1.0116734830423191e-07,
+          "consistent": true,
+          "consistency_tolerance": 0.00016314857145815142
+        }
+      ],
+      "kkt": {
+        "bound_status": "interior",
+        "unprojected_analytic": -0.16314857145815143,
+        "projected_kkt_component": -0.16314857145815143,
+        "sign_condition_holds": null,
+        "active_bound_direction": "free",
+        "gap_to_lower": 1.0418259586839262,
+        "gap_to_upper": 0.4081740413160737
+      },
+      "step_to_step": 3.056801353706895e-07,
+      "classification": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "gtol_resolvable": true,
+      "theta_sha256": "7abded50306ec11a32380f1ae85c555faef1d2d9318f39c673b691ae974473b2",
+      "selection_rule": "Predeclared additional fixture: NGC0801 is the archived coarse-grid outlier of the matched mond family. The direction audit itself only differentiated F574-1."
+    },
+    {
+      "model": "ptq-screen",
+      "galaxy": "F574-1",
+      "gi": 9,
+      "coordinate": "upsilon",
+      "native_index": 11,
+      "definition": "screen chain: Upsilon changes v_N^2 and therefore y inside nu_q",
+      "parameter_value": 0.939730638942954,
+      "bounds": [
+        0.05,
+        1.5
+      ],
+      "analytic_dF": 0.09652626272436632,
+      "abs_gap": 7.105427357601002e-15,
+      "identity_pass": true,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "kkt": {
+        "bound_status": "interior",
+        "unprojected_analytic": 0.09652626272436632,
+        "projected_kkt_component": 0.09652626272436632,
+        "sign_condition_holds": null,
+        "active_bound_direction": "free",
+        "gap_to_lower": 0.889730638942954,
+        "gap_to_upper": 0.560269361057046
+      },
+      "finite_differences": [
+        {
+          "relative_step": 0.0001,
+          "scheme": "central",
+          "native_step": 0.00014499999999995072,
+          "finite_difference_dF": 0.09652614131752407,
+          "order": 192,
+          "stencil_objectives": [
+            47.490569690731256,
+            47.49059768331224
+          ],
+          "abs_difference": 1.2140684224615228e-07,
+          "consistent": true,
+          "consistency_tolerance": 0.0001
+        },
+        {
+          "relative_step": 5e-05,
+          "scheme": "central",
+          "native_step": 7.250000000003087e-05,
+          "finite_difference_dF": 0.09652623231592329,
+          "order": 192,
+          "stencil_objectives": [
+            47.49057663061958,
+            47.490590626923264
+          ],
+          "abs_difference": 3.0408443027485355e-08,
+          "consistent": true,
+          "consistency_tolerance": 0.0001
+        }
+      ],
+      "theta_sha256": "b0a24278778944f59b3ae440ba3ae5a63d9dec584c851f93a64fa3e693ff3ab4",
+      "step_to_step": 9.099839921866693e-08,
+      "classification": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE"
+    }
+  ],
+  "screen_galaxies": [
+    {
+      "galaxy": "CamB",
+      "official_logL": -32.323568427315045,
+      "rederived_logL": -32.323568427315045,
+      "abs_gap": 0.0,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -21.8774734246934,
+        "epsilon": -30.670124259422145,
+        "ln_q": -22.649267718005348,
+        "ln_sigma_sys": 1.693473323822735
+      }
+    },
+    {
+      "galaxy": "D564-8",
+      "official_logL": -17.60258595228198,
+      "rederived_logL": -17.602585952281984,
+      "abs_gap": 3.552713678800501e-15,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -2.827539452172344,
+        "epsilon": -7.123113140941049,
+        "ln_q": -6.519093776177362,
+        "ln_sigma_sys": -4.721116360353334
+      }
+    },
+    {
+      "galaxy": "D631-7",
+      "official_logL": -55.03627124776201,
+      "rederived_logL": -55.03627124776201,
+      "abs_gap": 0.0,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -11.288372406943001,
+        "epsilon": -18.64940644005353,
+        "ln_q": -0.9862495891742156,
+        "ln_sigma_sys": 1.3945323660870916
+      }
+    },
+    {
+      "galaxy": "DDO154",
+      "official_logL": -34.099777262440824,
+      "rederived_logL": -34.099777262440824,
+      "abs_gap": 0.0,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.5553879710967091,
+        "epsilon": -4.9882572161138885,
+        "ln_q": -3.8879836826875023,
+        "ln_sigma_sys": -11.357048676681222
+      }
+    },
+    {
+      "galaxy": "DDO168",
+      "official_logL": -32.24281372927056,
+      "rederived_logL": -32.24281372927056,
+      "abs_gap": 0.0,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -1.3292705805072296,
+        "epsilon": -8.355125490185815,
+        "ln_q": -1.9647847001158452,
+        "ln_sigma_sys": -2.7529572243903946
+      }
+    },
+    {
+      "galaxy": "ESO444-G084",
+      "official_logL": -23.124972332340178,
+      "rederived_logL": -23.12497233234018,
+      "abs_gap": 3.552713678800501e-15,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.14378802812746516,
+        "epsilon": 8.990242805149629,
+        "ln_q": 7.573365365837448,
+        "ln_sigma_sys": -3.423631749844078
+      }
+    },
+    {
+      "galaxy": "ESO563-G021",
+      "official_logL": -194.94299066903045,
+      "rederived_logL": -194.94299066902926,
+      "abs_gap": 1.1937117960769683e-12,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -3.486721496786244,
+        "epsilon": 55.058696661680486,
+        "ln_q": 36.707288086127015,
+        "ln_sigma_sys": 89.31242653627983
+      }
+    },
+    {
+      "galaxy": "F568-3",
+      "official_logL": -67.27209030851795,
+      "rederived_logL": -67.27209030851793,
+      "abs_gap": 1.4210854715202004e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.11868550399079743,
+        "epsilon": -3.6272437098064607,
+        "ln_q": -2.7548048868442225,
+        "ln_sigma_sys": -0.16372765554002242
+      }
+    },
+    {
+      "galaxy": "F568-V1",
+      "official_logL": -59.0714303734985,
+      "rederived_logL": -59.07143037349851,
+      "abs_gap": 7.105427357601002e-15,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [
+        "negative_catalog_gas_squared"
+      ],
+      "dlogL": {
+        "upsilon": 1.4149805217750768,
+        "epsilon": -1.5559299329231198,
+        "ln_q": -4.104306887875379,
+        "ln_sigma_sys": -2.2071526379914728
+      }
+    },
+    {
+      "galaxy": "F574-1",
+      "official_logL": -47.49058360935465,
+      "rederived_logL": -47.490583609354644,
+      "abs_gap": 7.105427357601002e-15,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.09652626272436632,
+        "epsilon": -9.517425563718191,
+        "ln_q": -6.135277222186434,
+        "ln_sigma_sys": -3.9212064904950195
+      }
+    },
+    {
+      "galaxy": "IC2574",
+      "official_logL": -102.54965295527504,
+      "rederived_logL": -102.54965295527504,
+      "abs_gap": 0.0,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -1.6028095307084098,
+        "epsilon": -22.854919896930753,
+        "ln_q": -15.590423091402727,
+        "ln_sigma_sys": -24.992037546836823
+      }
+    },
+    {
+      "galaxy": "IC4202",
+      "official_logL": -240.84810410553044,
+      "rederived_logL": -240.84810410553143,
+      "abs_gap": 9.947598300641403e-13,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 2.481913368259555,
+        "epsilon": 114.76881565749906,
+        "ln_q": 27.787648228263368,
+        "ln_sigma_sys": 177.22561366649202
+      }
+    },
+    {
+      "galaxy": "NGC0024",
+      "official_logL": -97.65801033461149,
+      "rederived_logL": -97.6580103346115,
+      "abs_gap": 1.4210854715202004e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.360502807551341,
+        "epsilon": -0.19010582897969996,
+        "ln_q": 2.6732984075757034,
+        "ln_sigma_sys": -9.23301647384418
+      }
+    },
+    {
+      "galaxy": "NGC0055",
+      "official_logL": -64.44526992647047,
+      "rederived_logL": -64.44526992647049,
+      "abs_gap": 1.4210854715202004e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -18.41650024628595,
+        "epsilon": -46.32620915834456,
+        "ln_q": -24.652651934767633,
+        "ln_sigma_sys": -13.725920912998326
+      }
+    },
+    {
+      "galaxy": "NGC0247",
+      "official_logL": -83.88167429822396,
+      "rederived_logL": -83.88167429822394,
+      "abs_gap": 1.4210854715202004e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 0.5689627466036904,
+        "epsilon": -21.091493447472526,
+        "ln_q": -11.86773478434374,
+        "ln_sigma_sys": -10.87852109564902
+      }
+    },
+    {
+      "galaxy": "NGC0300",
+      "official_logL": -83.63306966862527,
+      "rederived_logL": -83.6330696686253,
+      "abs_gap": 2.842170943040401e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 0.21136831137246148,
+        "epsilon": 2.409177656574092,
+        "ln_q": 4.116694764882499,
+        "ln_sigma_sys": -10.103287353503333
+      }
+    },
+    {
+      "galaxy": "NGC0801",
+      "official_logL": -73.50194995472,
+      "rederived_logL": -73.50194995471979,
+      "abs_gap": 2.1316282072803006e-13,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -1.3567619583079302,
+        "epsilon": -114.38404936919497,
+        "ln_q": -36.02853122303386,
+        "ln_sigma_sys": 12.583655097851755
+      }
+    },
+    {
+      "galaxy": "NGC0891",
+      "official_logL": -81.86097482320734,
+      "rederived_logL": -81.86097482320741,
+      "abs_gap": 7.105427357601002e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [
+        "negative_catalog_gas_squared"
+      ],
+      "dlogL": {
+        "upsilon": -0.3432059345218091,
+        "epsilon": 131.4853985209735,
+        "ln_q": 50.05277749319633,
+        "ln_sigma_sys": 13.491617668643013
+      }
+    },
+    {
+      "galaxy": "NGC2403",
+      "official_logL": -227.41251239912773,
+      "rederived_logL": -227.41251239912745,
+      "abs_gap": 2.8421709430404007e-13,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -4.941729015649982,
+        "epsilon": 110.19014224765365,
+        "ln_q": 77.13979393601326,
+        "ln_sigma_sys": -41.920165274851044
+      }
+    },
+    {
+      "galaxy": "NGC2683",
+      "official_logL": -42.69407718138169,
+      "rederived_logL": -42.694077181381694,
+      "abs_gap": 7.105427357601002e-15,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -1.3899690130305702,
+        "epsilon": -42.5654378492082,
+        "ln_q": -38.225638955689845,
+        "ln_sigma_sys": -0.20807506602250364
+      }
+    },
+    {
+      "galaxy": "NGC2841",
+      "official_logL": -177.07836415613642,
+      "rederived_logL": -177.07836415613764,
+      "abs_gap": 1.2221335055073723e-12,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [
+        "negative_catalog_gas_squared"
+      ],
+      "dlogL": {
+        "upsilon": -2.3257353303752546,
+        "epsilon": 91.92936625352921,
+        "ln_q": 86.8923310557544,
+        "ln_sigma_sys": -11.072766267605012
+      }
+    },
+    {
+      "galaxy": "NGC2915",
+      "official_logL": -127.24085730383892,
+      "rederived_logL": -127.2408573038389,
+      "abs_gap": 2.842170943040401e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.8301143011751992,
+        "epsilon": 93.70250376322426,
+        "ln_q": 85.05468269801277,
+        "ln_sigma_sys": 4.18277365348083
+      }
+    },
+    {
+      "galaxy": "NGC2955",
+      "official_logL": -113.9374859939794,
+      "rederived_logL": -113.93748599397952,
+      "abs_gap": 1.2789769243681803e-13,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 0.29172172656442574,
+        "epsilon": -39.87055918108291,
+        "ln_q": 0.667325046218384,
+        "ln_sigma_sys": 23.52613680753584
+      }
+    },
+    {
+      "galaxy": "NGC2976",
+      "official_logL": -83.48364829695223,
+      "rederived_logL": -83.48364829695224,
+      "abs_gap": 1.4210854715202004e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 0.21666849540564415,
+        "epsilon": 2.8225877709031737,
+        "ln_q": -2.7548636103087394,
+        "ln_sigma_sys": -16.110365153211607
+      }
+    },
+    {
+      "galaxy": "NGC2998",
+      "official_logL": -58.56965578861661,
+      "rederived_logL": -58.569655788616615,
+      "abs_gap": 7.105427357601002e-15,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 0.8840778314495131,
+        "epsilon": -42.10859572055085,
+        "ln_q": -21.679423368409985,
+        "ln_sigma_sys": -1.298694814599415
+      }
+    },
+    {
+      "galaxy": "NGC3109",
+      "official_logL": -78.00741463164834,
+      "rederived_logL": -78.00741463164833,
+      "abs_gap": 1.4210854715202004e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.9591132649977374,
+        "epsilon": 17.07587268608711,
+        "ln_q": 13.385409225655335,
+        "ln_sigma_sys": -11.820611025543283
+      }
+    },
+    {
+      "galaxy": "NGC3198",
+      "official_logL": -141.46440314058225,
+      "rederived_logL": -141.46440314058276,
+      "abs_gap": 5.115907697472721e-13,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [
+        "negative_catalog_gas_squared"
+      ],
+      "dlogL": {
+        "upsilon": 0.22561615487961834,
+        "epsilon": -32.66153537817182,
+        "ln_q": -35.44737893255874,
+        "ln_sigma_sys": -22.77460479542012
+      }
+    },
+    {
+      "galaxy": "NGC3726",
+      "official_logL": -45.55105900150291,
+      "rederived_logL": -45.551059001502885,
+      "abs_gap": 2.1316282072803006e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 0.10134955474997831,
+        "epsilon": -4.382601810141854,
+        "ln_q": 3.868194144149652,
+        "ln_sigma_sys": 0.944174523207858
+      }
+    },
+    {
+      "galaxy": "NGC3741",
+      "official_logL": -62.30466125037952,
+      "rederived_logL": -62.30466125037952,
+      "abs_gap": 0.0,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.6001063762559248,
+        "epsilon": 33.16861690961895,
+        "ln_q": 28.89237011331911,
+        "ln_sigma_sys": -15.901436484502913
+      }
+    },
+    {
+      "galaxy": "NGC3769",
+      "official_logL": -41.813622231950895,
+      "rederived_logL": -41.81362223195088,
+      "abs_gap": 1.4210854715202004e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.06137710290099285,
+        "epsilon": -0.43556465166430414,
+        "ln_q": -5.8646394122259995,
+        "ln_sigma_sys": -3.3168964373837873
+      }
+    },
+    {
+      "galaxy": "NGC3877",
+      "official_logL": -64.67913544763613,
+      "rederived_logL": -64.67913544763614,
+      "abs_gap": 1.4210854715202004e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.05609109361157749,
+        "epsilon": -0.2853891162864386,
+        "ln_q": -0.3988415917629089,
+        "ln_sigma_sys": 14.699579445831777
+      }
+    },
+    {
+      "galaxy": "NGC3893",
+      "official_logL": -36.58223228960511,
+      "rederived_logL": -36.58223228960508,
+      "abs_gap": 2.842170943040401e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 0.06837924156161135,
+        "epsilon": 18.866439719721,
+        "ln_q": 6.4832479119838435,
+        "ln_sigma_sys": -1.8006251613880147
+      }
+    },
+    {
+      "galaxy": "NGC3917",
+      "official_logL": -58.17613941959096,
+      "rederived_logL": -58.17613941959096,
+      "abs_gap": 0.0,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.9190477764759226,
+        "epsilon": -9.617667275856167,
+        "ln_q": -6.492595016058075,
+        "ln_sigma_sys": -2.8429483051689424
+      }
+    },
+    {
+      "galaxy": "NGC3949",
+      "official_logL": -25.16075372372103,
+      "rederived_logL": -25.16075372372104,
+      "abs_gap": 1.0658141036401503e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.07677800840300453,
+        "epsilon": 3.1853442914003347,
+        "ln_q": 1.3259045658322668,
+        "ln_sigma_sys": -2.00892177042591
+      }
+    },
+    {
+      "galaxy": "NGC3953",
+      "official_logL": -30.86376764869077,
+      "rederived_logL": -30.863767648690818,
+      "abs_gap": 4.618527782440651e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.46959774016911743,
+        "epsilon": -19.8537787605268,
+        "ln_q": -8.007858371925929,
+        "ln_sigma_sys": 0.2860658182779835
+      }
+    },
+    {
+      "galaxy": "NGC3972",
+      "official_logL": -33.771669402386536,
+      "rederived_logL": -33.77166940238655,
+      "abs_gap": 1.4210854715202004e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 0.22393334036682866,
+        "epsilon": 3.955791426259367,
+        "ln_q": 2.6771151980509367,
+        "ln_sigma_sys": -2.884039855129627
+      }
+    },
+    {
+      "galaxy": "NGC3992",
+      "official_logL": -34.714150493250656,
+      "rederived_logL": -34.714150493250756,
+      "abs_gap": 9.947598300641403e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.414113931629193,
+        "epsilon": -39.847374583321226,
+        "ln_q": -25.91733829896697,
+        "ln_sigma_sys": -0.15087580819872445
+      }
+    },
+    {
+      "galaxy": "NGC4010",
+      "official_logL": -42.82213896853449,
+      "rederived_logL": -42.822138968534496,
+      "abs_gap": 7.105427357601002e-15,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 0.5369693763448377,
+        "epsilon": 13.569320692672699,
+        "ln_q": 8.11827265792378,
+        "ln_sigma_sys": -1.2842407488649774
+      }
+    },
+    {
+      "galaxy": "NGC4013",
+      "official_logL": -127.75830310939337,
+      "rederived_logL": -127.758303109393,
+      "abs_gap": 3.694822225952521e-13,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -1.2125333225487016,
+        "epsilon": 30.361767071701642,
+        "ln_q": 51.49383494213696,
+        "ln_sigma_sys": -4.873863672005242
+      }
+    },
+    {
+      "galaxy": "NGC4051",
+      "official_logL": -27.200920986072447,
+      "rederived_logL": -27.20092098607244,
+      "abs_gap": 7.105427357601002e-15,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 0.1709727561175276,
+        "epsilon": -7.332015533299263,
+        "ln_q": -3.7723475587477022,
+        "ln_sigma_sys": 0.1635430107398576
+      }
+    },
+    {
+      "galaxy": "NGC4068",
+      "official_logL": -18.12867474326314,
+      "rederived_logL": -18.128674743263147,
+      "abs_gap": 7.105427357601002e-15,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -4.5846673778409635,
+        "epsilon": -5.255069692680756,
+        "ln_q": -3.3464223181388095,
+        "ln_sigma_sys": -4.21290238641345
+      }
+    },
+    {
+      "galaxy": "NGC4085",
+      "official_logL": -29.00246931468246,
+      "rederived_logL": -29.002469314682465,
+      "abs_gap": 3.552713678800501e-15,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.7667168785040532,
+        "epsilon": 9.111545316259049,
+        "ln_q": 5.26698621814044,
+        "ln_sigma_sys": 2.8397606087766585
+      }
+    },
+    {
+      "galaxy": "NGC4088",
+      "official_logL": -42.51836419945104,
+      "rederived_logL": -42.51836419945107,
+      "abs_gap": 2.842170943040401e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -1.0190652892530419,
+        "epsilon": -12.72680388782176,
+        "ln_q": -5.5173405852696575,
+        "ln_sigma_sys": -3.1010377184170332
+      }
+    },
+    {
+      "galaxy": "NGC4100",
+      "official_logL": -85.04297851143586,
+      "rederived_logL": -85.04297851143592,
+      "abs_gap": 5.684341886080802e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.282224650964723,
+        "epsilon": -27.96933765757076,
+        "ln_q": -22.81421524704354,
+        "ln_sigma_sys": -4.93121999463447
+      }
+    },
+    {
+      "galaxy": "NGC4138",
+      "official_logL": -28.53414914815677,
+      "rederived_logL": -28.534149148156764,
+      "abs_gap": 7.105427357601002e-15,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.10849602097837874,
+        "epsilon": -4.63400377557225,
+        "ln_q": -5.750766744504364,
+        "ln_sigma_sys": -0.025567019926587192
+      }
+    },
+    {
+      "galaxy": "NGC4157",
+      "official_logL": -60.294394525850485,
+      "rederived_logL": -60.29439452585047,
+      "abs_gap": 1.4210854715202004e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.6457058681174139,
+        "epsilon": -1.5569950751425772,
+        "ln_q": 3.5684969295417304,
+        "ln_sigma_sys": -4.371457808955233
+      }
+    },
+    {
+      "galaxy": "NGC4183",
+      "official_logL": -78.97679181092066,
+      "rederived_logL": -78.97679181092056,
+      "abs_gap": 9.947598300641403e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 1.3369742580433792,
+        "epsilon": -29.26149183705814,
+        "ln_q": -23.171382457719794,
+        "ln_sigma_sys": -7.0923916264089515
+      }
+    },
+    {
+      "galaxy": "NGC4217",
+      "official_logL": -98.96178782028643,
+      "rederived_logL": -98.96178782028642,
+      "abs_gap": 1.4210854715202004e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 1.8186419736981811,
+        "epsilon": 136.67431876132565,
+        "ln_q": 86.96100457231194,
+        "ln_sigma_sys": 18.874255322919662
+      }
+    },
+    {
+      "galaxy": "NGC5005",
+      "official_logL": -73.32285151370282,
+      "rederived_logL": -73.32285151370276,
+      "abs_gap": 5.684341886080802e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.27728823311136175,
+        "epsilon": 5.823207887524639,
+        "ln_q": 0.9325382145457055,
+        "ln_sigma_sys": -1.806187633282435
+      }
+    },
+    {
+      "galaxy": "NGC5055",
+      "official_logL": -88.52062722941245,
+      "rederived_logL": -88.52062722941216,
+      "abs_gap": 2.984279490192421e-13,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 0.12889273851490513,
+        "epsilon": -27.816031229235634,
+        "ln_q": -31.601750285805988,
+        "ln_sigma_sys": -17.726300848191247
+      }
+    },
+    {
+      "galaxy": "NGC5907",
+      "official_logL": -90.67927126584438,
+      "rederived_logL": -90.67927126584374,
+      "abs_gap": 6.394884621840902e-13,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 2.1356933577611388,
+        "epsilon": -191.57844526290808,
+        "ln_q": -124.50209089407667,
+        "ln_sigma_sys": 22.311834756271313
+      }
+    },
+    {
+      "galaxy": "NGC6195",
+      "official_logL": -103.67029478019965,
+      "rederived_logL": -103.67029478019955,
+      "abs_gap": 9.947598300641403e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 0.3956780830429901,
+        "epsilon": -90.67912066011077,
+        "ln_q": -4.111257063681139,
+        "ln_sigma_sys": 14.766667665258433
+      }
+    },
+    {
+      "galaxy": "NGC6503",
+      "official_logL": -95.06987996410788,
+      "rederived_logL": -95.06987996410787,
+      "abs_gap": 1.4210854715202004e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 1.98596212776578,
+        "epsilon": 55.30196489691954,
+        "ln_q": 42.40848124005816,
+        "ln_sigma_sys": -19.602461751451607
+      }
+    },
+    {
+      "galaxy": "NGC6674",
+      "official_logL": -62.104018658522406,
+      "rederived_logL": -62.10401865852215,
+      "abs_gap": 2.5579538487363607e-13,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 2.6729871999134542,
+        "epsilon": -41.482449350927524,
+        "ln_q": -5.3737310910258875,
+        "ln_sigma_sys": 5.69070131739523
+      }
+    },
+    {
+      "galaxy": "NGC6789",
+      "official_logL": -13.799692755264335,
+      "rederived_logL": -13.799692755264331,
+      "abs_gap": 3.552713678800501e-15,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 0.6340995251251229,
+        "epsilon": 3.711472898816295,
+        "ln_q": 0.8250150291055132,
+        "ln_sigma_sys": -1.2541433014105328
+      }
+    },
+    {
+      "galaxy": "NGC7331",
+      "official_logL": -119.8697753597634,
+      "rederived_logL": -119.86977535976295,
+      "abs_gap": 4.405364961712621e-13,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [
+        "negative_catalog_gas_squared"
+      ],
+      "dlogL": {
+        "upsilon": -3.8997530985775914,
+        "epsilon": 73.2160215571041,
+        "ln_q": 57.5949439108956,
+        "ln_sigma_sys": -14.154711134419903
+      }
+    },
+    {
+      "galaxy": "NGC7793",
+      "official_logL": -156.8823037958086,
+      "rederived_logL": -156.8823037958086,
+      "abs_gap": 0.0,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 0.5324441024522142,
+        "epsilon": -5.698351352770862,
+        "ln_q": -7.172719050701824,
+        "ln_sigma_sys": -13.948730721414254
+      }
+    },
+    {
+      "galaxy": "NGC7814",
+      "official_logL": -78.3370801062164,
+      "rederived_logL": -78.33708010621656,
+      "abs_gap": 1.5631940186722204e-13,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [
+        "negative_catalog_gas_squared"
+      ],
+      "dlogL": {
+        "upsilon": 1.7701263069791902,
+        "epsilon": 244.38054607937315,
+        "ln_q": 96.13216206493414,
+        "ln_sigma_sys": 9.383288032154763
+      }
+    },
+    {
+      "galaxy": "UGC00128",
+      "official_logL": -71.52618828951071,
+      "rederived_logL": -71.52618828951067,
+      "abs_gap": 4.263256414560601e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 3.905270682326982,
+        "epsilon": -14.527701167886118,
+        "ln_q": -23.00070344666184,
+        "ln_sigma_sys": -10.713352129728577
+      }
+    },
+    {
+      "galaxy": "UGC01281",
+      "official_logL": -78.92314488718479,
+      "rederived_logL": -78.92314488718479,
+      "abs_gap": 0.0,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [
+        "negative_catalog_gas_squared"
+      ],
+      "dlogL": {
+        "upsilon": -0.4077548230101724,
+        "epsilon": 6.568896359521954,
+        "ln_q": 3.531836457908901,
+        "ln_sigma_sys": -11.991908698095322
+      }
+    },
+    {
+      "galaxy": "UGC02487",
+      "official_logL": -63.26786078036695,
+      "rederived_logL": -63.26786078036733,
+      "abs_gap": 3.765876499528531e-13,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [
+        "negative_catalog_gas_squared"
+      ],
+      "dlogL": {
+        "upsilon": 0.6880953346446151,
+        "epsilon": -7.010154640020174,
+        "ln_q": -9.436159312835638,
+        "ln_sigma_sys": -0.9263900762966065
+      }
+    },
+    {
+      "galaxy": "UGC02885",
+      "official_logL": -84.10072809926834,
+      "rederived_logL": -84.10072809926855,
+      "abs_gap": 2.1316282072803006e-13,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.387421692368712,
+        "epsilon": -68.43629047894736,
+        "ln_q": -3.686222102474592,
+        "ln_sigma_sys": 4.4775998662109995
+      }
+    },
+    {
+      "galaxy": "UGC02916",
+      "official_logL": -190.43720649275446,
+      "rederived_logL": -190.43720649275448,
+      "abs_gap": 2.842170943040401e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [
+        "negative_catalog_gas_squared"
+      ],
+      "dlogL": {
+        "upsilon": -0.6489497937090218,
+        "epsilon": 45.917712464246094,
+        "ln_q": -12.882942525352803,
+        "ln_sigma_sys": 33.2001174706097
+      }
+    },
+    {
+      "galaxy": "UGC03205",
+      "official_logL": -205.02076441564571,
+      "rederived_logL": -205.0207644156445,
+      "abs_gap": 1.2221335055073723e-12,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [
+        "negative_catalog_gas_squared"
+      ],
+      "dlogL": {
+        "upsilon": -1.3693013358764436,
+        "epsilon": -33.64327204586048,
+        "ln_q": 21.21202980920011,
+        "ln_sigma_sys": 26.741072756861573
+      }
+    },
+    {
+      "galaxy": "UGC04483",
+      "official_logL": -23.525292585718592,
+      "rederived_logL": -23.52529258571859,
+      "abs_gap": 3.552713678800501e-15,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -1.329400785128615,
+        "epsilon": -9.717200163582053,
+        "ln_q": -5.841412899902123,
+        "ln_sigma_sys": -6.256021772036031
+      }
+    },
+    {
+      "galaxy": "UGC05005",
+      "official_logL": -41.02682746937843,
+      "rederived_logL": -41.02682746937842,
+      "abs_gap": 1.4210854715202004e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.09854592920836125,
+        "epsilon": -2.858766467665874,
+        "ln_q": -2.4793527186773274,
+        "ln_sigma_sys": -2.5031506632314726
+      }
+    },
+    {
+      "galaxy": "UGC05750",
+      "official_logL": -39.46753786910097,
+      "rederived_logL": -39.46753786910098,
+      "abs_gap": 7.105427357601002e-15,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.1544891244021588,
+        "epsilon": -7.717451663893877,
+        "ln_q": -6.276921963827489,
+        "ln_sigma_sys": -2.8742568630762553
+      }
+    },
+    {
+      "galaxy": "UGC06399",
+      "official_logL": -28.599261110774222,
+      "rederived_logL": -28.599261110774215,
+      "abs_gap": 7.105427357601002e-15,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.3534362092067278,
+        "epsilon": -0.3987357081788243,
+        "ln_q": -0.2996515633365666,
+        "ln_sigma_sys": -4.659722632577058
+      }
+    },
+    {
+      "galaxy": "UGC06614",
+      "official_logL": -52.678894023187105,
+      "rederived_logL": -52.67889402318712,
+      "abs_gap": 1.4210854715202004e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [
+        "negative_catalog_gas_squared"
+      ],
+      "dlogL": {
+        "upsilon": -0.27142818317528306,
+        "epsilon": 1.0079258822446724,
+        "ln_q": 6.346303490084271,
+        "ln_sigma_sys": -1.0857810654384628
+      }
+    },
+    {
+      "galaxy": "UGC06667",
+      "official_logL": -30.949589029957682,
+      "rederived_logL": -30.94958902995768,
+      "abs_gap": 3.552713678800501e-15,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 3.41011283699659,
+        "epsilon": 26.895035286160102,
+        "ln_q": 15.833300260851532,
+        "ln_sigma_sys": -1.7730431480263402
+      }
+    },
+    {
+      "galaxy": "UGC06818",
+      "official_logL": -28.14582955876093,
+      "rederived_logL": -28.145829558760926,
+      "abs_gap": 3.552713678800501e-15,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 0.12034440519018497,
+        "epsilon": 16.7181894862063,
+        "ln_q": 11.88041521708006,
+        "ln_sigma_sys": -0.9764936286836902
+      }
+    },
+    {
+      "galaxy": "UGC06917",
+      "official_logL": -35.1893168896439,
+      "rederived_logL": -35.18931688964389,
+      "abs_gap": 7.105427357601002e-15,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.1567986413338449,
+        "epsilon": -1.0391110289744496,
+        "ln_q": -0.07676179452386123,
+        "ln_sigma_sys": -5.343810457379014
+      }
+    },
+    {
+      "galaxy": "UGC06923",
+      "official_logL": -19.74112075261873,
+      "rederived_logL": -19.741120752618727,
+      "abs_gap": 3.552713678800501e-15,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.007200486015492391,
+        "epsilon": 3.27029510176297,
+        "ln_q": 1.8935173496741897,
+        "ln_sigma_sys": -2.310317764719441
+      }
+    },
+    {
+      "galaxy": "UGC06930",
+      "official_logL": -35.179412588777595,
+      "rederived_logL": -35.17941258877761,
+      "abs_gap": 1.4210854715202004e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 0.09103413157010476,
+        "epsilon": -7.983529564300957,
+        "ln_q": -5.301122348478509,
+        "ln_sigma_sys": -3.3148164816276897
+      }
+    },
+    {
+      "galaxy": "UGC06983",
+      "official_logL": -57.88869260733804,
+      "rederived_logL": -57.88869260733799,
+      "abs_gap": 4.973799150320701e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 0.07933431142944325,
+        "epsilon": -11.025366006774034,
+        "ln_q": -6.777890116900872,
+        "ln_sigma_sys": -5.727327853607477
+      }
+    },
+    {
+      "galaxy": "UGC07089",
+      "official_logL": -37.57322573035315,
+      "rederived_logL": -37.573225730353165,
+      "abs_gap": 1.4210854715202004e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 0.07952828263226142,
+        "epsilon": 0.3255668499102562,
+        "ln_q": 0.24223102285328935,
+        "ln_sigma_sys": -6.736895954208292
+      }
+    },
+    {
+      "galaxy": "UGC07151",
+      "official_logL": -33.81646725654345,
+      "rederived_logL": -33.81646725654345,
+      "abs_gap": 0.0,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [
+        "negative_catalog_gas_squared"
+      ],
+      "dlogL": {
+        "upsilon": 0.9179173242704386,
+        "epsilon": -8.949227346486321,
+        "ln_q": -5.441717116958829,
+        "ln_sigma_sys": -5.976516984469701
+      }
+    },
+    {
+      "galaxy": "UGC07232",
+      "official_logL": -12.465391451606479,
+      "rederived_logL": -12.46539145160648,
+      "abs_gap": 1.7763568394002505e-15,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.3306505781831758,
+        "epsilon": 0.8700563362828537,
+        "ln_q": 0.5410385934649414,
+        "ln_sigma_sys": -1.9775845042659264
+      }
+    },
+    {
+      "galaxy": "UGC07524",
+      "official_logL": -99.08067143408942,
+      "rederived_logL": -99.08067143408945,
+      "abs_gap": 2.842170943040401e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [
+        "negative_catalog_gas_squared"
+      ],
+      "dlogL": {
+        "upsilon": -0.7004871645535469,
+        "epsilon": -30.39728284770748,
+        "ln_q": -15.750189159075624,
+        "ln_sigma_sys": -14.698091048909813
+      }
+    },
+    {
+      "galaxy": "UGC07559",
+      "official_logL": -21.61689432191067,
+      "rederived_logL": -21.61689432191067,
+      "abs_gap": 0.0,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -5.975398201373258,
+        "epsilon": -15.652071801603114,
+        "ln_q": -10.50830996779251,
+        "ln_sigma_sys": -3.9317304804647417
+      }
+    },
+    {
+      "galaxy": "UGC07577",
+      "official_logL": -30.936178813338348,
+      "rederived_logL": -30.936178813338344,
+      "abs_gap": 3.552713678800501e-15,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [
+        "negative_catalog_gas_squared"
+      ],
+      "dlogL": {
+        "upsilon": -17.313161209023352,
+        "epsilon": -27.841532781928418,
+        "ln_q": -22.43671576441231,
+        "ln_sigma_sys": -0.25554095716793135
+      }
+    },
+    {
+      "galaxy": "UGC07866",
+      "official_logL": -21.648020291873465,
+      "rederived_logL": -21.648020291873465,
+      "abs_gap": 0.0,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.211894144080442,
+        "epsilon": -5.874099869512934,
+        "ln_q": -3.6244156798441143,
+        "ln_sigma_sys": -4.073114695861719
+      }
+    },
+    {
+      "galaxy": "UGC08286",
+      "official_logL": -50.912118692318764,
+      "rederived_logL": -50.91211869231878,
+      "abs_gap": 1.4210854715202004e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [
+        "negative_catalog_gas_squared"
+      ],
+      "dlogL": {
+        "upsilon": -0.9442086403885168,
+        "epsilon": -12.574019611156823,
+        "ln_q": -7.162962213260241,
+        "ln_sigma_sys": -11.469779327118724
+      }
+    },
+    {
+      "galaxy": "UGC08490",
+      "official_logL": -90.59614690466069,
+      "rederived_logL": -90.59614690466066,
+      "abs_gap": 2.842170943040401e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.22610037690487372,
+        "epsilon": 4.278462503660559,
+        "ln_q": 2.6068413040210885,
+        "ln_sigma_sys": -20.9298608607865
+      }
+    },
+    {
+      "galaxy": "UGC08837",
+      "official_logL": -25.235956628423892,
+      "rederived_logL": -25.235956628423892,
+      "abs_gap": 0.0,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [
+        "negative_catalog_gas_squared"
+      ],
+      "dlogL": {
+        "upsilon": -13.699099166398952,
+        "epsilon": -26.668424448760213,
+        "ln_q": -17.473142082840837,
+        "ln_sigma_sys": -3.5259692810562595
+      }
+    },
+    {
+      "galaxy": "UGC09037",
+      "official_logL": -78.60948439825158,
+      "rederived_logL": -78.60948439825162,
+      "abs_gap": 4.263256414560601e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -1.1665760408539878,
+        "epsilon": 2.033627016925622,
+        "ln_q": 0.22146411328807147,
+        "ln_sigma_sys": -3.657647298628635
+      }
+    },
+    {
+      "galaxy": "UGC09133",
+      "official_logL": -248.29222314860266,
+      "rederived_logL": -248.2922231486039,
+      "abs_gap": 1.2505552149377763e-12,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [
+        "negative_catalog_gas_squared"
+      ],
+      "dlogL": {
+        "upsilon": -1.1159487907620738,
+        "epsilon": 18.405752406762137,
+        "ln_q": -86.80529330841296,
+        "ln_sigma_sys": -5.195080159319689
+      }
+    },
+    {
+      "galaxy": "UGC11455",
+      "official_logL": -151.7733596518567,
+      "rederived_logL": -151.77335965185648,
+      "abs_gap": 2.2737367544323206e-13,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.36255055887506843,
+        "epsilon": 19.119954705728844,
+        "ln_q": 14.86721005527168,
+        "ln_sigma_sys": 20.326235936163755
+      }
+    },
+    {
+      "galaxy": "UGC12506",
+      "official_logL": -138.168316781331,
+      "rederived_logL": -138.16831678133107,
+      "abs_gap": 8.526512829121202e-14,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": 3.0254626943000895,
+        "epsilon": -74.88616954776919,
+        "ln_q": -55.00226058639248,
+        "ln_sigma_sys": 1.2267368276919268
+      }
+    },
+    {
+      "galaxy": "UGCA442",
+      "official_logL": -24.099703096101432,
+      "rederived_logL": -24.09970309610143,
+      "abs_gap": 3.552713678800501e-15,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [],
+      "dlogL": {
+        "upsilon": -0.2628177506341527,
+        "epsilon": 0.4968768137087203,
+        "ln_q": 2.7155436294522532,
+        "ln_sigma_sys": -5.297949403641668
+      }
+    },
+    {
+      "galaxy": "UGCA444",
+      "official_logL": -110.5666351422111,
+      "rederived_logL": -110.5666351422111,
+      "abs_gap": 0.0,
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+      "flags": [
+        "negative_catalog_gas_squared"
+      ],
+      "dlogL": {
+        "upsilon": -0.04638888566425861,
+        "epsilon": -47.880052545163934,
+        "ln_q": -27.098209753350705,
+        "ln_sigma_sys": -22.10346642860907
+      }
+    }
+  ],
+  "mond_screen_galaxies": [],
+  "finite_differences": [
+    {
+      "scope": "local",
+      "model": "ptq-nu",
+      "galaxy": "F574-1",
+      "relative_step": 0.0001,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "finite_difference_dF": 0.034906944044878346,
+      "order": 192,
+      "stencil_objectives": [
+        47.522455024570064,
+        47.52246514758384
+      ],
+      "abs_difference": 1.1348701148272688e-07,
+      "consistent": true,
+      "consistency_tolerance": 0.0001,
+      "analytic_dF": 0.03490705753188983
+    },
+    {
+      "scope": "local",
+      "model": "ptq-nu",
+      "galaxy": "F574-1",
+      "relative_step": 5e-05,
+      "scheme": "central",
+      "native_step": 7.250000000003087e-05,
+      "finite_difference_dF": 0.034907029138469596,
+      "order": 192,
+      "stencil_objectives": [
+        47.522457499418124,
+        47.52246256093735
+      ],
+      "abs_difference": 2.8393420233030486e-08,
+      "consistent": true,
+      "consistency_tolerance": 0.0001,
+      "analytic_dF": 0.03490705753188983
+    },
+    {
+      "scope": "local",
+      "model": "ptq",
+      "galaxy": "F574-1",
+      "relative_step": 0.0001,
+      "scheme": "backward_inward",
+      "native_step": 0.00014500000000006175,
+      "finite_difference_dF": -0.11657968692466267,
+      "order": 192,
+      "stencil_objectives": [
+        50.36267439735251,
+        50.3626574932979
+      ],
+      "abs_difference": 0.00014596825690010862,
+      "consistent": false,
+      "consistency_tolerance": 0.00011643371866776256,
+      "analytic_dF": -0.11643371866776256
+    },
+    {
+      "scope": "local",
+      "model": "ptq",
+      "galaxy": "F574-1",
+      "relative_step": 5e-05,
+      "scheme": "backward_inward",
+      "native_step": 7.249999999991985e-05,
+      "finite_difference_dF": -0.11650669987701794,
+      "order": 192,
+      "stencil_objectives": [
+        50.362665940033644,
+        50.3626574932979
+      ],
+      "abs_difference": 7.298120925537666e-05,
+      "consistent": true,
+      "consistency_tolerance": 0.00011643371866776256,
+      "analytic_dF": -0.11643371866776256
+    },
+    {
+      "scope": "local",
+      "model": "ptq-nu",
+      "galaxy": "NGC0801",
+      "relative_step": 0.0001,
+      "scheme": "central",
+      "native_step": 0.00014500000000006175,
+      "finite_difference_dF": -0.1631489783056351,
+      "order": 192,
+      "stencil_objectives": [
+        72.71576855381629,
+        72.71572124061258
+      ],
+      "abs_difference": 4.068474836749214e-07,
+      "consistent": true,
+      "consistency_tolerance": 0.00016314857145815142,
+      "analytic_dF": -0.16314857145815143
+    },
+    {
+      "scope": "local",
+      "model": "ptq-nu",
+      "galaxy": "NGC0801",
+      "relative_step": 5e-05,
+      "scheme": "central",
+      "native_step": 7.249999999991985e-05,
+      "finite_difference_dF": -0.16314867262549973,
+      "order": 192,
+      "stencil_objectives": [
+        72.71575643681973,
+        72.7157327802622
+      ],
+      "abs_difference": 1.0116734830423191e-07,
+      "consistent": true,
+      "consistency_tolerance": 0.00016314857145815142,
+      "analytic_dF": -0.16314857145815143
+    },
+    {
+      "scope": "local384",
+      "model": "ptq-nu",
+      "galaxy": "F574-1",
+      "analytic_dF": 0.03490705753188983,
+      "relative_step": 0.0001,
+      "scheme": "central",
+      "native_step": 0.00014499999999995072,
+      "finite_difference_dF": 0.0349069439958754,
+      "order": 384,
+      "stencil_objectives": [
+        47.52245502457019,
+        47.52246514758395
+      ],
+      "abs_difference_vs_analytic": 1.1353601443025996e-07,
+      "note": "384 is diagnostic and does not replace fine192"
+    },
+    {
+      "relative_step": 0.0001,
+      "scheme": "central",
+      "native_step": 2.2906630204960754e-05,
+      "finite_difference_dF": -23.635113136254244,
+      "order": 192,
+      "stencil_objectives": [
+        6657.647184511165,
+        6657.646101709572
+      ],
+      "model": "ptq-screen",
+      "coordinate": "epsilon",
+      "native_index": 0,
+      "analytic_dF": -23.635029912923386,
+      "abs_difference": 8.322333085786227e-05,
+      "consistent": true,
+      "consistency_tolerance": 0.023635029912923388,
+      "seconds": 29.549053505063057,
+      "bound_status": "interior"
+    },
+    {
+      "relative_step": 5e-05,
+      "scheme": "central",
+      "native_step": 1.1453315102494255e-05,
+      "finite_difference_dF": -23.635050562043496,
+      "order": 192,
+      "stencil_objectives": [
+        6657.646903632127,
+        6657.646362232764
+      ],
+      "model": "ptq-screen",
+      "coordinate": "epsilon",
+      "native_index": 0,
+      "analytic_dF": -23.635029912923386,
+      "abs_difference": 2.0649120109794694e-05,
+      "consistent": true,
+      "consistency_tolerance": 0.023635029912923388,
+      "seconds": 29.43155564367771,
+      "bound_status": "interior"
+    },
+    {
+      "relative_step": 0.0001,
+      "scheme": "central",
+      "native_step": 0.00034657359027997353,
+      "finite_difference_dF": -24.063031238903662,
+      "order": 192,
+      "stencil_objectives": [
+        6657.6565904960025,
+        6657.639911273744
+      ],
+      "model": "ptq-screen",
+      "coordinate": "ln_q",
+      "native_index": 1,
+      "analytic_dF": -24.0648465470676,
+      "abs_difference": 0.0018153081639376012,
+      "consistent": true,
+      "consistency_tolerance": 0.0240648465470676,
+      "seconds": 19.53709602402523,
+      "bound_status": "interior"
+    }
+  ],
+  "prototype_spot": [
+    {
+      "model": "ptq-nu",
+      "galaxy": "F574-1",
+      "prototype_dlogL_depsilon": -10.73611660301019,
+      "new_dlogL_depsilon": -10.736116603010199,
+      "epsilon_difference": 8.881784197001252e-15,
+      "prototype_dlogL_dln_sigma": -3.8721667698266486,
+      "new_dlogL_dln_sigma": -3.8721667698266486,
+      "ln_sigma_difference": 0.0,
+      "prototype_gap": 7.105427357601002e-15,
+      "new_gap": 7.105427357601002e-15
+    },
+    {
+      "model": "ptq",
+      "galaxy": "F574-1",
+      "prototype_dlogL_depsilon": -86.48299227950554,
+      "new_dlogL_depsilon": -86.48299227950554,
+      "epsilon_difference": 0.0,
+      "prototype_dlogL_dln_sigma": -7.2474520187707006,
+      "new_dlogL_dln_sigma": -7.2474520187707006,
+      "ln_sigma_difference": 0.0,
+      "prototype_gap": 7.105427357601002e-15,
+      "new_gap": 7.105427357601002e-15
+    }
+  ],
+  "prototype_full": [],
+  "skipped": [
+    {
+      "what": "screen global fd",
+      "coordinate": "ln_q",
+      "relative": 5e-05,
+      "equivalents": 7.200953160837027
+    }
+  ],
+  "locality": {
+    "model": "ptq-nu",
+    "perturbed_galaxy": "F574-1",
+    "observed_galaxy": "CamB",
+    "base_logL": -32.514406333552785,
+    "perturbed_logL": -32.514406333552785,
+    "abs_difference": 0.0,
+    "pass": true,
+    "reason": "catalog_velocity_at_distance reads U[gi] only; nodes do not depend on Upsilon"
+  },
+  "formula_self_check": [
+    {
+      "model": "ptq",
+      "coordinate": "epsilon",
+      "max_rel": 8.889574076436472e-12
+    },
+    {
+      "model": "ptq",
+      "coordinate": "upsilon",
+      "max_rel": 3.511725379255968e-10
+    },
+    {
+      "model": "ptq-nu",
+      "coordinate": "upsilon",
+      "max_rel": 7.336354295926558e-11
+    },
+    {
+      "model": "ptq-nu",
+      "coordinate": "epsilon",
+      "max_rel": 1.4582014891367898e-11
+    },
+    {
+      "model": "ptq-screen",
+      "coordinate": "upsilon",
+      "max_rel": 8.132332479783543e-11
+    },
+    {
+      "model": "ptq-screen",
+      "coordinate": "epsilon",
+      "max_rel": 2.8118968242192513e-11
+    },
+    {
+      "model": "ptq-screen",
+      "coordinate": "ln_q",
+      "max_rel": 4.0992768300971295e-11
+    },
+    {
+      "model": "mond-screen",
+      "coordinate": "upsilon",
+      "max_rel": 1.3727701362415347e-10
+    },
+    {
+      "model": "mond-screen",
+      "coordinate": "log10_a0",
+      "max_rel": 7.417641619564308e-10
+    },
+    {
+      "model": "mond-screen",
+      "coordinate": "ln_q",
+      "max_rel": 4.099285857750473e-11
+    }
+  ],
+  "source_hashes": {
+    "marginal_likelihood.py": "3766ef2c1385316d1825ea62d72979829e00267f09e951644c58760783b6cbb7",
+    "models.py": "cba208085f4e5e6373fe3b1bd5b862e9be66a6d1412a6a7750c4c4b053bbc952",
+    "dependency_gradient.py": "4117a4c95753a0fbd251513d2556ddd79a0c4b40b7b735401ef89e6883d9039f",
+    "evaluation_contract.py": "b30445b9fd7edefe64f502c3f33f5e39dd6ad737f8de05d0069be7b2bbb6d4e2",
+    "b0_analytic_contract.py": "f30f8bc78b375f31b88df8f2df3cbce351eb260546590bc335548e050b3915e2"
+  },
+  "ptq_screen_theta_sha256": "b0a24278778944f59b3ae440ba3ae5a63d9dec584c851f93a64fa3e693ff3ab4",
+  "screen_summary": {
+    "theta_sha256": "b0a24278778944f59b3ae440ba3ae5a63d9dec584c851f93a64fa3e693ff3ab4",
+    "objective": 6657.646629539804,
+    "archived_objective": 6657.646629539804,
+    "objective_minus_archived": 0.0,
+    "max_abs_galaxy_logL_gap": 1.2505552149377763e-12,
+    "identity_pass": true,
+    "analytic_dF": {
+      "epsilon": -23.635029912923386,
+      "ln_q": -24.0648465470676,
+      "ln_sigma_sys": 0.9196249038415554
+    },
+    "sum_local_upsilon_dF": 104.05826470801036,
+    "domain_flags_excluding_catalog_sign": [],
+    "n_galaxies_with_floor_flags": 0,
+    "epsilon_value": 0.18314148131846816,
+    "ln_q_value": -0.02986887182600353,
+    "q_value": 0.9705727946428605,
+    "epsilon_bound": "interior",
+    "ln_q_bound": "interior",
+    "weights_depend_on_theta": false,
+    "q_enters_gN": false,
+    "seconds": 46.76306885993108
+  },
+  "budget": {
+    "calls": 732,
+    "equivalents": 7.996706657195465,
+    "wall_seconds": 158.44546983530745,
+    "caps": {
+      "calls": 1200,
+      "equivalents": 8.0,
+      "wall_minutes": 90
+    },
+    "stopped": true,
+    "scipy_optimize_minimize_calls": 0
+  }
+}
