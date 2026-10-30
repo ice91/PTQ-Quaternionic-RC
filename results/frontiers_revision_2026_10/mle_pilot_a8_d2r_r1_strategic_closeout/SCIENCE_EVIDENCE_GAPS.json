@@ -1,0 +1,109 @@
+{
+  "manuscript_id": "1964512",
+  "manuscript": "submission_package/frontiers_source_flat/main_frontiers.tex",
+  "recommended_scope": "C_constraints_first_diagnostic",
+  "readiness": "CLAIM_REDUCTION_REQUIRED",
+  "screen_paper_role": "EXPLORATORY_ONLY",
+  "claims": [
+    {
+      "claim": "SPARC quality-cut sample is 91 galaxies and 1782 points",
+      "current_evidence": "Manuscript Table sample flow. Signed candidate uses S_DOMAIN13, 91 galaxies and 1769 points.",
+      "missing_evidence": "Likelihood contribution of the 13 excluded radii, and an explicit statement of which sample a revised claim uses.",
+      "is_ptq_specific": false,
+      "reviewer_risk": "HIGH",
+      "compute_cost": "LOW",
+      "minimum_completion_criterion": "Report the 13 radii and their effect without refitting.",
+      "recommendation": "REQUIRED_BEFORE_ANY_RANKING"
+    },
+    {
+      "claim": "Primary likelihood is full within-galaxy covariance, with distance and inclination propagated by Jacobians rather than marginalized",
+      "current_evidence": "Manuscript equation logL_g. Isolated candidate uses fine192 explicit marginalization and B0 variance e^2+sigma_sys^2.",
+      "missing_evidence": "A frozen decision that the revision either retains the covariance target or replaces it.",
+      "is_ptq_specific": false,
+      "reviewer_risk": "HIGH",
+      "compute_cost": "NONE",
+      "minimum_completion_criterion": "Human target choice recorded before new fits.",
+      "recommendation": "BLOCKING_FOR_TABLE_REUSE"
+    },
+    {
+      "claim": "Full-covariance MLE table: NFW -6508.170, MOND=PTQ-nu -6663.422, nu_q -6663.002, linear -7138.535, baryon -8826.777",
+      "current_evidence": "Manuscript table only. Signed-candidate smokes use a different objective. Screen start F is 6614.725282751667 and is not a converged MLE.",
+      "missing_evidence": "Converged optimizations on one declared target, with KKT and a multistart policy.",
+      "is_ptq_specific": false,
+      "reviewer_risk": "HIGH",
+      "compute_cost": "HIGH",
+      "minimum_completion_criterion": "Do not rank models from three-iteration smokes.",
+      "recommendation": "DO_NOT_IMPORT_INTO_SIGNED_CANDIDATE"
+    },
+    {
+      "claim": "Matched a0 makes PTQ-nu identical to MOND simple-nu, and ptq-screen identical to mond-screen",
+      "current_evidence": "Analytical identity in the manuscript. Old numerical gaps about 4.7e-8 and 4.5e-12 are on the manuscript pipeline.",
+      "missing_evidence": "The same fixed-point comparison on S_DOMAIN13 with the signed operator.",
+      "is_ptq_specific": true,
+      "reviewer_risk": "MEDIUM",
+      "compute_cost": "LOW",
+      "minimum_completion_criterion": "Evaluate archived paired thetas. No optimization.",
+      "recommendation": "NEXT_BOUNDED_TASK"
+    },
+    {
+      "claim": "Best recovered q is about 0.984 and AIC does not prefer the extra parameter",
+      "current_evidence": "Manuscript text. This smoke moved q from 0.9705727946428605 to 0.9729170687102457 in three accepted steps. That is not a maximum.",
+      "missing_evidence": "A converged q on the declared target, plus the AIC comparison against q=1.",
+      "is_ptq_specific": true,
+      "reviewer_risk": "HIGH",
+      "compute_cost": "HIGH",
+      "minimum_completion_criterion": "Remove or label the number as historical until recomputed.",
+      "recommendation": "CLAIM_REDUCTION"
+    },
+    {
+      "claim": "Cross-scale closure fails: epsilon_RC about 0.155 versus epsilon_cos about 1.492",
+      "current_evidence": "Manuscript negative result on its own PTQ-nu inference. Signed-candidate screen start uses epsilon 0.18314148131846816.",
+      "missing_evidence": "Recomputation of epsilon_RC on the revision target.",
+      "is_ptq_specific": true,
+      "reviewer_risk": "MEDIUM",
+      "compute_cost": "MEDIUM",
+      "minimum_completion_criterion": "Keep the failure only with the epsilon that belongs to the chosen target.",
+      "recommendation": "RECOMPUTE_AFTER_TARGET_CHOICE"
+    },
+    {
+      "claim": "Thickness audit N=19 gives R^2 about 0.818 and slope -2.559",
+      "current_evidence": "Manuscript table. Earlier claim inventory marked the robust-association wording for replacement. Not redone here.",
+      "missing_evidence": "Equal-weight or corrected-photometry recomputation, or deletion of the robustness wording.",
+      "is_ptq_specific": false,
+      "reviewer_risk": "HIGH",
+      "compute_cost": "MEDIUM",
+      "minimum_completion_criterion": "Do not call the association robust until the marked replacements are done.",
+      "recommendation": "SEPARATE_FROM_ROTATION_CURVE_FIT"
+    },
+    {
+      "claim": "SPARC validates the full PTQ theory or the luminality theorem",
+      "current_evidence": "The manuscript already denies this. No new result creates that validation.",
+      "missing_evidence": "None for the denial. A derivation of nu_q from the structural theory is absent.",
+      "is_ptq_specific": true,
+      "reviewer_risk": "HIGH_IF_OVERCLAIMED",
+      "compute_cost": "NONE",
+      "minimum_completion_criterion": "Keep the four epistemic layers separate.",
+      "recommendation": "RETAIN_LIMITATION"
+    },
+    {
+      "claim": "Linear PTQ is an empirically distinct and disfavored dictionary",
+      "current_evidence": "Manuscript AIC gap on the old likelihood. D1R shows three strict accepted steps on the signed candidate and is not stationary.",
+      "missing_evidence": "A converged comparison on one target.",
+      "is_ptq_specific": true,
+      "reviewer_risk": "MEDIUM",
+      "compute_cost": "HIGH",
+      "minimum_completion_criterion": "Describe the functional difference without a likelihood ranking.",
+      "recommendation": "NO_RANKING_FROM_SMOKE"
+    },
+    {
+      "claim": "Screen belongs in a five-family statistical comparison",
+      "current_evidence": "Engineering smoke passed with three strict accepted steps. The first line-search point reproduces the D2 corner, with 25 galaxies superluminal, and was not committed.",
+      "missing_evidence": "A converged, subluminal, physically reviewed fit.",
+      "is_ptq_specific": true,
+      "reviewer_risk": "HIGH",
+      "compute_cost": "HIGH",
+      "minimum_completion_criterion": "Keep Screen out of the primary comparison.",
+      "recommendation": "EXPLORATORY_ONLY"
+    }
+  ]
+}

@@ -1,0 +1,214 @@
+{
+  "manifest": {
+    "latest_kind": "ACCEPTED",
+    "iteration_index": 3,
+    "theta_file": "accepted_3_theta.npy",
+    "meta_file": "accepted_3_meta.json",
+    "theta_sha256": "c0d573b7c4b6ac6ff4973456c9b070ccbb30a1ce4b5721af7a66a8abe6680ff6",
+    "meta_sha256": "cbbe8d1a55ee22974cad91de492d717926cd0d15ca95dbbc919a70e973fcf412",
+    "objective_after": 6614.648343668185,
+    "model": "ptq-screen",
+    "scientific_target": "REV26-P1E-UNIFORM-EXPLICIT-B0-SIGNED-SPARC-CANDIDATE-v2",
+    "mask_sha256": "df0086b1e67f96403ff09f5c5bfb7f5818593d141d14234d752cb433a9511e6e",
+    "models_sha256": "7214664b9a4a3e182f99748a9c4c7da91a98b930399a832589203395f3b89b1b",
+    "jacobian_sha256": "d23cb42195870aab92745d1735e54366435c8ae49f3d214f858164364d439585",
+    "canonical": true
+  },
+  "accepted": [
+    {
+      "kind": "ACCEPTED",
+      "iteration_index": 1,
+      "theta_sha256": "bb67a0fb84fa300bb2dc5739ccffeaea281fce6dcc560b54a69bd06f5756958b",
+      "objective_before": 6614.725282751667,
+      "objective_after": 6614.693259684777,
+      "delta_f": -0.032023066889451,
+      "identity_class": "ACCEPTED_STRICT_PASS",
+      "max_absolute": 1.4637180356658064e-12,
+      "physical_regime": "NO_FLAG_OBSERVED",
+      "physical_audit": {
+        "labels": [
+          "MATHEMATICAL_DOMAIN_VALID",
+          "FLOATING_POINT_EVALUATION_VALID"
+        ],
+        "superluminal_galaxies": [],
+        "nominal_superluminal_galaxies": [],
+        "quadrature_superluminal_galaxies": [],
+        "max_nominal_kms": 386.6942130620804,
+        "max_quadrature_kms": 563.7088915160448,
+        "max_superluminal_weight": 0.0,
+        "review_required": false
+      },
+      "projected_gradient_norm": 16.827858292706544,
+      "full_gradient_norm": 21.879754824177144,
+      "active_bounds": {
+        "lower": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          15,
+          42,
+          66,
+          81,
+          82,
+          86
+        ],
+        "upper": [
+          10,
+          56,
+          60,
+          71
+        ],
+        "outside": [],
+        "epsilon_at_lower": false,
+        "epsilon_at_upper": false,
+        "ln_q_at_lower": false,
+        "ln_q_at_upper": false,
+        "ln_sigma_at_lower": false,
+        "ln_sigma_at_upper": false,
+        "upsilon_lower": 11,
+        "upsilon_upper": 4,
+        "upsilon_interior": 76
+      },
+      "evaluation_count": 4,
+      "elapsed_seconds": 301.7176631651819,
+      "step_l2": 0.0034699359603189723,
+      "step_inf": 0.001507679427734443,
+      "epsilon": 0.18321774225329032,
+      "ln_q": -0.028553385656173262,
+      "q": 0.9718504098893771,
+      "ln_sigma": 1.8928712014289844
+    },
+    {
+      "kind": "ACCEPTED",
+      "iteration_index": 2,
+      "theta_sha256": "cc81f2457a4ab3fc378d0e7667d1a8b81d4f3842716fdabd09c2ca38a500d416",
+      "objective_before": 6614.693259684777,
+      "objective_after": 6614.68484765227,
+      "delta_f": -0.008412032507294498,
+      "identity_class": "ACCEPTED_STRICT_PASS",
+      "max_absolute": 1.1652900866465643e-12,
+      "physical_regime": "NO_FLAG_OBSERVED",
+      "physical_audit": {
+        "labels": [
+          "MATHEMATICAL_DOMAIN_VALID",
+          "FLOATING_POINT_EVALUATION_VALID"
+        ],
+        "superluminal_galaxies": [],
+        "nominal_superluminal_galaxies": [],
+        "quadrature_superluminal_galaxies": [],
+        "max_nominal_kms": 386.64555564144433,
+        "max_quadrature_kms": 563.6379604813297,
+        "max_superluminal_weight": 0.0,
+        "review_required": false
+      },
+      "projected_gradient_norm": 12.761611326281933,
+      "full_gradient_norm": 21.857192068198763,
+      "active_bounds": {
+        "lower": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          15,
+          42,
+          66,
+          81,
+          82,
+          86
+        ],
+        "upper": [
+          10,
+          56,
+          60,
+          71
+        ],
+        "outside": [],
+        "epsilon_at_lower": false,
+        "epsilon_at_upper": false,
+        "ln_q_at_lower": false,
+        "ln_q_at_upper": false,
+        "ln_sigma_at_lower": false,
+        "ln_sigma_at_upper": false,
+        "upsilon_lower": 11,
+        "upsilon_upper": 4,
+        "upsilon_interior": 76
+      },
+      "evaluation_count": 5,
+      "elapsed_seconds": 390.4720926391892,
+      "step_l2": 0.0011961543006502287,
+      "step_inf": 0.0005017872906474263,
+      "epsilon": 0.18297727586102702,
+      "ln_q": -0.02834665923299429,
+      "q": 0.9720513378163188,
+      "ln_sigma": 1.8933729887196318
+    },
+    {
+      "kind": "ACCEPTED",
+      "iteration_index": 3,
+      "theta_sha256": "c0d573b7c4b6ac6ff4973456c9b070ccbb30a1ce4b5721af7a66a8abe6680ff6",
+      "objective_before": 6614.68484765227,
+      "objective_after": 6614.648343668185,
+      "delta_f": -0.03650398408535693,
+      "identity_class": "ACCEPTED_STRICT_PASS",
+      "max_absolute": 1.7621459846850485e-12,
+      "physical_regime": "NO_FLAG_OBSERVED",
+      "physical_audit": {
+        "labels": [
+          "MATHEMATICAL_DOMAIN_VALID",
+          "FLOATING_POINT_EVALUATION_VALID"
+        ],
+        "superluminal_galaxies": [],
+        "nominal_superluminal_galaxies": [],
+        "quadrature_superluminal_galaxies": [],
+        "max_nominal_kms": 386.4591190806766,
+        "max_quadrature_kms": 563.366179980204,
+        "max_superluminal_weight": 0.0,
+        "review_required": false
+      },
+      "projected_gradient_norm": 10.712545311788075,
+      "full_gradient_norm": 21.723459347627415,
+      "active_bounds": {
+        "lower": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          15,
+          42,
+          66,
+          81,
+          82,
+          86
+        ],
+        "upper": [
+          10,
+          56,
+          60,
+          71
+        ],
+        "outside": [],
+        "epsilon_at_lower": false,
+        "epsilon_at_upper": false,
+        "ln_q_at_lower": false,
+        "ln_q_at_upper": false,
+        "ln_sigma_at_lower": false,
+        "ln_sigma_at_upper": false,
+        "upsilon_lower": 11,
+        "upsilon_upper": 4,
+        "upsilon_interior": 76
+      },
+      "evaluation_count": 6,
+      "elapsed_seconds": 475.75849270587787,
+      "step_l2": 0.008330241497895534,
+      "step_inf": 0.003263841482441965,
+      "epsilon": 0.18183688646388754,
+      "ln_q": -0.027456432997754347,
+      "q": 0.9729170687102457,
+      "ln_sigma": 1.8966368302020737
+    }
+  ]
+}

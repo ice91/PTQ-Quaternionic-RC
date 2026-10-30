@@ -1,0 +1,21 @@
+{
+  "mask_sha256": "df0086b1e67f96403ff09f5c5bfb7f5818593d141d14234d752cb433a9511e6e",
+  "tidy_sha256": "3ab1c3c2b110c1e48680ebae77c1ceefaa4f778f81119dcf04881b630b274cbb",
+  "models_sha256": "7214664b9a4a3e182f99748a9c4c7da91a98b930399a832589203395f3b89b1b",
+  "jacobian_sha256": "d23cb42195870aab92745d1735e54366435c8ae49f3d214f858164364d439585",
+  "start_sha256": "b0a24278778944f59b3ae440ba3ae5a63d9dec584c851f93a64fa3e693ff3ab4",
+  "d2_trial_sha256": "49ddefe591521a171457bd110bda4b5baf8c1ca55a8a8554a6d15518aef68693",
+  "budget_class": "Budget",
+  "weight_access": "budget.weights[name]",
+  "subscript_raises_TypeError": true,
+  "scipy_version": "1.17.1",
+  "options": {
+    "method": "L-BFGS-B",
+    "jac": true,
+    "maxiter": 3,
+    "gtol": 1e-06,
+    "ftol": 1e-12,
+    "maxls": 20,
+    "maxcor": 10
+  }
+}
