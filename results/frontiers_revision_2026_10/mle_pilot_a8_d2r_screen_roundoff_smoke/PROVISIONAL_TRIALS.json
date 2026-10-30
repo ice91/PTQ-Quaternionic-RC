@@ -1,0 +1,52 @@
+{
+  "requests": [
+    {
+      "theta_sha256": "b0a24278778944f59b3ae440ba3ae5a63d9dec584c851f93a64fa3e693ff3ab4",
+      "epsilon": 0.18314148131846816,
+      "ln_q": -0.02986887182600353,
+      "q": 0.9705727946428605,
+      "ln_sigma": 1.89136352200125,
+      "identity_class": "TRIAL_STRICT_PASS",
+      "F_A5": 6614.725282751667,
+      "F_A6": 6614.725282751664,
+      "max_absolute": 2.1032064978498966e-12,
+      "max_ulp_scaled": 74.0,
+      "roundoff_galaxies": 0,
+      "roundoff_names": [],
+      "outside_bounds": [],
+      "projected_gradient_norm": 32.307860649919405,
+      "full_gradient_norm": 32.307860649919405,
+      "finite_gradient": true,
+      "physical": {
+        "labels": [
+          "MATHEMATICAL_DOMAIN_VALID",
+          "FLOATING_POINT_EVALUATION_VALID"
+        ],
+        "superluminal_galaxies": [],
+        "nominal_superluminal_galaxies": [],
+        "quadrature_superluminal_galaxies": [],
+        "max_nominal_kms": 386.65207444451534,
+        "max_quadrature_kms": 563.6474633575795,
+        "max_superluminal_weight": 0.0,
+        "review_required": false
+      },
+      "calls": 182,
+      "equivalents": 1.9999999999999998,
+      "kind": "INITIAL",
+      "request_index": 1,
+      "step_l2": 0.0,
+      "step_inf": 0.0,
+      "matches_d2_trial": false
+    }
+  ],
+  "first_noninitial_trial": {
+    "type": "TypeError",
+    "message": "Budget object is not subscriptable in speed_audit",
+    "where": "first galaxy of the first noninitial trial, CamB, after a superluminal speed was detected",
+    "trial_theta_persisted": false,
+    "accepted_iterations": 0,
+    "minimize_invocations": 1,
+    "restarted": false,
+    "post_abort_driver_fix_executed": false
+  }
+}

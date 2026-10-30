@@ -1,0 +1,10 @@
+{
+  "absolute_limit": 1e-09,
+  "relative_limit": 1e-12,
+  "ulp_factor": 8,
+  "ulp": "math.ulp(abs(float(logL_A5)))",
+  "provisional": "d<=1e-9 OR (d<=8*ulp AND relative<=1e-12), plus finite complete domain and no floor/formula/normalization failure",
+  "accepted": "every galaxy d<=1e-9; ULP exception cannot be committed",
+  "physical": "v>=c is recorded; provisional trials continue; solver-accepted superluminal candidates are noncanonical and stop the run",
+  "c_kms": 299792.458
+}
