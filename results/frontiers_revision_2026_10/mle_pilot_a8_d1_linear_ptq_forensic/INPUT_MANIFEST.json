@@ -1,0 +1,22 @@
+{
+  "task": "REV26-P1G-A8-D1-LINEAR-PTQ-FORENSIC",
+  "scientific_target": "REV26-P1E-UNIFORM-EXPLICIT-B0-SIGNED-SPARC-CANDIDATE-v2",
+  "status": "ISOLATED_CANDIDATE_ONLY",
+  "sample": "S_DOMAIN13_91_1769",
+  "scipy": "1.17.1",
+  "options": {
+    "maxiter": 3,
+    "maxls": 20,
+    "maxcor": 10,
+    "ftol": 1e-12,
+    "gtol": 1e-06
+  },
+  "source_sha256": {
+    "S_DOMAIN13_MASK.csv": "df0086b1e67f96403ff09f5c5bfb7f5818593d141d14234d752cb433a9511e6e",
+    "sparc_tidy.csv": "3ab1c3c2b110c1e48680ebae77c1ceefaa4f778f81119dcf04881b630b274cbb",
+    "a5_models.py": "7214664b9a4a3e182f99748a9c4c7da91a98b930399a832589203395f3b89b1b",
+    "a6_signed_jacobian.py": "d23cb42195870aab92745d1735e54366435c8ae49f3d214f858164364d439585",
+    "linear_ptq_start": "96ac8469398b416aa0740522da74c844c12ea8e95364d69f3920f2df460fd6c4",
+    "captured_trial": "dc65035bc1f195edc72a71c9afa162fbc42a6cd6cec322454ada7f16310b5223"
+  }
+}
