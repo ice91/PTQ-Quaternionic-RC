@@ -1,0 +1,99 @@
+{
+  "implemented_formula": "c(M200)=10*(M200/1e12)**(-0.1)",
+  "concentration_held_fixed": false,
+  "chain": "log10 M200 -> M200 -> c(M200), R200, rs, enclosed-mass function, halo velocity, total speed",
+  "halo_function_self_check": [
+    {
+      "log10_M200": 9.0,
+      "step": 1e-05,
+      "max_abs_gap": 1.2588429854076821e-08,
+      "scale": 628.3807299845565,
+      "flags": []
+    },
+    {
+      "log10_M200": 11.2,
+      "step": 1e-05,
+      "max_abs_gap": 1.1600695870583877e-07,
+      "scale": 5809.3737314061855,
+      "flags": []
+    },
+    {
+      "log10_M200": 13.0,
+      "step": 1e-05,
+      "max_abs_gap": 3.202357447662507e-06,
+      "scale": 12416.126834774957,
+      "flags": []
+    }
+  ],
+  "likelihood_finite_differences": [
+    {
+      "model": "nfw1p",
+      "galaxy": "F574-1",
+      "coordinate": "log10_M200",
+      "value": 11.307128532825564,
+      "analytic_dF": 0.9388061277078767,
+      "kkt": {
+        "bound_status": "interior",
+        "unprojected": 0.9388061277078767,
+        "projected_kkt_component": 0.9388061277078767,
+        "gap_to_lower": 2.3071285328255637,
+        "gap_to_upper": 1.6928714671744363
+      },
+      "steps": [
+        {
+          "step": 0.0001,
+          "finite_difference_dF": 0.9388059118009551,
+          "abs_difference": 2.1590692167450243e-07,
+          "within_engineering_bar": true,
+          "tolerance": 0.0009388061277078768,
+          "kind": "central"
+        },
+        {
+          "step": 5e-05,
+          "finite_difference_dF": 0.9388060738757531,
+          "abs_difference": 5.3832123647623575e-08,
+          "within_engineering_bar": true,
+          "tolerance": 0.0009388061277078768,
+          "kind": "central"
+        }
+      ],
+      "native_units": "objective per native coordinate",
+      "fixture": "nfw_mass"
+    },
+    {
+      "model": "nfw1p",
+      "galaxy": "UGC01281",
+      "coordinate": "log10_M200",
+      "value": 10.15276232949279,
+      "analytic_dF": -10.451469489340653,
+      "kkt": {
+        "bound_status": "interior",
+        "unprojected": -10.451469489340653,
+        "projected_kkt_component": -10.451469489340653,
+        "gap_to_lower": 1.1527623294927896,
+        "gap_to_upper": 2.8472376705072104
+      },
+      "steps": [
+        {
+          "step": 0.0001,
+          "finite_difference_dF": -10.45146937734387,
+          "abs_difference": 1.119967834029012e-07,
+          "within_engineering_bar": true,
+          "tolerance": 0.010451469489340653,
+          "kind": "central"
+        },
+        {
+          "step": 5e-05,
+          "finite_difference_dF": -10.451469461258966,
+          "abs_difference": 2.808168630963337e-08,
+          "within_engineering_bar": true,
+          "tolerance": 0.010451469489340653,
+          "kind": "central"
+        }
+      ],
+      "native_units": "objective per native coordinate",
+      "fixture": "nfw_mass"
+    }
+  ],
+  "formula_discrepancy": null
+}

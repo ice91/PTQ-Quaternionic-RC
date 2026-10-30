@@ -1,0 +1,74 @@
+{
+  "task": "REV26-P1G-A6-SIGNED-JAC",
+  "scientific_target": "REV26-P1E-UNIFORM-EXPLICIT-B0-SIGNED-SPARC-CANDIDATE-v2",
+  "target_status": "ISOLATED_CANDIDATE_ONLY",
+  "variance_token": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+  "variance_token_is_not_the_signed_target": true,
+  "comparison_sample": "S_DOMAIN13_91_1769",
+  "canonical_v2_activated": false,
+  "optimizer_calls": 0,
+  "identity_limit": 1e-09,
+  "max_identity_gap": {
+    "baryon": 5.684341886080802e-14,
+    "mond": 1.6768808563938364e-12,
+    "ptq": 4.263256414560601e-13,
+    "ptq-nu": 1.4779288903810084e-12,
+    "ptq-screen": 2.1032064978498966e-12,
+    "mond-screen": 1.1510792319313623e-12,
+    "nfw1p": 2.9274360713316128e-12
+  },
+  "signed_objective_identity": "PASS",
+  "engineering_bar": {
+    "abs": 0.0001,
+    "rel": 0.001,
+    "distinct_from_gtol": 1e-06
+  },
+  "linear_ptq_epsilon_classification": {
+    "analytic_dF": -28.81029102042346,
+    "fd_h_1e-4": -29.16618866038334,
+    "fd_h_5e-5": -28.89926522584574,
+    "error_ratio": 4.000009196719013,
+    "richardson": -28.81029074766654,
+    "richardson_abs_gap": 2.72756921049222e-07,
+    "classification": "TRUNCATION_ERROR",
+    "historical_squared_gas_fd_bias_not_reused": 5.699222739931031,
+    "raw_engineering_bar_met": false,
+    "richardson_meets_engineering_tolerance": true
+  },
+  "y_floor_galaxy_counts": {
+    "baryon": 0,
+    "mond": 0,
+    "ptq": 0,
+    "ptq-nu": 0,
+    "ptq-screen": 0,
+    "mond-screen": 0,
+    "nfw1p": 0
+  },
+  "all_tested_galaxies_domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+  "locality": [
+    {
+      "model": "baryon",
+      "owner": "F574-1",
+      "non_owner": "CamB",
+      "coordinate": "upsilon",
+      "abs_logL_change": 0.0,
+      "local_to_owner": true
+    },
+    {
+      "model": "ptq",
+      "owner": "F574-1",
+      "non_owner": "CamB",
+      "coordinate": "upsilon",
+      "abs_logL_change": 0.0,
+      "local_to_owner": true
+    },
+    {
+      "model": "nfw1p",
+      "owner": "F574-1",
+      "non_owner": "CamB",
+      "coordinate": "log10_M200",
+      "abs_logL_change": 0.0,
+      "local_to_owner": true
+    }
+  ]
+}

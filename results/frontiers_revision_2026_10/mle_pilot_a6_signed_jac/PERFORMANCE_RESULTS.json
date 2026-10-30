@@ -1,0 +1,46 @@
+{
+  "joint_fine192_objective_and_analytic_gradient_seconds": {
+    "baryon": {
+      "analytic_seconds": 38.43454393418506,
+      "calls": 91
+    },
+    "mond": {
+      "analytic_seconds": 35.23510435828939,
+      "calls": 91
+    },
+    "ptq": {
+      "analytic_seconds": 31.848930750973523,
+      "calls": 91
+    },
+    "ptq-nu": {
+      "analytic_seconds": 32.27583621488884,
+      "calls": 91
+    },
+    "ptq-screen": {
+      "analytic_seconds": 39.40657755499706,
+      "calls": 91
+    },
+    "mond-screen": {
+      "analytic_seconds": 38.23415591008961,
+      "calls": 91
+    },
+    "nfw1p": {
+      "analytic_seconds": 32.41291352594271,
+      "calls": 91
+    },
+    "mond_mapped": {
+      "analytic_seconds": 32.86517312284559
+    },
+    "mond-screen_mapped": {
+      "analytic_seconds": 35.50692332489416
+    }
+  },
+  "wall_seconds": 651.7993059796281,
+  "full_gradient_batch_seconds_range": [
+    31.848930750973523,
+    39.40657755499706
+  ],
+  "do_not_extrapolate_full_fit_speedup": true,
+  "global_central_difference_full_sample_passes": 30,
+  "checkpoint": "logs/jacobian_rows.jsonl appended during execution"
+}

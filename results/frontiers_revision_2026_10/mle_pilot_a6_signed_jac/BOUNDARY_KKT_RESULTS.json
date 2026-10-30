@@ -1,0 +1,587 @@
+{
+  "gtol": 1e-06,
+  "kkt_is_not_a_model_stationarity_certificate": true,
+  "bound_census_local_coordinates": {
+    "baryon": {
+      "bound_counts": {
+        "interior": 46,
+        "upper": 45
+      },
+      "projected_zero_at_bound": 45,
+      "projected_nonzero_at_bound": 0
+    },
+    "mond": {
+      "bound_counts": {
+        "lower": 11,
+        "interior": 74,
+        "upper": 6
+      },
+      "projected_zero_at_bound": 17,
+      "projected_nonzero_at_bound": 0
+    },
+    "ptq": {
+      "bound_counts": {
+        "lower": 20,
+        "upper": 12,
+        "interior": 59
+      },
+      "projected_zero_at_bound": 32,
+      "projected_nonzero_at_bound": 0
+    },
+    "ptq-nu": {
+      "bound_counts": {
+        "lower": 11,
+        "interior": 74,
+        "upper": 6
+      },
+      "projected_zero_at_bound": 17,
+      "projected_nonzero_at_bound": 0
+    },
+    "ptq-screen": {
+      "bound_counts": {
+        "lower": 11,
+        "interior": 76,
+        "upper": 4
+      },
+      "projected_zero_at_bound": 15,
+      "projected_nonzero_at_bound": 0
+    },
+    "mond-screen": {
+      "bound_counts": {
+        "lower": 11,
+        "interior": 76,
+        "upper": 4
+      },
+      "projected_zero_at_bound": 15,
+      "projected_nonzero_at_bound": 0
+    },
+    "nfw1p": {
+      "bound_counts": {
+        "lower": 38,
+        "interior": 140,
+        "upper": 4
+      },
+      "projected_zero_at_bound": 40,
+      "projected_nonzero_at_bound": 2
+    }
+  },
+  "examples_of_bound_with_nonzero_projected_component": [
+    {
+      "model": "nfw1p",
+      "coordinate": "upsilon[59]",
+      "value": 0.05,
+      "unprojected": -0.8430147826831202,
+      "projected": -0.8430147826831202,
+      "bound_status": "lower"
+    },
+    {
+      "model": "nfw1p",
+      "coordinate": "log10_M200[84]",
+      "value": 9.0,
+      "unprojected": -1.3048003757702087,
+      "projected": -1.3048003757702087,
+      "bound_status": "lower"
+    }
+  ],
+  "fixture_kkt": [
+    {
+      "model": "baryon",
+      "galaxy": "UGC11455",
+      "coordinate": "upsilon",
+      "value": 0.7709551263872887,
+      "analytic_dF": -0.0008868840830604796,
+      "kkt": {
+        "bound_status": "interior",
+        "unprojected": -0.0008868840830604796,
+        "projected_kkt_component": -0.0008868840830604796,
+        "gap_to_lower": 0.7209551263872886,
+        "gap_to_upper": 0.7290448736127113
+      },
+      "fixture": "interior"
+    },
+    {
+      "model": "baryon",
+      "galaxy": "F574-1",
+      "coordinate": "upsilon",
+      "value": 1.5,
+      "analytic_dF": -5.383951715521744,
+      "kkt": {
+        "bound_status": "upper",
+        "unprojected": -5.383951715521744,
+        "projected_kkt_component": 0.0,
+        "gap_to_lower": 1.45,
+        "gap_to_upper": 0.0
+      },
+      "fixture": "active_or_nearest_bound"
+    },
+    {
+      "model": "baryon",
+      "galaxy": "UGC01281",
+      "coordinate": "upsilon",
+      "value": 1.5,
+      "analytic_dF": -1.866644500353668,
+      "kkt": {
+        "bound_status": "upper",
+        "unprojected": -1.866644500353668,
+        "projected_kkt_component": 0.0,
+        "gap_to_lower": 1.45,
+        "gap_to_upper": 0.0
+      },
+      "fixture": "low_b"
+    },
+    {
+      "model": "baryon",
+      "galaxy": "F568-V1",
+      "coordinate": "upsilon",
+      "value": 1.5,
+      "analytic_dF": -6.256164411831722,
+      "kkt": {
+        "bound_status": "upper",
+        "unprojected": -6.256164411831722,
+        "projected_kkt_component": 0.0,
+        "gap_to_lower": 1.45,
+        "gap_to_upper": 0.0
+      },
+      "fixture": "negative_gas"
+    },
+    {
+      "model": "mond",
+      "galaxy": "F574-1",
+      "coordinate": "upsilon",
+      "value": 0.9440760287698533,
+      "analytic_dF": -0.002157927929459069,
+      "kkt": {
+        "bound_status": "interior",
+        "unprojected": -0.002157927929459069,
+        "projected_kkt_component": -0.002157927929459069,
+        "gap_to_lower": 0.8940760287698533,
+        "gap_to_upper": 0.5559239712301467
+      },
+      "fixture": "interior"
+    },
+    {
+      "model": "mond",
+      "galaxy": "CamB",
+      "coordinate": "upsilon",
+      "value": 0.05,
+      "analytic_dF": 21.786434393419004,
+      "kkt": {
+        "bound_status": "lower",
+        "unprojected": 21.786434393419004,
+        "projected_kkt_component": 0.0,
+        "gap_to_lower": 0.0,
+        "gap_to_upper": 1.45
+      },
+      "fixture": "active_or_nearest_bound"
+    },
+    {
+      "model": "mond",
+      "galaxy": "UGC01281",
+      "coordinate": "upsilon",
+      "value": 0.34701153559418735,
+      "analytic_dF": -4.085525026016746,
+      "kkt": {
+        "bound_status": "interior",
+        "unprojected": -4.085525026016746,
+        "projected_kkt_component": -4.085525026016746,
+        "gap_to_lower": 0.29701153559418736,
+        "gap_to_upper": 1.1529884644058126
+      },
+      "fixture": "low_b"
+    },
+    {
+      "model": "mond",
+      "galaxy": "F568-V1",
+      "coordinate": "upsilon",
+      "value": 1.5,
+      "analytic_dF": -1.4948059080983132,
+      "kkt": {
+        "bound_status": "upper",
+        "unprojected": -1.4948059080983132,
+        "projected_kkt_component": 0.0,
+        "gap_to_lower": 1.45,
+        "gap_to_upper": 0.0
+      },
+      "fixture": "negative_gas"
+    },
+    {
+      "model": "ptq",
+      "galaxy": "NGC0801",
+      "coordinate": "upsilon",
+      "value": 0.7810796750963499,
+      "analytic_dF": 0.3287213649126764,
+      "kkt": {
+        "bound_status": "interior",
+        "unprojected": 0.3287213649126764,
+        "projected_kkt_component": 0.3287213649126764,
+        "gap_to_lower": 0.7310796750963499,
+        "gap_to_upper": 0.7189203249036501
+      },
+      "fixture": "interior"
+    },
+    {
+      "model": "ptq",
+      "galaxy": "F574-1",
+      "coordinate": "upsilon",
+      "value": 1.5,
+      "analytic_dF": -0.11643371866776256,
+      "kkt": {
+        "bound_status": "upper",
+        "unprojected": -0.11643371866776256,
+        "projected_kkt_component": 0.0,
+        "gap_to_lower": 1.45,
+        "gap_to_upper": 0.0
+      },
+      "fixture": "active_or_nearest_bound"
+    },
+    {
+      "model": "ptq",
+      "galaxy": "UGC01281",
+      "coordinate": "upsilon",
+      "value": 0.05,
+      "analytic_dF": 0.497748118510157,
+      "kkt": {
+        "bound_status": "lower",
+        "unprojected": 0.497748118510157,
+        "projected_kkt_component": 0.0,
+        "gap_to_lower": 0.0,
+        "gap_to_upper": 1.45
+      },
+      "fixture": "low_b"
+    },
+    {
+      "model": "ptq",
+      "galaxy": "F568-V1",
+      "coordinate": "upsilon",
+      "value": 1.5,
+      "analytic_dF": -3.12442973598825,
+      "kkt": {
+        "bound_status": "upper",
+        "unprojected": -3.12442973598825,
+        "projected_kkt_component": 0.0,
+        "gap_to_lower": 1.45,
+        "gap_to_upper": 0.0
+      },
+      "fixture": "negative_gas"
+    },
+    {
+      "model": "ptq-nu",
+      "galaxy": "F574-1",
+      "coordinate": "upsilon",
+      "value": 0.9499353954084917,
+      "analytic_dF": 0.03490705753188983,
+      "kkt": {
+        "bound_status": "interior",
+        "unprojected": 0.03490705753188983,
+        "projected_kkt_component": 0.03490705753188983,
+        "gap_to_lower": 0.8999353954084917,
+        "gap_to_upper": 0.5500646045915083
+      },
+      "fixture": "interior"
+    },
+    {
+      "model": "ptq-nu",
+      "galaxy": "CamB",
+      "coordinate": "upsilon",
+      "value": 0.05,
+      "analytic_dF": 21.74995932992902,
+      "kkt": {
+        "bound_status": "lower",
+        "unprojected": 21.74995932992902,
+        "projected_kkt_component": 0.0,
+        "gap_to_lower": 0.0,
+        "gap_to_upper": 1.45
+      },
+      "fixture": "active_or_nearest_bound"
+    },
+    {
+      "model": "ptq-nu",
+      "galaxy": "UGC01281",
+      "coordinate": "upsilon",
+      "value": 0.3477469058053136,
+      "analytic_dF": -4.102155029200778,
+      "kkt": {
+        "bound_status": "interior",
+        "unprojected": -4.102155029200778,
+        "projected_kkt_component": -4.102155029200778,
+        "gap_to_lower": 0.2977469058053136,
+        "gap_to_upper": 1.1522530941946865
+      },
+      "fixture": "low_b"
+    },
+    {
+      "model": "ptq-nu",
+      "galaxy": "F568-V1",
+      "coordinate": "upsilon",
+      "value": 1.5,
+      "analytic_dF": -1.4963350658569774,
+      "kkt": {
+        "bound_status": "upper",
+        "unprojected": -1.4963350658569774,
+        "projected_kkt_component": 0.0,
+        "gap_to_lower": 1.45,
+        "gap_to_upper": 0.0
+      },
+      "fixture": "negative_gas"
+    },
+    {
+      "model": "ptq-screen",
+      "galaxy": "F574-1",
+      "coordinate": "upsilon",
+      "value": 0.939730638942954,
+      "analytic_dF": 0.09652626272436632,
+      "kkt": {
+        "bound_status": "interior",
+        "unprojected": 0.09652626272436632,
+        "projected_kkt_component": 0.09652626272436632,
+        "gap_to_lower": 0.889730638942954,
+        "gap_to_upper": 0.560269361057046
+      },
+      "fixture": "interior"
+    },
+    {
+      "model": "ptq-screen",
+      "galaxy": "CamB",
+      "coordinate": "upsilon",
+      "value": 0.05,
+      "analytic_dF": 21.8774734246934,
+      "kkt": {
+        "bound_status": "lower",
+        "unprojected": 21.8774734246934,
+        "projected_kkt_component": 0.0,
+        "gap_to_lower": 0.0,
+        "gap_to_upper": 1.45
+      },
+      "fixture": "active_or_nearest_bound"
+    },
+    {
+      "model": "ptq-screen",
+      "galaxy": "UGC01281",
+      "coordinate": "upsilon",
+      "value": 0.3664233596505117,
+      "analytic_dF": -3.715170503600779,
+      "kkt": {
+        "bound_status": "interior",
+        "unprojected": -3.715170503600779,
+        "projected_kkt_component": -3.715170503600779,
+        "gap_to_lower": 0.3164233596505117,
+        "gap_to_upper": 1.1335766403494882
+      },
+      "fixture": "low_b"
+    },
+    {
+      "model": "ptq-screen",
+      "galaxy": "F568-V1",
+      "coordinate": "upsilon",
+      "value": 1.5,
+      "analytic_dF": -1.4144616026519117,
+      "kkt": {
+        "bound_status": "upper",
+        "unprojected": -1.4144616026519117,
+        "projected_kkt_component": 0.0,
+        "gap_to_lower": 1.45,
+        "gap_to_upper": 0.0
+      },
+      "fixture": "negative_gas"
+    },
+    {
+      "model": "mond-screen",
+      "galaxy": "F574-1",
+      "coordinate": "upsilon",
+      "value": 0.9399881781781853,
+      "analytic_dF": 0.11029820214505165,
+      "kkt": {
+        "bound_status": "interior",
+        "unprojected": 0.11029820214505165,
+        "projected_kkt_component": 0.11029820214505165,
+        "gap_to_lower": 0.8899881781781852,
+        "gap_to_upper": 0.5600118218218147
+      },
+      "fixture": "interior"
+    },
+    {
+      "model": "mond-screen",
+      "galaxy": "CamB",
+      "coordinate": "upsilon",
+      "value": 0.05,
+      "analytic_dF": 21.97205882702122,
+      "kkt": {
+        "bound_status": "lower",
+        "unprojected": 21.97205882702122,
+        "projected_kkt_component": 0.0,
+        "gap_to_lower": 0.0,
+        "gap_to_upper": 1.45
+      },
+      "fixture": "active_or_nearest_bound"
+    },
+    {
+      "model": "mond-screen",
+      "galaxy": "UGC01281",
+      "coordinate": "upsilon",
+      "value": 0.36585364213968213,
+      "analytic_dF": -3.57049172327309,
+      "kkt": {
+        "bound_status": "interior",
+        "unprojected": -3.57049172327309,
+        "projected_kkt_component": -3.57049172327309,
+        "gap_to_lower": 0.31585364213968214,
+        "gap_to_upper": 1.134146357860318
+      },
+      "fixture": "low_b"
+    },
+    {
+      "model": "mond-screen",
+      "galaxy": "F568-V1",
+      "coordinate": "upsilon",
+      "value": 1.5,
+      "analytic_dF": -1.411980905815386,
+      "kkt": {
+        "bound_status": "upper",
+        "unprojected": -1.411980905815386,
+        "projected_kkt_component": 0.0,
+        "gap_to_lower": 1.45,
+        "gap_to_upper": 0.0
+      },
+      "fixture": "negative_gas"
+    },
+    {
+      "model": "nfw1p",
+      "galaxy": "NGC3992",
+      "coordinate": "upsilon",
+      "value": 0.7658240658668615,
+      "analytic_dF": 0.6122058067673146,
+      "kkt": {
+        "bound_status": "interior",
+        "unprojected": 0.6122058067673146,
+        "projected_kkt_component": 0.6122058067673146,
+        "gap_to_lower": 0.7158240658668614,
+        "gap_to_upper": 0.7341759341331385
+      },
+      "fixture": "interior"
+    },
+    {
+      "model": "nfw1p",
+      "galaxy": "F574-1",
+      "coordinate": "upsilon",
+      "value": 0.05,
+      "analytic_dF": 0.6377064719372665,
+      "kkt": {
+        "bound_status": "lower",
+        "unprojected": 0.6377064719372665,
+        "projected_kkt_component": 0.0,
+        "gap_to_lower": 0.0,
+        "gap_to_upper": 1.45
+      },
+      "fixture": "active_or_nearest_bound"
+    },
+    {
+      "model": "nfw1p",
+      "galaxy": "UGC01281",
+      "coordinate": "upsilon",
+      "value": 0.05,
+      "analytic_dF": -0.8430147826831202,
+      "kkt": {
+        "bound_status": "lower",
+        "unprojected": -0.8430147826831202,
+        "projected_kkt_component": -0.8430147826831202,
+        "gap_to_lower": 0.0,
+        "gap_to_upper": 1.45
+      },
+      "fixture": "low_b"
+    },
+    {
+      "model": "nfw1p",
+      "galaxy": "F568-V1",
+      "coordinate": "upsilon",
+      "value": 1.5,
+      "analytic_dF": -0.1289420836790333,
+      "kkt": {
+        "bound_status": "upper",
+        "unprojected": -0.1289420836790333,
+        "projected_kkt_component": 0.0,
+        "gap_to_lower": 1.45,
+        "gap_to_upper": 0.0
+      },
+      "fixture": "negative_gas"
+    },
+    {
+      "model": "nfw1p",
+      "galaxy": "F574-1",
+      "coordinate": "log10_M200",
+      "value": 11.307128532825564,
+      "analytic_dF": 0.9388061277078767,
+      "kkt": {
+        "bound_status": "interior",
+        "unprojected": 0.9388061277078767,
+        "projected_kkt_component": 0.9388061277078767,
+        "gap_to_lower": 2.3071285328255637,
+        "gap_to_upper": 1.6928714671744363
+      },
+      "fixture": "nfw_mass"
+    },
+    {
+      "model": "nfw1p",
+      "galaxy": "UGC01281",
+      "coordinate": "log10_M200",
+      "value": 10.15276232949279,
+      "analytic_dF": -10.451469489340653,
+      "kkt": {
+        "bound_status": "interior",
+        "unprojected": -10.451469489340653,
+        "projected_kkt_component": -10.451469489340653,
+        "gap_to_lower": 1.1527623294927896,
+        "gap_to_upper": 2.8472376705072104
+      },
+      "fixture": "nfw_mass"
+    }
+  ],
+  "low_b_upsilon_0.05_diagnostic": {
+    "fixture_B": 0.44940499999999983,
+    "fixture_speed": 0.6703767597403716,
+    "analytic_dF_upsilon_at_lower_bound": -7.815120028529257,
+    "kkt": {
+      "bound_status": "lower",
+      "unprojected": -7.815120028529257,
+      "projected_kkt_component": -7.815120028529257,
+      "gap_to_lower": 0.0,
+      "gap_to_upper": 1.45
+    },
+    "forward_differences": [
+      {
+        "step": 0.0001,
+        "finite_difference_dF": -7.813302467525318,
+        "analytic_dF": -7.815120028529257,
+        "abs_difference": 0.0018175610039383727,
+        "within_engineering_bar": true,
+        "tolerance": 0.007815120028529257,
+        "kind": "forward_inward"
+      },
+      {
+        "step": 5e-05,
+        "finite_difference_dF": -7.814210742935757,
+        "analytic_dF": -7.815120028529257,
+        "abs_difference": 0.0009092855935000088,
+        "within_engineering_bar": true,
+        "tolerance": 0.007815120028529257,
+        "kind": "forward_inward"
+      }
+    ],
+    "distance_scaling": [
+      {
+        "s": 0.25,
+        "speed_over_sqrt_s_gap": 0.0,
+        "derivative_over_sqrt_s_gap": 0.0
+      },
+      {
+        "s": 4.0,
+        "speed_over_sqrt_s_gap": 0.0,
+        "derivative_over_sqrt_s_gap": 0.0
+      }
+    ],
+    "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE",
+    "flags": [
+      "negative_catalog_gas_signed"
+    ],
+    "B_at_0.05_min_in_UGC01281": 0.44940499999999983
+  }
+}
