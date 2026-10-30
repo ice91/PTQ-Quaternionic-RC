@@ -1,0 +1,548 @@
+{
+  "task": "REV26-P1G-A2-ENG",
+  "likelihood_calls": 0,
+  "optimizer_calls": 0,
+  "total_seconds": 39600,
+  "allocation_seconds": {
+    "opt": {
+      "baryon": 5400,
+      "mond_ptqnu": 5400,
+      "ptq_linear": 5400,
+      "screen": 5400,
+      "nfw1p": 10800
+    },
+    "validation": {
+      "baryon": 900,
+      "mond_ptqnu": 900,
+      "ptq_linear": 900,
+      "screen": 900,
+      "nfw1p": 900
+    },
+    "contingency": 2700
+  },
+  "order": [
+    "baryon",
+    "mond_ptqnu",
+    "ptq_linear",
+    "screen",
+    "nfw1p"
+  ],
+  "scenarios": {
+    "normal_completion": {
+      "events": [
+        {
+          "kind": "opt",
+          "family": "baryon",
+          "requested": 3600,
+          "taken": 3600,
+          "remaining_opt": 1800,
+          "borrowed_from_nfw": 0,
+          "borrowed_from_validation": 0
+        },
+        {
+          "kind": "trial",
+          "family": "baryon",
+          "token": "baryon-A",
+          "accepted": false
+        },
+        {
+          "kind": "accepted_commit",
+          "family": "baryon",
+          "token": "baryon-A",
+          "sha256": "0ea9ad7e2822f6f85f4e945bcd23e5a716d29d2c6c857138d80da17efba8fb41"
+        },
+        {
+          "kind": "validation",
+          "family": "baryon",
+          "requested": 600,
+          "taken": 600,
+          "remaining_val": 300
+        },
+        {
+          "kind": "opt",
+          "family": "mond_ptqnu",
+          "requested": 3600,
+          "taken": 3600,
+          "remaining_opt": 1800,
+          "borrowed_from_nfw": 0,
+          "borrowed_from_validation": 0
+        },
+        {
+          "kind": "trial",
+          "family": "mond_ptqnu",
+          "token": "mond_ptqnu-A",
+          "accepted": false
+        },
+        {
+          "kind": "accepted_commit",
+          "family": "mond_ptqnu",
+          "token": "mond_ptqnu-A",
+          "sha256": "5ea768e5f1e2470ebaa9d475da190fa2b29d480c403dfcdfbac5f695ba867940"
+        },
+        {
+          "kind": "validation",
+          "family": "mond_ptqnu",
+          "requested": 600,
+          "taken": 600,
+          "remaining_val": 300
+        },
+        {
+          "kind": "opt",
+          "family": "ptq_linear",
+          "requested": 3600,
+          "taken": 3600,
+          "remaining_opt": 1800,
+          "borrowed_from_nfw": 0,
+          "borrowed_from_validation": 0
+        },
+        {
+          "kind": "trial",
+          "family": "ptq_linear",
+          "token": "ptq_linear-A",
+          "accepted": false
+        },
+        {
+          "kind": "accepted_commit",
+          "family": "ptq_linear",
+          "token": "ptq_linear-A",
+          "sha256": "42dff8bc3016728f9ab6e345c421784c07458577f7d00c8fbfcbe2afad60d5ab"
+        },
+        {
+          "kind": "validation",
+          "family": "ptq_linear",
+          "requested": 600,
+          "taken": 600,
+          "remaining_val": 300
+        },
+        {
+          "kind": "opt",
+          "family": "screen",
+          "requested": 3600,
+          "taken": 3600,
+          "remaining_opt": 1800,
+          "borrowed_from_nfw": 0,
+          "borrowed_from_validation": 0
+        },
+        {
+          "kind": "trial",
+          "family": "screen",
+          "token": "screen-A",
+          "accepted": false
+        },
+        {
+          "kind": "accepted_commit",
+          "family": "screen",
+          "token": "screen-A",
+          "sha256": "1501ed2b7ca9da0beacd0b0a67472b94601c0029c8838e9c1598b570ee6f1b3d"
+        },
+        {
+          "kind": "validation",
+          "family": "screen",
+          "requested": 600,
+          "taken": 600,
+          "remaining_val": 300
+        },
+        {
+          "kind": "opt",
+          "family": "nfw1p",
+          "requested": 7200,
+          "taken": 7200,
+          "remaining_opt": 3600,
+          "borrowed_from_nfw": 0,
+          "borrowed_from_validation": 0
+        },
+        {
+          "kind": "trial",
+          "family": "nfw1p",
+          "token": "nfw1p-A",
+          "accepted": false
+        },
+        {
+          "kind": "accepted_commit",
+          "family": "nfw1p",
+          "token": "nfw1p-A",
+          "sha256": "66a190db053eff6ad9dd9f72547e0d461e68c68d404fac183456217b376136d7"
+        },
+        {
+          "kind": "validation",
+          "family": "nfw1p",
+          "requested": 600,
+          "taken": 600,
+          "remaining_val": 300
+        }
+      ],
+      "end": {
+        "opt_remaining_s": {
+          "baryon": 1800,
+          "mond_ptqnu": 1800,
+          "ptq_linear": 1800,
+          "screen": 1800,
+          "nfw1p": 3600
+        },
+        "val_remaining_s": {
+          "baryon": 300,
+          "mond_ptqnu": 300,
+          "ptq_linear": 300,
+          "screen": 300,
+          "nfw1p": 300
+        },
+        "contingency_remaining_s": 1500,
+        "accepted": {
+          "baryon": "baryon-A",
+          "mond_ptqnu": "mond_ptqnu-A",
+          "ptq_linear": "ptq_linear-A",
+          "screen": "screen-A",
+          "nfw1p": "nfw1p-A"
+        },
+        "trial": {
+          "baryon": null,
+          "mond_ptqnu": null,
+          "ptq_linear": null,
+          "screen": null,
+          "nfw1p": null
+        },
+        "nfw_opt_intact": false,
+        "validation_intact": {
+          "baryon": false,
+          "mond_ptqnu": false,
+          "ptq_linear": false,
+          "screen": false,
+          "nfw1p": false
+        }
+      }
+    },
+    "first_family_cap": {
+      "events": [
+        {
+          "kind": "opt",
+          "family": "baryon",
+          "requested": 5460,
+          "taken": 5400,
+          "remaining_opt": 0,
+          "borrowed_from_nfw": 0,
+          "borrowed_from_validation": 0
+        }
+      ],
+      "end": {
+        "opt_remaining_s": {
+          "baryon": 0,
+          "mond_ptqnu": 5400,
+          "ptq_linear": 5400,
+          "screen": 5400,
+          "nfw1p": 10800
+        },
+        "val_remaining_s": {
+          "baryon": 900,
+          "mond_ptqnu": 900,
+          "ptq_linear": 900,
+          "screen": 900,
+          "nfw1p": 900
+        },
+        "contingency_remaining_s": 2700,
+        "accepted": {
+          "baryon": null,
+          "mond_ptqnu": null,
+          "ptq_linear": null,
+          "screen": null,
+          "nfw1p": null
+        },
+        "trial": {
+          "baryon": null,
+          "mond_ptqnu": null,
+          "ptq_linear": null,
+          "screen": null,
+          "nfw1p": null
+        },
+        "nfw_opt_intact": true,
+        "validation_intact": {
+          "baryon": true,
+          "mond_ptqnu": true,
+          "ptq_linear": true,
+          "screen": true,
+          "nfw1p": true
+        }
+      },
+      "short_s": 60
+    },
+    "multiple_caps": {
+      "end": {
+        "opt_remaining_s": {
+          "baryon": 0,
+          "mond_ptqnu": 0,
+          "ptq_linear": 0,
+          "screen": 5400,
+          "nfw1p": 10800
+        },
+        "val_remaining_s": {
+          "baryon": 900,
+          "mond_ptqnu": 900,
+          "ptq_linear": 900,
+          "screen": 900,
+          "nfw1p": 900
+        },
+        "contingency_remaining_s": 2700,
+        "accepted": {
+          "baryon": null,
+          "mond_ptqnu": null,
+          "ptq_linear": null,
+          "screen": null,
+          "nfw1p": null
+        },
+        "trial": {
+          "baryon": null,
+          "mond_ptqnu": null,
+          "ptq_linear": null,
+          "screen": null,
+          "nfw1p": null
+        },
+        "nfw_opt_intact": true,
+        "validation_intact": {
+          "baryon": true,
+          "mond_ptqnu": true,
+          "ptq_linear": true,
+          "screen": true,
+          "nfw1p": true
+        }
+      }
+    },
+    "early_stop": {
+      "end": {
+        "opt_remaining_s": {
+          "baryon": 5400,
+          "mond_ptqnu": 4800,
+          "ptq_linear": 5400,
+          "screen": 5400,
+          "nfw1p": 10800
+        },
+        "val_remaining_s": {
+          "baryon": 900,
+          "mond_ptqnu": 900,
+          "ptq_linear": 900,
+          "screen": 900,
+          "nfw1p": 900
+        },
+        "contingency_remaining_s": 2700,
+        "accepted": {
+          "baryon": null,
+          "mond_ptqnu": "mond-early",
+          "ptq_linear": null,
+          "screen": null,
+          "nfw1p": null
+        },
+        "trial": {
+          "baryon": null,
+          "mond_ptqnu": null,
+          "ptq_linear": null,
+          "screen": null,
+          "nfw1p": null
+        },
+        "nfw_opt_intact": true,
+        "validation_intact": {
+          "baryon": true,
+          "mond_ptqnu": true,
+          "ptq_linear": true,
+          "screen": true,
+          "nfw1p": true
+        }
+      },
+      "mond_opt_leftover_s": 4800
+    },
+    "aggregate_nearly_exhausted": {
+      "end": {
+        "opt_remaining_s": {
+          "baryon": 0,
+          "mond_ptqnu": 0,
+          "ptq_linear": 0,
+          "screen": 0,
+          "nfw1p": 10800
+        },
+        "val_remaining_s": {
+          "baryon": 0,
+          "mond_ptqnu": 0,
+          "ptq_linear": 0,
+          "screen": 0,
+          "nfw1p": 900
+        },
+        "contingency_remaining_s": 0,
+        "accepted": {
+          "baryon": null,
+          "mond_ptqnu": null,
+          "ptq_linear": null,
+          "screen": null,
+          "nfw1p": null
+        },
+        "trial": {
+          "baryon": null,
+          "mond_ptqnu": null,
+          "ptq_linear": null,
+          "screen": null,
+          "nfw1p": null
+        },
+        "nfw_opt_intact": true,
+        "validation_intact": {
+          "baryon": false,
+          "mond_ptqnu": false,
+          "ptq_linear": false,
+          "screen": false,
+          "nfw1p": true
+        }
+      },
+      "used_s": 27900,
+      "borrow": false
+    },
+    "budget_limit_during_gradient": {
+      "events": [
+        {
+          "kind": "trial",
+          "family": "ptq_linear",
+          "token": "ptq-accepted",
+          "accepted": false
+        },
+        {
+          "kind": "accepted_commit",
+          "family": "ptq_linear",
+          "token": "ptq-accepted",
+          "sha256": "2cf863bcc05a2b72b672d087fb0e168371c484af3898f7985bf325a7a7810740"
+        },
+        {
+          "kind": "trial",
+          "family": "ptq_linear",
+          "token": "ptq-linesearch-not-accepted",
+          "accepted": false
+        },
+        {
+          "kind": "budget_limit_discards_trial",
+          "family": "ptq_linear",
+          "discarded": "ptq-linesearch-not-accepted",
+          "terminal": "ptq-accepted"
+        }
+      ],
+      "durable": {
+        "family": "ptq_linear",
+        "objective": 3.0,
+        "status": "ACCEPTED",
+        "token": "ptq-accepted"
+      }
+    },
+    "crash_after_accept": {
+      "events": [
+        {
+          "kind": "trial",
+          "family": "screen",
+          "token": "screen-1",
+          "accepted": false
+        },
+        {
+          "kind": "accepted_commit",
+          "family": "screen",
+          "token": "screen-1",
+          "sha256": "25966dbd5f815659443cc5350f7a2e32f2e7783389db9868503f08c8f6181e92"
+        },
+        {
+          "kind": "trial",
+          "family": "screen",
+          "token": "screen-torn-trial",
+          "accepted": false
+        },
+        {
+          "kind": "crash_recovery",
+          "family": "screen",
+          "recovered": "screen-1",
+          "volatile_trial": "screen-torn-trial"
+        }
+      ],
+      "recovered": {
+        "family": "screen",
+        "objective": 4.0,
+        "status": "ACCEPTED",
+        "token": "screen-1"
+      },
+      "volatile_left_uncommitted": "screen-torn-trial"
+    },
+    "validation_reservation": {
+      "end": {
+        "opt_remaining_s": {
+          "baryon": 0,
+          "mond_ptqnu": 5400,
+          "ptq_linear": 5400,
+          "screen": 5400,
+          "nfw1p": 10800
+        },
+        "val_remaining_s": {
+          "baryon": 870,
+          "mond_ptqnu": 900,
+          "ptq_linear": 900,
+          "screen": 900,
+          "nfw1p": 900
+        },
+        "contingency_remaining_s": 2700,
+        "accepted": {
+          "baryon": null,
+          "mond_ptqnu": null,
+          "ptq_linear": null,
+          "screen": null,
+          "nfw1p": null
+        },
+        "trial": {
+          "baryon": null,
+          "mond_ptqnu": null,
+          "ptq_linear": null,
+          "screen": null,
+          "nfw1p": null
+        },
+        "nfw_opt_intact": true,
+        "validation_intact": {
+          "baryon": false,
+          "mond_ptqnu": true,
+          "ptq_linear": true,
+          "screen": true,
+          "nfw1p": true
+        }
+      },
+      "opt_short": 30,
+      "val_taken": 30
+    },
+    "nfw_scheduled_late": {
+      "nfw_before_its_turn_s": 10800,
+      "end": {
+        "opt_remaining_s": {
+          "baryon": 0,
+          "mond_ptqnu": 0,
+          "ptq_linear": 0,
+          "screen": 0,
+          "nfw1p": 7200
+        },
+        "val_remaining_s": {
+          "baryon": 900,
+          "mond_ptqnu": 900,
+          "ptq_linear": 900,
+          "screen": 900,
+          "nfw1p": 900
+        },
+        "contingency_remaining_s": 2700,
+        "accepted": {
+          "baryon": "baryon-final",
+          "mond_ptqnu": "mond_ptqnu-final",
+          "ptq_linear": "ptq_linear-final",
+          "screen": "screen-final",
+          "nfw1p": "nfw-accepted"
+        },
+        "trial": {
+          "baryon": null,
+          "mond_ptqnu": null,
+          "ptq_linear": null,
+          "screen": null,
+          "nfw1p": null
+        },
+        "nfw_opt_intact": false,
+        "validation_intact": {
+          "baryon": true,
+          "mond_ptqnu": true,
+          "ptq_linear": true,
+          "screen": true,
+          "nfw1p": true
+        }
+      }
+    }
+  }
+}

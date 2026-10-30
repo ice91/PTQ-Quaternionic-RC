@@ -1,0 +1,201 @@
+{
+  "all_pass": true,
+  "checks": [
+    {
+      "name": "normal_keeps_nfw_reserve_until_nfw_runs",
+      "pass": true,
+      "detail": "baryon precedes nfw"
+    },
+    {
+      "name": "normal_accepted_all",
+      "pass": true,
+      "detail": {
+        "baryon": "baryon-A",
+        "mond_ptqnu": "mond_ptqnu-A",
+        "ptq_linear": "ptq_linear-A",
+        "screen": "screen-A",
+        "nfw1p": "nfw1p-A"
+      }
+    },
+    {
+      "name": "first_cap_does_not_borrow",
+      "pass": true,
+      "detail": {
+        "opt_remaining_s": {
+          "baryon": 0,
+          "mond_ptqnu": 5400,
+          "ptq_linear": 5400,
+          "screen": 5400,
+          "nfw1p": 10800
+        },
+        "val_remaining_s": {
+          "baryon": 900,
+          "mond_ptqnu": 900,
+          "ptq_linear": 900,
+          "screen": 900,
+          "nfw1p": 900
+        },
+        "contingency_remaining_s": 2700,
+        "accepted": {
+          "baryon": null,
+          "mond_ptqnu": null,
+          "ptq_linear": null,
+          "screen": null,
+          "nfw1p": null
+        },
+        "trial": {
+          "baryon": null,
+          "mond_ptqnu": null,
+          "ptq_linear": null,
+          "screen": null,
+          "nfw1p": null
+        },
+        "nfw_opt_intact": true,
+        "validation_intact": {
+          "baryon": true,
+          "mond_ptqnu": true,
+          "ptq_linear": true,
+          "screen": true,
+          "nfw1p": true
+        }
+      }
+    },
+    {
+      "name": "multiple_caps_leave_nfw",
+      "pass": true,
+      "detail": {
+        "baryon": 0,
+        "mond_ptqnu": 0,
+        "ptq_linear": 0,
+        "screen": 5400,
+        "nfw1p": 10800
+      }
+    },
+    {
+      "name": "early_stop_does_not_redistribute",
+      "pass": true,
+      "detail": 4800
+    },
+    {
+      "name": "near_exhaustion_preserves_nfw_and_its_validation",
+      "pass": true,
+      "detail": {
+        "opt_remaining_s": {
+          "baryon": 0,
+          "mond_ptqnu": 0,
+          "ptq_linear": 0,
+          "screen": 0,
+          "nfw1p": 10800
+        },
+        "val_remaining_s": {
+          "baryon": 0,
+          "mond_ptqnu": 0,
+          "ptq_linear": 0,
+          "screen": 0,
+          "nfw1p": 900
+        },
+        "contingency_remaining_s": 0,
+        "accepted": {
+          "baryon": null,
+          "mond_ptqnu": null,
+          "ptq_linear": null,
+          "screen": null,
+          "nfw1p": null
+        },
+        "trial": {
+          "baryon": null,
+          "mond_ptqnu": null,
+          "ptq_linear": null,
+          "screen": null,
+          "nfw1p": null
+        },
+        "nfw_opt_intact": true,
+        "validation_intact": {
+          "baryon": false,
+          "mond_ptqnu": false,
+          "ptq_linear": false,
+          "screen": false,
+          "nfw1p": true
+        }
+      }
+    },
+    {
+      "name": "budget_limit_keeps_accepted_not_trial",
+      "pass": true,
+      "detail": {
+        "family": "ptq_linear",
+        "objective": 3.0,
+        "status": "ACCEPTED",
+        "token": "ptq-accepted"
+      }
+    },
+    {
+      "name": "crash_recovers_last_accepted",
+      "pass": true,
+      "detail": {
+        "family": "screen",
+        "objective": 4.0,
+        "status": "ACCEPTED",
+        "token": "screen-1"
+      }
+    },
+    {
+      "name": "validation_not_spent_by_optimizer",
+      "pass": true,
+      "detail": {
+        "opt_remaining_s": {
+          "baryon": 0,
+          "mond_ptqnu": 5400,
+          "ptq_linear": 5400,
+          "screen": 5400,
+          "nfw1p": 10800
+        },
+        "val_remaining_s": {
+          "baryon": 870,
+          "mond_ptqnu": 900,
+          "ptq_linear": 900,
+          "screen": 900,
+          "nfw1p": 900
+        },
+        "contingency_remaining_s": 2700,
+        "accepted": {
+          "baryon": null,
+          "mond_ptqnu": null,
+          "ptq_linear": null,
+          "screen": null,
+          "nfw1p": null
+        },
+        "trial": {
+          "baryon": null,
+          "mond_ptqnu": null,
+          "ptq_linear": null,
+          "screen": null,
+          "nfw1p": null
+        },
+        "nfw_opt_intact": true,
+        "validation_intact": {
+          "baryon": false,
+          "mond_ptqnu": true,
+          "ptq_linear": true,
+          "screen": true,
+          "nfw1p": true
+        }
+      }
+    },
+    {
+      "name": "nfw_late_starts_from_full_reserve",
+      "pass": true,
+      "detail": 10800
+    },
+    {
+      "name": "no_unaccepted_trial_is_durable_terminal",
+      "pass": true,
+      "detail": "ptq-accepted"
+    },
+    {
+      "name": "all_invariants",
+      "pass": true,
+      "detail": 11
+    }
+  ]
+}

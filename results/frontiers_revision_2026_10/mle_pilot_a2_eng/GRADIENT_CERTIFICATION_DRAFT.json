@@ -1,0 +1,363 @@
+{
+  "task": "REV26-P1G-A2-ENG",
+  "document": "GRADIENT_CERTIFICATION_DRAFT",
+  "version": "REV26-P1G-A2-ENG-DRAFT-1",
+  "activated": false,
+  "official_mle_acceptance_unchanged": true,
+  "gtol": 1e-06,
+  "gtol_changed": false,
+  "new_finite_difference_evaluations": 0,
+  "classes": [
+    "GRADIENT_IMPLEMENTATION_CONSISTENT",
+    "DERIVATIVE_RESOLUTION_INSUFFICIENT",
+    "NONSTATIONARY_WITH_RESOLVED_GRADIENT",
+    "STATIONARITY_CERTIFIABLE",
+    "UNRESOLVED"
+  ],
+  "decision_order": [
+    "Active bound with projected component exactly zero is a KKT sign condition, not a stationarity failure.",
+    "Same-step candidate versus independent difference within the frozen limit is implementation consistency only.",
+    "STATIONARITY_CERTIFIABLE requires the projected component and every saved derivative discrepancy to be at or below gtol.",
+    "A discrepancy above gtol blocks 1e-6 certification even when the gradient is obviously large.",
+    "NONSTATIONARY_WITH_RESOLVED_GRADIENT requires same-step consistency, passing two-step and 96/192 checks, and |gradient| larger than the observed discrepancy plus gtol.",
+    "A failed 96/192 derivative check yields DERIVATIVE_RESOLUTION_INSUFFICIENT. A large gradient beside that failure is recorded as a coarse indication, not a resolved certificate.",
+    "Derivative differences are diagnostics, not rigorous error bounds."
+  ],
+  "examples": [
+    {
+      "model": "ptq",
+      "theta_sha256": "96ac8469398b416aa0740522da74c844c12ea8e95364d69f3920f2df460fd6c4",
+      "audit_status": "FAIL",
+      "scipy_result_present": false,
+      "native_projected_inf": 76.82584514804235,
+      "scaled_projected_inf": 307.2264779211762,
+      "stationary_under_frozen_gtol": false,
+      "two_step_pass": false,
+      "n_exact_bound_contacts": 32,
+      "coordinates": [
+        {
+          "index": 0,
+          "name": "epsilon",
+          "at_bound": false,
+          "bound_side": "interior",
+          "candidate_scaled_gradient": 307.2264779211762,
+          "independent_scaled_gradient": 307.2264779211762,
+          "same_step_difference": 0.0,
+          "same_step_limit": 0.00032722647792117617,
+          "native_projected_component": 76.82584514804235,
+          "observed_derivative_discrepancy": 17.093575966100616,
+          "discrepancy_is_not_a_rigorous_error_bound": true,
+          "driver_direction_pass": false,
+          "checks": [
+            {
+              "kind": "fine_coarse",
+              "h": 0.0001,
+              "difference": 0.02057424353552051,
+              "limit": 0.3082470521647117,
+              "noise_ratio": 0.00015331447693322465,
+              "pass_test": true
+            },
+            {
+              "kind": "fine_coarse",
+              "h": 5e-05,
+              "difference": 0.018423716028337367,
+              "limit": 0.32533847760330514,
+              "noise_ratio": 0.0002526253197554758,
+              "pass_test": true
+            },
+            {
+              "kind": "two_steps",
+              "order": 192,
+              "difference": 17.093575966100616,
+              "limit": 0.3253200538872768,
+              "pass_test": false
+            },
+            {
+              "kind": "two_steps",
+              "order": 96,
+              "difference": 17.091425438593433,
+              "limit": 0.32533847760330514,
+              "pass_test": false
+            }
+          ],
+          "implementation": "GRADIENT_IMPLEMENTATION_CONSISTENT",
+          "primary": "DERIVATIVE_RESOLUTION_INSUFFICIENT",
+          "stationarity_1e-6": "NOT_CERTIFIABLE",
+          "gtol": 1e-06
+        },
+        {
+          "index": 10,
+          "name": "Upsilon_F574-1",
+          "at_bound": true,
+          "bound_side": "upper",
+          "candidate_scaled_gradient": -0.16904054604076085,
+          "independent_scaled_gradient": -0.16904054973558308,
+          "same_step_difference": 3.694822225952521e-09,
+          "same_step_limit": 2.0169040549735586e-05,
+          "native_projected_component": 0.0,
+          "observed_derivative_discrepancy": 0.00010583121908486204,
+          "discrepancy_is_not_a_rigorous_error_bound": true,
+          "driver_direction_pass": true,
+          "checks": [
+            {
+              "kind": "fine_coarse",
+              "h": 0.0001,
+              "difference": 1.4210854715202004e-10,
+              "limit": 0.0011690405461828694,
+              "noise_ratio": 3.724200368658174e-07,
+              "pass_test": true
+            },
+            {
+              "kind": "fine_coarse",
+              "h": 5e-05,
+              "difference": 1.4210854715202004e-10,
+              "limit": 0.0011689347149637845,
+              "noise_ratio": 7.461478918470794e-07,
+              "pass_test": true
+            },
+            {
+              "kind": "two_steps",
+              "order": 192,
+              "difference": 0.00010583121908486204,
+              "limit": 0.0011690405460407609,
+              "pass_test": true
+            },
+            {
+              "kind": "two_steps",
+              "order": 96,
+              "difference": 0.00010583121908486204,
+              "limit": 0.0011690405461828694,
+              "pass_test": true
+            }
+          ],
+          "primary": "GRADIENT_IMPLEMENTATION_CONSISTENT",
+          "kkt_reading": "ACTIVE_BOUND_PROJECTED_COMPONENT_ZERO",
+          "stationarity_1e-6": "NOT_APPLICABLE_ACTIVE_BOUND_SIGN_CONDITION",
+          "note": "Unprojected scaled gradient is not a KKT violation when the projected component is zero."
+        },
+        {
+          "index": 92,
+          "name": "ln_sigma_sys",
+          "at_bound": false,
+          "bound_side": "interior",
+          "candidate_scaled_gradient": 95.65672678492155,
+          "independent_scaled_gradient": 95.65672678492155,
+          "same_step_difference": 0.0,
+          "same_step_limit": 0.00011565672678492154,
+          "native_projected_component": 7.836814474469866,
+          "observed_derivative_discrepancy": 0.002581555201444985,
+          "discrepancy_is_not_a_rigorous_error_bound": true,
+          "driver_direction_pass": true,
+          "checks": [
+            {
+              "kind": "fine_coarse",
+              "h": 0.0001,
+              "difference": 0.00017889306036522612,
+              "limit": 0.09665672678492154,
+              "noise_ratio": 0.00040771691349136434,
+              "pass_test": true
+            },
+            {
+              "kind": "fine_coarse",
+              "h": 5e-05,
+              "difference": 0.00017885213310364634,
+              "limit": 0.09665930829919574,
+              "noise_ratio": 0.0008154247516369686,
+              "pass_test": true
+            },
+            {
+              "kind": "two_steps",
+              "order": 192,
+              "difference": 0.002581514274183405,
+              "limit": 0.09665930829919574,
+              "pass_test": true
+            },
+            {
+              "kind": "two_steps",
+              "order": 96,
+              "difference": 0.002581555201444985,
+              "limit": 0.09665912944706263,
+              "pass_test": true
+            }
+          ],
+          "implementation": "GRADIENT_IMPLEMENTATION_CONSISTENT",
+          "primary": "NONSTATIONARY_WITH_RESOLVED_GRADIENT",
+          "stationarity_1e-6": "NOT_CERTIFIABLE",
+          "gtol": 1e-06
+        }
+      ],
+      "model_primary": "NONSTATIONARY_WITH_RESOLVED_GRADIENT",
+      "official_gtol_unchanged": 1e-06,
+      "activated": false
+    },
+    {
+      "model": "ptq-nu",
+      "theta_sha256": "7abded50306ec11a32380f1ae85c555faef1d2d9318f39c673b691ae974473b2",
+      "audit_status": "FAIL",
+      "scipy_result_present": false,
+      "native_projected_inf": 0.949282900256421,
+      "scaled_projected_inf": 5.474301347021228,
+      "stationary_under_frozen_gtol": false,
+      "two_step_pass": false,
+      "n_exact_bound_contacts": 17,
+      "coordinates": [
+        {
+          "index": 0,
+          "name": "epsilon",
+          "at_bound": false,
+          "bound_side": "interior",
+          "candidate_scaled_gradient": 0.2174487235607676,
+          "independent_scaled_gradient": 0.2174487235607676,
+          "same_step_difference": 0.0,
+          "same_step_limit": 2.021744872356077e-05,
+          "native_projected_component": 0.949282900256421,
+          "observed_derivative_discrepancy": 0.00633327999821931,
+          "discrepancy_is_not_a_rigorous_error_bound": true,
+          "driver_direction_pass": false,
+          "checks": [
+            {
+              "kind": "fine_coarse",
+              "h": 0.0001,
+              "difference": 0.00633327999821931,
+              "limit": 0.001223782003558987,
+              "noise_ratio": 0.957160247675118,
+              "pass_test": false
+            },
+            {
+              "kind": "fine_coarse",
+              "h": 5e-05,
+              "difference": 0.006333184501267963,
+              "limit": 0.0012238020806542573,
+              "noise_ratio": 1.9143568818949035,
+              "pass_test": false
+            },
+            {
+              "kind": "two_steps",
+              "order": 192,
+              "difference": 2.0172592221812113e-05,
+              "limit": 0.0012174688961529895,
+              "pass_test": true
+            },
+            {
+              "kind": "two_steps",
+              "order": 96,
+              "difference": 2.0077095270465417e-05,
+              "limit": 0.0012238020806542573,
+              "pass_test": true
+            }
+          ],
+          "implementation": "GRADIENT_IMPLEMENTATION_CONSISTENT",
+          "coarse_nonzero_relative_to_observed_discrepancy": true,
+          "primary": "DERIVATIVE_RESOLUTION_INSUFFICIENT",
+          "stationarity_1e-6": "NOT_CERTIFIABLE",
+          "gtol": 1e-06
+        },
+        {
+          "index": 10,
+          "name": "Upsilon_F574-1",
+          "at_bound": false,
+          "bound_side": "interior",
+          "candidate_scaled_gradient": 0.0506150688650736,
+          "independent_scaled_gradient": 0.050615071813825956,
+          "same_step_difference": 2.9487523534044158e-09,
+          "same_step_limit": 2.0050615071813827e-05,
+          "native_projected_component": 0.034906944044878346,
+          "observed_derivative_discrepancy": 1.2338570731101894e-07,
+          "discrepancy_is_not_a_rigorous_error_bound": true,
+          "driver_direction_pass": true,
+          "checks": [
+            {
+              "kind": "fine_coarse",
+              "h": 0.0001,
+              "difference": 0.0,
+              "limit": 0.0010506150688650736,
+              "noise_ratio": 5.671419039503872e-07,
+              "pass_test": true
+            },
+            {
+              "kind": "fine_coarse",
+              "h": 5e-05,
+              "difference": 2.842170943040401e-10,
+              "limit": 0.001050615192250781,
+              "noise_ratio": 1.1258581638017303e-06,
+              "pass_test": true
+            },
+            {
+              "kind": "two_steps",
+              "order": 192,
+              "difference": 1.2338570731101894e-07,
+              "limit": 0.001050615192250781,
+              "pass_test": true
+            },
+            {
+              "kind": "two_steps",
+              "order": 96,
+              "difference": 1.231014902167149e-07,
+              "limit": 0.001050615191966564,
+              "pass_test": true
+            }
+          ],
+          "implementation": "GRADIENT_IMPLEMENTATION_CONSISTENT",
+          "primary": "NONSTATIONARY_WITH_RESOLVED_GRADIENT",
+          "stationarity_1e-6": "NOT_CERTIFIABLE",
+          "gtol": 1e-06
+        },
+        {
+          "index": 92,
+          "name": "ln_sigma_sys",
+          "at_bound": false,
+          "bound_side": "interior",
+          "candidate_scaled_gradient": -5.474301347021228,
+          "independent_scaled_gradient": -5.474301347021228,
+          "same_step_difference": 0.0,
+          "same_step_limit": 2.547430134702123e-05,
+          "native_projected_component": -0.4484899857634307,
+          "observed_derivative_discrepancy": 0.012085274647687605,
+          "discrepancy_is_not_a_rigorous_error_bound": true,
+          "driver_direction_pass": false,
+          "checks": [
+            {
+              "kind": "fine_coarse",
+              "h": 0.0001,
+              "difference": 0.012085274647687605,
+              "limit": 0.006474301347021229,
+              "noise_ratio": 0.038033471445282976,
+              "pass_test": false
+            },
+            {
+              "kind": "fine_coarse",
+              "h": 5e-05,
+              "difference": 0.01208520188811324,
+              "limit": 0.006475268999362702,
+              "noise_ratio": 0.07604192162931823,
+              "pass_test": false
+            },
+            {
+              "kind": "two_steps",
+              "order": 192,
+              "difference": 0.0009676523414734461,
+              "limit": 0.006475268999362702,
+              "pass_test": true
+            },
+            {
+              "kind": "two_steps",
+              "order": 96,
+              "difference": 0.0009677251010478116,
+              "limit": 0.006463183797474589,
+              "pass_test": true
+            }
+          ],
+          "implementation": "GRADIENT_IMPLEMENTATION_CONSISTENT",
+          "coarse_nonzero_relative_to_observed_discrepancy": true,
+          "primary": "DERIVATIVE_RESOLUTION_INSUFFICIENT",
+          "stationarity_1e-6": "NOT_CERTIFIABLE",
+          "gtol": 1e-06
+        }
+      ],
+      "model_primary": "NONSTATIONARY_WITH_RESOLVED_GRADIENT",
+      "official_gtol_unchanged": 1e-06,
+      "activated": false
+    }
+  ],
+  "proposal_for_author_review": "Keep gtol=1e-6 as the frozen official tolerance. Do not mark stationarity unless the saved discrepancy floor is also <= 1e-6. Where the floor is higher, report DERIVATIVE_RESOLUTION_INSUFFICIENT or NONSTATIONARY_WITH_RESOLVED_GRADIENT and leave the official acceptance rule unchanged until a separate human decision."
+}

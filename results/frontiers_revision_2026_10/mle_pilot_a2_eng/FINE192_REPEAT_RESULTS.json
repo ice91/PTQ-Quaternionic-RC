@@ -1,0 +1,87 @@
+{
+  "task": "REV26-P1G-A2-ENG",
+  "record": "FINE192_REPRODUCIBILITY",
+  "authoritative_scientific_acceptance": false,
+  "environment": {
+    "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+    "numpy": "2.4.2",
+    "executable": "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_pilot_a/.venv/bin/python",
+    "import_file": "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_pilot_a/candidate/src/ptquat/marginal_likelihood.py",
+    "blas_threads": 1,
+    "identity": {
+      "protected_ok": true,
+      "r1_report_files": 21,
+      "theta_content_ok": true
+    }
+  },
+  "budget": {
+    "calls": 822,
+    "equivalents": 6.865078532802947,
+    "wall_seconds": 109.03641181299463,
+    "caps": {
+      "calls": 3000,
+      "equivalents": 50.0,
+      "wall_seconds": 4800
+    },
+    "optimizer_calls": 0
+  },
+  "models": [
+    {
+      "model": "baryon",
+      "theta_sha256": "1e9c848c43e456d6eb233b90ff4796edaf2a30fb7cd9daf274fe40e95f680714",
+      "source": "last_accepted_theta.npy",
+      "n_galaxies": 91,
+      "n_observations": 1782,
+      "likelihood_version": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+      "order": 192,
+      "fresh_objective": 8812.51428142682,
+      "archived_objective": 8812.51428142682,
+      "objective_abs_error": 0.0,
+      "max_abs_galaxy_192_minus_archived": 0.0,
+      "max_abs_192_repeat": 0.0,
+      "max_abs_96_minus_archived": 0.0,
+      "warning_count": 0,
+      "label": "REPEATABLE_FINE_TARGET",
+      "scientific_mle_acceptance": "NOT_GRANTED",
+      "official_precision_status_unchanged": "FAIL"
+    },
+    {
+      "model": "mond",
+      "theta_sha256": "4c2a9af69596074fc4f81d6240d3e70c926d0c80ab2fa2e4d8c6118f9cd1e40f",
+      "source": "last_accepted_theta.npy",
+      "n_galaxies": 91,
+      "n_observations": 1782,
+      "likelihood_version": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+      "order": 192,
+      "fresh_objective": 6657.762686800939,
+      "archived_objective": 6657.762686800939,
+      "objective_abs_error": 0.0,
+      "max_abs_galaxy_192_minus_archived": 0.0,
+      "max_abs_192_repeat": 0.0,
+      "max_abs_96_minus_archived": 0.0,
+      "warning_count": 0,
+      "label": "REPEATABLE_FINE_TARGET",
+      "scientific_mle_acceptance": "NOT_GRANTED",
+      "official_precision_status_unchanged": "FAIL"
+    },
+    {
+      "model": "ptq-screen",
+      "theta_sha256": "b0a24278778944f59b3ae440ba3ae5a63d9dec584c851f93a64fa3e693ff3ab4",
+      "source": "last_accepted_theta.npy",
+      "n_galaxies": 91,
+      "n_observations": 1782,
+      "likelihood_version": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+      "order": 192,
+      "fresh_objective": 6657.646629539804,
+      "archived_objective": 6657.646629539804,
+      "objective_abs_error": 0.0,
+      "max_abs_galaxy_192_minus_archived": 0.0,
+      "max_abs_192_repeat": 0.0,
+      "max_abs_96_minus_archived": 0.0,
+      "warning_count": 0,
+      "label": "REPEATABLE_FINE_TARGET",
+      "scientific_mle_acceptance": "NOT_GRANTED",
+      "official_precision_status_unchanged": "FAIL"
+    }
+  ]
+}

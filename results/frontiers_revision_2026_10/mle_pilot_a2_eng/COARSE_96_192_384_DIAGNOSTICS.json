@@ -1,0 +1,94 @@
+{
+  "task": "REV26-P1G-A2-ENG",
+  "record": "COARSE_REFINEMENT_CLASSIFICATION",
+  "authoritative_scientific_acceptance": false,
+  "labels_are_engineering_diagnostics": true,
+  "budget": {
+    "calls": 822,
+    "equivalents": 6.865078532802947,
+    "wall_seconds": 109.03641181299463,
+    "caps": {
+      "calls": 3000,
+      "equivalents": 50.0,
+      "wall_seconds": 4800
+    },
+    "optimizer_calls": 0
+  },
+  "threshold_per_galaxy": 0.0001,
+  "scientific_objective_order": 192,
+  "order_384_role": "diagnostic_only",
+  "models": {
+    "baryon": {
+      "n_galaxies": 91,
+      "n_coarse_pass": 90,
+      "n_coarse_insufficient_384": 1,
+      "n_unresolved": 0,
+      "failures": [
+        {
+          "galaxy": "UGC09133",
+          "gi": 86,
+          "n_points": 68,
+          "ell96": -406.4210487573171,
+          "ell192": -406.42006499680014,
+          "ell192_repeat": -406.42006499680014,
+          "abs_192_96": 0.000983760516987786,
+          "abs_192_repeat": 0.0,
+          "abs_192_minus_archived": 0.0,
+          "ell384": -406.42000501451577,
+          "abs_384_192": 5.9982284369652916e-05,
+          "original_refinement_threshold": 0.0001,
+          "classification": "COARSE_INSUFFICIENT_384_DIAGNOSTIC_PASS"
+        }
+      ],
+      "note": "384 comparison is pointwise and is not a uniform quadrature error bound"
+    },
+    "mond": {
+      "n_galaxies": 91,
+      "n_coarse_pass": 90,
+      "n_coarse_insufficient_384": 1,
+      "n_unresolved": 0,
+      "failures": [
+        {
+          "galaxy": "NGC0801",
+          "gi": 16,
+          "n_points": 13,
+          "ell96": -72.76767177555845,
+          "ell192": -72.7675084305389,
+          "ell192_repeat": -72.7675084305389,
+          "abs_192_96": 0.00016334501955839187,
+          "abs_192_repeat": 0.0,
+          "abs_192_minus_archived": 0.0,
+          "ell384": -72.76750835793936,
+          "abs_384_192": 7.259953349603165e-08,
+          "original_refinement_threshold": 0.0001,
+          "classification": "COARSE_INSUFFICIENT_384_DIAGNOSTIC_PASS"
+        }
+      ],
+      "note": "384 comparison is pointwise and is not a uniform quadrature error bound"
+    },
+    "ptq-screen": {
+      "n_galaxies": 91,
+      "n_coarse_pass": 90,
+      "n_coarse_insufficient_384": 1,
+      "n_unresolved": 0,
+      "failures": [
+        {
+          "galaxy": "NGC0801",
+          "gi": 16,
+          "n_points": 13,
+          "ell96": -73.49811827213264,
+          "ell192": -73.50194995472,
+          "ell192_repeat": -73.50194995472,
+          "abs_192_96": 0.003831682587360774,
+          "abs_192_repeat": 0.0,
+          "abs_192_minus_archived": 0.0,
+          "ell384": -73.50196327232511,
+          "abs_384_192": 1.3317605109364195e-05,
+          "original_refinement_threshold": 0.0001,
+          "classification": "COARSE_INSUFFICIENT_384_DIAGNOSTIC_PASS"
+        }
+      ],
+      "note": "384 comparison is pointwise and is not a uniform quadrature error bound"
+    }
+  }
+}
