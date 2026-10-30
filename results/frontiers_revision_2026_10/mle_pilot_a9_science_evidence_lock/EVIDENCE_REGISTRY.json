@@ -1,0 +1,44 @@
+{
+  "authorization": "AUTHORIZE_REV26_P1G_A9_SCIENCE_EVIDENCE_LOCK",
+  "manuscript_id": "1964512",
+  "optimizer_invocations": 0,
+  "likelihood_reruns": 0,
+  "engineering": {
+    "source": "mle_pilot_a8_d2r_r1_strategic_closeout/AUDIT_STATUS.json",
+    "SCREEN_OPTIMIZER_SMOKE": "PASS_WITH_WARN",
+    "SCREEN_ACCEPTED_ITERATIONS": 3,
+    "SCREEN_ENDPOINT_REPLAY": "PASS",
+    "FIVE_FAMILY_ENGINEERING_COVERAGE": "COMPLETE",
+    "SCIENTIFIC_MLE": "NOT_ESTABLISHED",
+    "CANONICAL_V2": "NOT_ACTIVATED"
+  },
+  "families": {
+    "baryon": {
+      "evidence": "A8",
+      "smoke": "PASS_WITH_WARN",
+      "accepted_iterations": 3,
+      "historical_a8_fail": false
+    },
+    "ptq_linear": {
+      "evidence": "D1R; A8 original FAIL preserved",
+      "smoke": "PASS_WITH_WARN",
+      "accepted_iterations": 3
+    },
+    "ptq_nu": {
+      "evidence": "A7-R1; A7 original CONDITIONAL preserved",
+      "smoke": "PASS_WITH_WARN",
+      "accepted_iterations": 3
+    },
+    "ptq_screen": {
+      "evidence": "D2R-R1; A8 FAIL and D2 identity FAIL preserved",
+      "smoke": "PASS_WITH_WARN",
+      "accepted_iterations": 3,
+      "paper_role": "EXPLORATORY_ONLY"
+    },
+    "nfw1p": {
+      "evidence": "A8",
+      "smoke": "PASS_WITH_WARN",
+      "accepted_iterations": 3
+    }
+  }
+}

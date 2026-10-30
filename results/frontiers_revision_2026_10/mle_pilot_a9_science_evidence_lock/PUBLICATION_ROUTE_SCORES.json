@@ -1,0 +1,55 @@
+{
+  "scale": "1 low or costly, 5 high or favorable",
+  "criteria": [
+    "scientific_evidence",
+    "empirical_novelty",
+    "ptq_specific_insight",
+    "reviewer_defensibility",
+    "statistical_completeness",
+    "computational_feasibility",
+    "low_engineering_risk",
+    "frontiers_revision_suitability"
+  ],
+  "ROUTE_A": {
+    "scores": [
+      1,
+      2,
+      2,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "unacceptable_if": "Any family is ranked without single-start stationarity, or Screen's superluminal corner is treated as a fitted model."
+  },
+  "ROUTE_B": {
+    "scores": [
+      3,
+      3,
+      4,
+      3,
+      2,
+      3,
+      3,
+      4
+    ],
+    "preferred": true,
+    "unacceptable_if": "The old AIC table is pasted as the signed-target result, the 13-point cut is called negligible, or the convergence pilot fails to reach the declared stationarity class."
+  },
+  "ROUTE_C": {
+    "scores": [
+      4,
+      2,
+      3,
+      4,
+      2,
+      5,
+      5,
+      3
+    ],
+    "fallback": true,
+    "unacceptable_if": "It still presents historical rankings as current measurements, or it is offered as a complete empirical replacement for the major-revision comparison."
+  },
+  "preferred_route": "B"
+}

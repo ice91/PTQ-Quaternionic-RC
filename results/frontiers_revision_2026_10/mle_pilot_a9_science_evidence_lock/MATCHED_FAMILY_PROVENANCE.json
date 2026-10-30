@@ -1,0 +1,33 @@
+{
+  "status": "VERIFIED_EXISTING",
+  "recomputed": false,
+  "machine_record": "mle_pilot_a5_signed_b0_integration/MATCHED_FAMILY_IDENTITY.json",
+  "driver": "mle_pilot_a5_signed_b0_integration/diagnostic/run_a5.py",
+  "sample": "S_DOMAIN13_91_1769",
+  "quadrature": "fine192",
+  "operator": "signed",
+  "likelihood_version_token_on_rows": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+  "mask_sha256": "df0086b1e67f96403ff09f5c5bfb7f5818593d141d14234d752cb433a9511e6e",
+  "tidy_sha256": "3ab1c3c2b110c1e48680ebae77c1ceefaa4f778f81119dcf04881b630b274cbb",
+  "criterion": "max abs galaxy logL gap <= 1e-9",
+  "pairs": {
+    "mond_ptqnu": {
+      "source_theta_sha256": "7abded50306ec11a32380f1ae85c555faef1d2d9318f39c673b691ae974473b2",
+      "map": "log10(a0)=log10(epsilon*c*H0); shared Upsilon; shared ln sigma",
+      "galaxies": 91,
+      "max_abs_galaxy_logL_gap": 1.4779288903810084e-12,
+      "archived_mond_theta_sha256": "4c2a9af69596074fc4f81d6240d3e70c926d0c80ab2fa2e4d8c6118f9cd1e40f",
+      "archived_native_endpoint_used_as_the_comparison_point": false
+    },
+    "screen": {
+      "source_theta_sha256": "b0a24278778944f59b3ae440ba3ae5a63d9dec584c851f93a64fa3e693ff3ab4",
+      "map": "log10(a0)=log10(epsilon*c*H0); shared q; shared Upsilon; shared ln sigma",
+      "galaxies": 91,
+      "max_abs_galaxy_logL_gap": 1.8189894035458565e-12,
+      "archived_mond_screen_theta_sha256": "079614456d29ad1996cc6825d572ce5a293b4fafa9f865a4e8818dbdc99267de",
+      "archived_native_endpoint_used_as_the_comparison_point": false
+    }
+  },
+  "targeted_rerun": "NOT_REQUIRED",
+  "provenance_limit": "Per-galaxy gap rows were not archived. The machine summary stores the maxima, and the frozen driver shows how those maxima were computed. That is enough to avoid another 91-galaxy pair."
+}

@@ -1,0 +1,28 @@
+{
+  "historical_target": {
+    "name": "manuscript full-covariance 91/1782",
+    "sample": "91/1782",
+    "likelihood": "multivariate Gaussian with linearized distance and inclination covariance",
+    "baryonic_operator_provenance": "Pre-sign code path audited as Upsilon*(Vdisk^2+Vbulge^2)+Vgas^2. The manuscript equation writes v_bar^2 and does not itself print the gas-square formula.",
+    "distance_inclination": "linearized Jacobians inside C_g, not marginalized",
+    "information_criteria_N": 1782
+  },
+  "candidate_target": {
+    "name": "SIGNED_B0_S_DOMAIN13_91_1769",
+    "sample": "91/1769",
+    "operator": "Upsilon*(disk*|disk|+bulge*|bulge|)+gas*|gas|",
+    "likelihood": "fine192 explicit distance and inclination marginalization; B0 variance e^2+sigma_sys^2",
+    "canonical_activation": "NOT_AUTHORIZED",
+    "scientific_mle": "NOT_ESTABLISHED"
+  },
+  "recommendation": "SIGNED_B0_S_DOMAIN13_91_1769",
+  "decision": "READY_FOR_HUMAN_FREEZE",
+  "justification": "The signed operator is the physically declared baryonic input, and S_DOMAIN13 is the only fixed sample on which the original Upsilon box is feasible for every retained radius. The historical table answers a different likelihood.",
+  "unresolved_risks": [
+    "The 13 excluded radii are missing not at random: inner radii where negative gas overcomes the stellar term at Upsilon=0.05.",
+    "Eleven of the thirteen are undefined only below a zero crossing inside the original box, so the cut is a mathematical-domain rule, not a claim that those data are permanently unphysical.",
+    "AIC and BIC on 1782 covariance points do not transfer. BIC's N would change, and the likelihood function changes.",
+    "q≈0.984 and epsilon_RC≈0.155 belong to the historical covariance fit.",
+    "Single-start smokes are not stationarity."
+  ]
+}

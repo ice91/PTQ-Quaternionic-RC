@@ -1,0 +1,61 @@
+{
+  "authorization_to_execute": "NOT_INCLUDED_IN_A9",
+  "optimizer_calls_in_this_task": 0,
+  "target": "SIGNED_B0_S_DOMAIN13_91_1769",
+  "canonical_activation": "NOT_AUTHORIZED",
+  "jacobian": "A6 signed analytic Jacobian d23cb42195870aab92745d1735e54366435c8ae49f3d214f858164364d439585",
+  "quadrature_definition": "fine192",
+  "accepted_identity": "max per-galaxy abs(logL_A5-logL_A6) <= 1e-9",
+  "excluded": [
+    "ptq-screen",
+    "mond",
+    "mond-screen"
+  ],
+  "reason_for_exclusions": "Screen remains exploratory. MOND and mond-screen are mapped duplicates of ptq-nu and ptq-screen.",
+  "per_family_caps": {
+    "minimize_invocations": 1,
+    "maxiter": 8,
+    "wall_minutes": 12,
+    "full_sample_equivalents": 8,
+    "objective_gradient_requests": 16
+  },
+  "families": [
+    {
+      "family": "baryon",
+      "start_content_sha256": "1e9c848c43e456d6eb233b90ff4796edaf2a30fb7cd9daf274fe40e95f680714",
+      "roundoff_exception": "none"
+    },
+    {
+      "family": "ptq-nu",
+      "represents": "matched MOND/PTQ-nu pair",
+      "start_content_sha256": "7abded50306ec11a32380f1ae85c555faef1d2d9318f39c673b691ae974473b2",
+      "roundoff_exception": "none; stop if absolute identity fails"
+    },
+    {
+      "family": "nfw1p",
+      "start_content_sha256": "5c4ad3c07e46f3fa3df746c3cb5a1eeb42fc8577fbd5ec316dcd1c12ae617d7e",
+      "start_note": "archived initial vector, not a signed-target MLE",
+      "roundoff_exception": "none"
+    },
+    {
+      "family": "ptq",
+      "represents": "linear dictionary",
+      "start_content_sha256": "96ac8469398b416aa0740522da74c844c12ea8e95364d69f3920f2df460fd6c4",
+      "roundoff_exception": "reuse the existing D1R provisional 8 ULP rule for line-search trials only"
+    }
+  ],
+  "shared_requirements": [
+    "original bounds",
+    "projected and full infinity-norm KKT",
+    "transactional checkpoint and independent fine192 replay",
+    "weak-field audit with c=299792.458 km/s; superluminal accepted states are not canonical",
+    "one endpoint quadrature refinement using a node count the existing nuisance routine already accepts; it is a precision diagnostic, not a new likelihood",
+    "stop if two consecutive accepted absolute objective changes are below 1e-4 while the projected infinity norm remains above 1e-3"
+  ],
+  "classes": {
+    "SINGLE_START_STATIONARITY": "projected infinity norm <= 1e-4, strict identity, replay gap <= 1e-8, quadrature diagnostic recorded, accepted state subluminal",
+    "CONDITIONAL": "objective decreased and identity held, but the projected norm or the quadrature diagnostic misses the stationarity class",
+    "FAIL": "identity failure, nonfinite values, an accepted superluminal state, or no objective decrease",
+    "not_an_mle": "A single-start stationarity class is not a scientific MLE and is not a model ranking."
+  }
+}
