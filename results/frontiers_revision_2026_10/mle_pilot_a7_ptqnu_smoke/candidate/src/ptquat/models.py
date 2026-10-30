@@ -1,0 +1,267 @@
+from __future__ import annotations
+import numpy as np
+from .constants import (
+    C_LIGHT, H0_SI, KPC, KM, G_SI, MSUN
+)
+
+# ---------- 共用：恆星/氣體的貢獻 ----------
+# Isolated signed-SPARC operator. One common Upsilon. Not the canonical v1 square.
+
+def signed_square(velocity_kms: np.ndarray) -> np.ndarray:
+    """Published component contribution v*|v|. A negative velocity stays negative."""
+    v = np.asarray(velocity_kms, dtype=float)
+    return v * np.abs(v)
+
+
+def vbar_squared_kms2(Upsilon: float,
+                      v_disk_kms: np.ndarray,
+                      v_bulge_kms: np.ndarray,
+                      v_gas_kms: np.ndarray) -> np.ndarray:
+    """
+    Signed baryonic contribution in (km/s)^2:
+        Upsilon * (Vdisk*|Vdisk| + Vbulge*|Vbulge|) + Vgas*|Vgas|.
+    Negative values are returned as signed squared speed and are not repaired.
+    """
+    return (float(Upsilon) * (signed_square(v_disk_kms) + signed_square(v_bulge_kms))
+            + signed_square(v_gas_kms))
+
+
+# ---------- PTQ 模型（線性項） ----------
+
+def linear_term_kms2(epsilon: float,
+                     r_kpc: np.ndarray,
+                     H0_si: float = H0_SI) -> np.ndarray:
+    """
+    (epsilon * c * H0) * r   in (km/s)^2  with r in kpc.
+    """
+    r_m = r_kpc * KPC
+    term_m2s2 = epsilon * C_LIGHT * H0_si * r_m
+    return term_m2s2 / (KM**2)
+
+def model_v_ptq(Upsilon: float,
+                epsilon: float,
+                r_kpc: np.ndarray,
+                v_disk_kms: np.ndarray,
+                v_bulge_kms: np.ndarray,
+                v_gas_kms: np.ndarray,
+                H0_si: float = H0_SI) -> np.ndarray:
+    """
+    v_model = sqrt( v_bar^2 + (epsilon c H0) r )  [km/s]
+    """
+    vbar2 = vbar_squared_kms2(Upsilon, v_disk_kms, v_bulge_kms, v_gas_kms)
+    lin   = linear_term_kms2(epsilon, r_kpc, H0_si=H0_si)
+    return np.sqrt(vbar2 + lin)
+
+def model_v_ptq_split(U_disk: float,
+                      U_bulge: float,
+                      epsilon: float,
+                      r_kpc: np.ndarray,
+                      v_disk_kms: np.ndarray,
+                      v_bulge_kms: np.ndarray,
+                      v_gas_kms: np.ndarray,
+                      H0_si: float = H0_SI) -> np.ndarray:
+    """
+    拆分 M/L：
+      v_bar^2 = U_disk * v_disk^2 + U_bulge * v_bulge^2 + v_gas^2
+      v_model = sqrt( v_bar^2 + (epsilon c H0) r )
+    """
+    vbar2 = (U_disk * signed_square(v_disk_kms)
+             + U_bulge * signed_square(v_bulge_kms)
+             + signed_square(v_gas_kms))
+    lin   = linear_term_kms2(epsilon, r_kpc, H0_si=H0_si)
+    return np.sqrt(vbar2 + lin)
+
+
+# ---------- 基線：只有重子（epsilon=0） ----------
+
+def model_v_baryon(Upsilon: float,
+                   r_kpc: np.ndarray,
+                   v_disk_kms: np.ndarray,
+                   v_bulge_kms: np.ndarray,
+                   v_gas_kms: np.ndarray) -> np.ndarray:
+    """
+    v_model = sqrt( v_bar^2 )  [km/s]
+    """
+    vbar2 = vbar_squared_kms2(Upsilon, v_disk_kms, v_bulge_kms, v_gas_kms)
+    return np.sqrt(vbar2)
+
+
+# ---------- MOND（simple ν） ----------
+
+def model_v_mond(Upsilon: float,
+                 a0_si: float,
+                 r_kpc: np.ndarray,
+                 v_disk_kms: np.ndarray,
+                 v_bulge_kms: np.ndarray,
+                 v_gas_kms: np.ndarray) -> np.ndarray:
+    """
+    MOND (simple μ):
+      g_N = v_N^2 / r,  v_N^2 = Upsilon*(v_disk^2 + v_bulge^2) + v_gas^2
+      ν(y) = 0.5 + sqrt(0.25 + 1/y), y = g_N / a0
+      v^2 = v_N^2 * ν(y)
+    """
+    vN2 = vbar_squared_kms2(Upsilon, v_disk_kms, v_bulge_kms, v_gas_kms)
+    r_m = r_kpc * KPC
+    gN = (vN2 * (KM**2)) / np.maximum(r_m, 1e-12)                        # m/s^2
+    y  = np.maximum(gN / np.maximum(a0_si, 1e-16), 1e-12)
+    nu = 0.5 + np.sqrt(0.25 + 1.0 / y)
+    v2 = vN2 * nu
+    return np.sqrt(v2)
+
+
+# ---------- PTQ-ν：用 a0(ε)=ε c H0 駕動 MOND 形狀 ----------
+
+def model_v_ptq_nu(Upsilon: float,
+                   epsilon: float,
+                   r_kpc: np.ndarray,
+                   v_disk_kms: np.ndarray,
+                   v_bulge_kms: np.ndarray,
+                   v_gas_kms: np.ndarray,
+                   H0_si: float = H0_SI) -> np.ndarray:
+    """
+    PTQ-ν:
+      a0(ε) = ε c H0
+      使用 MOND 的 simple-ν 形狀，但 a0 由 ε 與 H0 給定（不再單獨擬合）。
+    """
+    a0_si = max(epsilon * C_LIGHT * H0_si, 1e-30)
+    vN2 = vbar_squared_kms2(Upsilon, v_disk_kms, v_bulge_kms, v_gas_kms)
+    r_m = r_kpc * KPC
+    gN = (vN2 * (KM**2)) / np.maximum(r_m, 1e-12)                        # m/s^2
+    y  = np.maximum(gN / a0_si, 1e-12)
+    nu = 0.5 + np.sqrt(0.25 + 1.0 / y)
+    v2 = vN2 * nu
+    return np.sqrt(v2)
+
+
+# ---------- Screening kernel ν_q(y) (shared by PTQ-screen and mond-screen) ----------
+
+def nu_q(y: np.ndarray, q: float) -> np.ndarray:
+    """
+    Global screening interpolating function: ν_q(y) = 0.5 + sqrt(0.25 + y^{-q}).
+    Used by both ptq-screen (a0 = ε c H0) and mond-screen (a0 free).
+    """
+    y = np.maximum(np.asarray(y, float), 1e-12)
+    return 0.5 + np.sqrt(0.25 + np.power(y, -float(q)))
+
+
+# ---------- PTQ-screen：加強/變鈍的轉換（全域指數 q） ----------
+
+def model_v_ptq_screen(Upsilon: float,
+                       epsilon: float,
+                       q: float,
+                       r_kpc: np.ndarray,
+                       v_disk_kms: np.ndarray,
+                       v_bulge_kms: np.ndarray,
+                       v_gas_kms: np.ndarray,
+                       H0_si: float = H0_SI) -> np.ndarray:
+    """
+    PTQ-screen:
+      a0(ε) = ε c H0
+      ν_q(y) = 0.5 + sqrt(0.25 + y^{-q})
+      q 為全域參數：q>1 較「硬」的屏蔽/開啟、q<1 較柔和。
+    """
+    a0_si = max(epsilon * C_LIGHT * H0_si, 1e-30)
+    vN2 = vbar_squared_kms2(Upsilon, v_disk_kms, v_bulge_kms, v_gas_kms)
+    r_m = r_kpc * KPC
+    gN = (vN2 * (KM**2)) / np.maximum(r_m, 1e-12)                        # m/s^2
+    y  = np.maximum(gN / a0_si, 1e-12)
+    nu = nu_q(y, q)
+    v2 = vN2 * nu
+    return np.sqrt(v2)
+
+
+# ---------- mond-screen：matched-kernel MOND control (same ν_q, free a0) ----------
+
+def model_v_mond_screen(Upsilon: float,
+                        a0_si: float,
+                        q: float,
+                        r_kpc: np.ndarray,
+                        v_disk_kms: np.ndarray,
+                        v_bulge_kms: np.ndarray,
+                        v_gas_kms: np.ndarray) -> np.ndarray:
+    """
+    MOND with same screening kernel as PTQ-screen (ν_q), but a0 is a free parameter.
+    Matched-kernel control for comparing MOND vs PTQ-screen on equal footing.
+    """
+    a0_si = max(float(a0_si), 1e-30)
+    vN2 = vbar_squared_kms2(Upsilon, v_disk_kms, v_bulge_kms, v_gas_kms)
+    r_m = r_kpc * KPC
+    gN = (vN2 * (KM**2)) / np.maximum(r_m, 1e-12)                        # m/s^2
+    y  = np.maximum(gN / a0_si, 1e-12)
+    nu = nu_q(y, q)
+    v2 = vN2 * nu
+    return np.sqrt(v2)
+
+
+# ---------- NFW-1p（每星系只放 M200，c 由 c–M 關係給出） ----------
+
+def nfw_v_kms_M200_c(r_kpc: np.ndarray,
+                     M200_Msun: float,
+                     c: float,
+                     H0_si: float = H0_SI) -> np.ndarray:
+    """
+    NFW halo circular velocity with (M200, c).
+    """
+    M200 = M200_Msun * MSUN
+    rho_crit = 3.0 * H0_si**2 / (8.0 * np.pi * G_SI)
+    R200 = (3.0 * M200 / (4.0 * np.pi * 200.0 * rho_crit))**(1.0/3.0)  # [m]
+    rs = R200 / np.maximum(c, 1e-6)
+    x = (r_kpc * KPC) / np.maximum(rs, 1.0e-30)
+    g  = np.log1p(x) - x/(1.0 + x)
+    gc = np.log1p(c) - c/(1.0 + c)
+    gc = np.maximum(gc, 1.0e-20)
+    M_r = M200 * (g / gc)
+    v2  = G_SI * M_r / np.maximum(r_kpc * KPC, 1.0e-30)   # [m^2 s^-2]
+    return np.sqrt(np.maximum(v2, 0.0)) / KM              # [km/s]
+
+def c_powerlaw(M200_Msun: float,
+               c0: float = 10.0,
+               beta: float = -0.1,
+               Mpiv: float = 1.0e12) -> float:
+    return float(c0) * (M200_Msun / Mpiv)**float(beta)
+
+def model_v_nfw1p(Upsilon: float,
+                  log10_M200: float,
+                  r_kpc: np.ndarray,
+                  v_disk_kms: np.ndarray,
+                  v_bulge_kms: np.ndarray,
+                  v_gas_kms: np.ndarray,
+                  H0_si: float = H0_SI,
+                  c0: float = 10.0,
+                  c_slope: float = -0.1) -> np.ndarray:
+    """
+    v_model = sqrt( v_bar^2 + v_nfw^2(M200, c(M200)) ),  M200 in Msun (given as log10).
+    """
+    M200 = 10.0**log10_M200
+    c    = c_powerlaw(M200, c0=c0, beta=c_slope)
+    vbar2 = vbar_squared_kms2(Upsilon, v_disk_kms, v_bulge_kms, v_gas_kms)
+    vhalo = nfw_v_kms_M200_c(r_kpc, M200, c, H0_si=H0_si)
+    return np.sqrt(vbar2 + vhalo**2)
+
+# --- Backward-compat aliases (keep old imports working) ---
+model_v_kms = model_v_ptq
+model_v_kms_split = model_v_ptq_split
+
+
+def catalog_velocity_at_distance(g, pars, gi, model, D_Mpc, *,
+                                 H0_si=H0_SI, c0=10.0, c_slope=-0.1):
+    """Full catalog transform at fixed angular samples and physical parameters."""
+    scale = np.asarray(D_Mpc, float) / g.D
+    if np.any(scale <= 0) or np.any(~np.isfinite(scale)):
+        raise ValueError("Nonpositive or nonfinite distance")
+    radius = g.r * scale
+    disk = g.disk * np.sqrt(scale)
+    bulge = g.bulge * np.sqrt(scale)
+    gas = g.gas * np.sqrt(scale)
+    U = float(pars["U"][gi])
+    if model == "baryon": return model_v_baryon(U, radius, disk, bulge, gas)
+    if model == "ptq": return model_v_ptq(U, pars["eps"], radius, disk, bulge, gas, H0_si=H0_si)
+    if model == "ptq-nu": return model_v_ptq_nu(U, pars["eps"], radius, disk, bulge, gas, H0_si=H0_si)
+    if model == "ptq-screen": return model_v_ptq_screen(U, pars["eps"], float(np.exp(pars["lq"])), radius, disk, bulge, gas, H0_si=H0_si)
+    if model in ("mond", "mond-screen"):
+        a0 = pars.get("a0_fixed")
+        if a0 is None: a0 = 10.0**pars["log10a0"]
+        if model == "mond": return model_v_mond(U, a0, radius, disk, bulge, gas)
+        return model_v_mond_screen(U, a0, float(np.exp(pars["lq"])), radius, disk, bulge, gas)
+    if model == "nfw1p": return model_v_nfw1p(U, float(pars["lM"][gi]), radius, disk, bulge, gas, H0_si=H0_si, c0=c0, c_slope=c_slope)
+    raise ValueError("Unsupported explicit native parameterization: " + model)
