@@ -1,0 +1,56 @@
+{
+  "task": "REV26-P1G-A4-FAM-FIX-GATE",
+  "SPARC_GAS_SIGN": "MATERIAL_MISMATCH_CONFIRMED",
+  "published_reference": {
+    "citation": "Lelli, McGaugh & Schombert 2016, AJ, 152, 157",
+    "doi": "10.3847/0004-6256/152/6/157",
+    "arxiv": "1606.09251",
+    "equation": "Vbar = sqrt(|Vgas|*Vgas + Upsilon_disk*|Vdisk|*Vdisk + Upsilon_bul*|Vbul|*Vbul)",
+    "equation_number": "2"
+  },
+  "path_findings": {
+    "A_upstream_sign_transform": false,
+    "B_sign_preserved_through_squared_velocity": false,
+    "C_code_squares_negative_gas": true,
+    "D_distinct_convention_clearly_declared": false,
+    "tidy_equals_raw_max_abs": 0.0,
+    "preprocess_applies_abs": false
+  },
+  "frozen_sample": {
+    "galaxies": 91,
+    "radii": 1782
+  },
+  "raw_catalog_negative_gas": {
+    "galaxies": 48,
+    "radii": 361
+  },
+  "frozen_sample_negative_gas": {
+    "galaxies": 18,
+    "radii": 111
+  },
+  "disk_negative_radii_in_frozen_sample": 0,
+  "bulge_negative_radii_in_frozen_sample": 0,
+  "zero_gas_radii": 81,
+  "positive_gas_radii": 1590,
+  "max_squared_velocity_difference_kms2": 527.4751999999999,
+  "sum_squared_velocity_difference_kms2": 11050.037799999996,
+  "radii_where_U0.5_published_vbar2_is_negative": [
+    {
+      "galaxy": "UGC01281",
+      "r_kpc": 0.08,
+      "v_gas_kms": -5.85,
+      "published_vbar2_at_U_0.5": -33.0975,
+      "implemented_vbar2_at_U_0.5": 35.3475
+    },
+    {
+      "galaxy": "UGC01281",
+      "r_kpc": 0.23,
+      "v_gas_kms": -5.85,
+      "published_vbar2_at_U_0.5": -27.921249999999997,
+      "implemented_vbar2_at_U_0.5": 40.52374999999999
+    }
+  ],
+  "stellar_signed_product_equals_square_on_this_sample": true,
+  "gate2_started": false,
+  "likelihood_evaluations": 0
+}
