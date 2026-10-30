@@ -1,0 +1,217 @@
+{
+  "task": "REV26-P1G-A4-DOMAIN-DECISION-FEASIBILITY",
+  "native_code_still_uses_squared_gas": true,
+  "analysis": "Analytical substitution of the isolated signed operator into the seven native formulas. No model function was evaluated as a likelihood.",
+  "rows": [
+    {
+      "sample": "S_FULL",
+      "model": "baryon",
+      "status": "NOT_DEFINED_ON_ORIGINAL_BOX",
+      "reason": "Two radii have B<0 for every Upsilon in [0.05,1.5]; eleven more are negative below an interior threshold. nu stays positive, so v^2 has the sign of B."
+    },
+    {
+      "sample": "S_HARD2",
+      "model": "baryon",
+      "status": "NOT_DEFINED_ON_ORIGINAL_BOX",
+      "reason": "Eleven retained radii are negative on a subinterval of the original Upsilon box."
+    },
+    {
+      "sample": "S_DOMAIN13",
+      "model": "baryon",
+      "status": "DEFINED_ON_ORIGINAL_BOX",
+      "reason": "B>0 on the whole Upsilon interval, g_N>0, and y at the maximum matched a0 stays above the 1e-12 floor. Fractional q of a positive y is real."
+    },
+    {
+      "sample": "S_NO_UGC01281",
+      "model": "baryon",
+      "status": "NOT_DEFINED_ON_ORIGINAL_BOX",
+      "reason": "Six radii outside UGC01281 remain negative on a Upsilon subinterval."
+    },
+    {
+      "sample": "S_NO_UGC01281_DOMAIN_SAFE",
+      "model": "baryon",
+      "status": "DEFINED_ON_ORIGINAL_BOX",
+      "reason": "This optional mask is a subset of S_DOMAIN13, so the same strict positivity applies. The extra galaxy deletion is not required by the domain rule."
+    },
+    {
+      "sample": "S_FULL",
+      "model": "mond",
+      "status": "NOT_DEFINED_ON_ORIGINAL_BOX",
+      "reason": "Two radii have B<0 for every Upsilon in [0.05,1.5]; eleven more are negative below an interior threshold. nu stays positive, so v^2 has the sign of B."
+    },
+    {
+      "sample": "S_HARD2",
+      "model": "mond",
+      "status": "NOT_DEFINED_ON_ORIGINAL_BOX",
+      "reason": "Eleven retained radii are negative on a subinterval of the original Upsilon box."
+    },
+    {
+      "sample": "S_DOMAIN13",
+      "model": "mond",
+      "status": "DEFINED_ON_ORIGINAL_BOX",
+      "reason": "B>0 on the whole Upsilon interval, g_N>0, and y at the maximum matched a0 stays above the 1e-12 floor. Fractional q of a positive y is real."
+    },
+    {
+      "sample": "S_NO_UGC01281",
+      "model": "mond",
+      "status": "NOT_DEFINED_ON_ORIGINAL_BOX",
+      "reason": "Six radii outside UGC01281 remain negative on a Upsilon subinterval."
+    },
+    {
+      "sample": "S_NO_UGC01281_DOMAIN_SAFE",
+      "model": "mond",
+      "status": "DEFINED_ON_ORIGINAL_BOX",
+      "reason": "This optional mask is a subset of S_DOMAIN13, so the same strict positivity applies. The extra galaxy deletion is not required by the domain rule."
+    },
+    {
+      "sample": "S_FULL",
+      "model": "ptq-nu",
+      "status": "NOT_DEFINED_ON_ORIGINAL_BOX",
+      "reason": "Two radii have B<0 for every Upsilon in [0.05,1.5]; eleven more are negative below an interior threshold. nu stays positive, so v^2 has the sign of B."
+    },
+    {
+      "sample": "S_HARD2",
+      "model": "ptq-nu",
+      "status": "NOT_DEFINED_ON_ORIGINAL_BOX",
+      "reason": "Eleven retained radii are negative on a subinterval of the original Upsilon box."
+    },
+    {
+      "sample": "S_DOMAIN13",
+      "model": "ptq-nu",
+      "status": "DEFINED_ON_ORIGINAL_BOX",
+      "reason": "B>0 on the whole Upsilon interval, g_N>0, and y at the maximum matched a0 stays above the 1e-12 floor. Fractional q of a positive y is real."
+    },
+    {
+      "sample": "S_NO_UGC01281",
+      "model": "ptq-nu",
+      "status": "NOT_DEFINED_ON_ORIGINAL_BOX",
+      "reason": "Six radii outside UGC01281 remain negative on a Upsilon subinterval."
+    },
+    {
+      "sample": "S_NO_UGC01281_DOMAIN_SAFE",
+      "model": "ptq-nu",
+      "status": "DEFINED_ON_ORIGINAL_BOX",
+      "reason": "This optional mask is a subset of S_DOMAIN13, so the same strict positivity applies. The extra galaxy deletion is not required by the domain rule."
+    },
+    {
+      "sample": "S_FULL",
+      "model": "mond-screen",
+      "status": "NOT_DEFINED_ON_ORIGINAL_BOX",
+      "reason": "Two radii have B<0 for every Upsilon in [0.05,1.5]; eleven more are negative below an interior threshold. nu stays positive, so v^2 has the sign of B."
+    },
+    {
+      "sample": "S_HARD2",
+      "model": "mond-screen",
+      "status": "NOT_DEFINED_ON_ORIGINAL_BOX",
+      "reason": "Eleven retained radii are negative on a subinterval of the original Upsilon box."
+    },
+    {
+      "sample": "S_DOMAIN13",
+      "model": "mond-screen",
+      "status": "DEFINED_ON_ORIGINAL_BOX",
+      "reason": "B>0 on the whole Upsilon interval, g_N>0, and y at the maximum matched a0 stays above the 1e-12 floor. Fractional q of a positive y is real."
+    },
+    {
+      "sample": "S_NO_UGC01281",
+      "model": "mond-screen",
+      "status": "NOT_DEFINED_ON_ORIGINAL_BOX",
+      "reason": "Six radii outside UGC01281 remain negative on a Upsilon subinterval."
+    },
+    {
+      "sample": "S_NO_UGC01281_DOMAIN_SAFE",
+      "model": "mond-screen",
+      "status": "DEFINED_ON_ORIGINAL_BOX",
+      "reason": "This optional mask is a subset of S_DOMAIN13, so the same strict positivity applies. The extra galaxy deletion is not required by the domain rule."
+    },
+    {
+      "sample": "S_FULL",
+      "model": "ptq-screen",
+      "status": "NOT_DEFINED_ON_ORIGINAL_BOX",
+      "reason": "Two radii have B<0 for every Upsilon in [0.05,1.5]; eleven more are negative below an interior threshold. nu stays positive, so v^2 has the sign of B."
+    },
+    {
+      "sample": "S_HARD2",
+      "model": "ptq-screen",
+      "status": "NOT_DEFINED_ON_ORIGINAL_BOX",
+      "reason": "Eleven retained radii are negative on a subinterval of the original Upsilon box."
+    },
+    {
+      "sample": "S_DOMAIN13",
+      "model": "ptq-screen",
+      "status": "DEFINED_ON_ORIGINAL_BOX",
+      "reason": "B>0 on the whole Upsilon interval, g_N>0, and y at the maximum matched a0 stays above the 1e-12 floor. Fractional q of a positive y is real."
+    },
+    {
+      "sample": "S_NO_UGC01281",
+      "model": "ptq-screen",
+      "status": "NOT_DEFINED_ON_ORIGINAL_BOX",
+      "reason": "Six radii outside UGC01281 remain negative on a Upsilon subinterval."
+    },
+    {
+      "sample": "S_NO_UGC01281_DOMAIN_SAFE",
+      "model": "ptq-screen",
+      "status": "DEFINED_ON_ORIGINAL_BOX",
+      "reason": "This optional mask is a subset of S_DOMAIN13, so the same strict positivity applies. The extra galaxy deletion is not required by the domain rule."
+    },
+    {
+      "sample": "S_FULL",
+      "model": "ptq",
+      "status": "NOT_DEFINED_ON_ORIGINAL_BOX",
+      "reason": "At epsilon=1e-6 and Upsilon=0.05 the thirteen negative-B radii remain negative. High epsilon can rescue them, which is a parameter restriction."
+    },
+    {
+      "sample": "S_HARD2",
+      "model": "ptq",
+      "status": "NOT_DEFINED_ON_ORIGINAL_BOX",
+      "reason": "The eleven conditional radii are still negative at the epsilon lower bound when Upsilon is at its lower bound."
+    },
+    {
+      "sample": "S_DOMAIN13",
+      "model": "ptq",
+      "status": "DEFINED_ON_ORIGINAL_BOX",
+      "reason": "B>0 and the linear term epsilon*c*H0*r is nonnegative for epsilon in (1e-6, 3.999) and r>0, so the sum stays positive."
+    },
+    {
+      "sample": "S_NO_UGC01281",
+      "model": "ptq",
+      "status": "NOT_DEFINED_ON_ORIGINAL_BOX",
+      "reason": "Six conditional radii remain."
+    },
+    {
+      "sample": "S_NO_UGC01281_DOMAIN_SAFE",
+      "model": "ptq",
+      "status": "DEFINED_ON_ORIGINAL_BOX",
+      "reason": "Subset of S_DOMAIN13."
+    },
+    {
+      "sample": "S_FULL",
+      "model": "nfw1p",
+      "status": "CONDITIONAL",
+      "reason": "The earlier nine-point and 401-point mass scans found a positive slack, and the worst tested radius increased with mass. That is not a continuous proof for every mass in [1e9, 1e13] when B can be negative."
+    },
+    {
+      "sample": "S_HARD2",
+      "model": "nfw1p",
+      "status": "CONDITIONAL",
+      "reason": "Removing the two worst radii does not convert the previous discrete halo scan into a continuous proof. B can still be negative on eleven radii."
+    },
+    {
+      "sample": "S_DOMAIN13",
+      "model": "nfw1p",
+      "status": "DEFINED_ON_ORIGINAL_BOX",
+      "reason": "For r>0 and log10 M200 in [9,13], c(M)>0 and the halo speed is a real square root of a nonnegative quantity. B>0 then implies B+v_halo^2>0 at every mass, without a grid."
+    },
+    {
+      "sample": "S_NO_UGC01281",
+      "model": "nfw1p",
+      "status": "CONDITIONAL",
+      "reason": "Six radii can still have B<0, so halo positivity is not guaranteed by B alone."
+    },
+    {
+      "sample": "S_NO_UGC01281_DOMAIN_SAFE",
+      "model": "nfw1p",
+      "status": "DEFINED_ON_ORIGINAL_BOX",
+      "reason": "Subset of S_DOMAIN13."
+    }
+  ]
+}

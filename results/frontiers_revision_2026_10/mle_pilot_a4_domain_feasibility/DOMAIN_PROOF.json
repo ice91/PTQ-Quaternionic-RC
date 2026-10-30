@@ -1,0 +1,234 @@
+{
+  "task": "REV26-P1G-A4-DOMAIN-DECISION-FEASIBILITY",
+  "likelihood_evaluations": 0,
+  "optimizer_calls": 0,
+  "S_DOMAIN13_FULL_BOX": "PASS",
+  "S_HARD2_FULL_BOX": "FAIL",
+  "S_HARD2_note": "FAIL means the original parameter boxes are not entirely feasible. It does not mean the eleven rows are undefined for every admissible Upsilon.",
+  "domain13_proof": {
+    "stellar_signed_contribution_min": 2.25,
+    "stellar_nonnegative_on_all_1782": true,
+    "B_affine_nondecreasing_because_stellar_nonnegative": true,
+    "minimum_B_at_U_0.05": 0.44940499999999983,
+    "max_abs_gap_versus_frozen_csv_B": 1.8189894035458565e-12,
+    "row_of_minimum_B": {
+      "galaxy": "UGC01281",
+      "r_kpc": 0.38,
+      "source_recno": 1947
+    },
+    "grid_minimum_B_on_1001_upsilon_nodes": 0.44940499999999983,
+    "endpoints_positive": {
+      "U_0.05": true,
+      "U_0.5": true,
+      "U_1.5": true
+    },
+    "zero_crossings_inside_interval": 0,
+    "maximum_zero_crossing_among_retained_negative_gas": 0.03406144821446938,
+    "retained_negative_gas_radii": 98,
+    "retained_negative_gas_galaxies": 15,
+    "max_condition_number_at_U_0.05": 5.274095748823445,
+    "max_condition_number_at_U_1.5": 1.0464704992893217,
+    "machine_epsilon": 2.220446049250313e-16,
+    "distance_rescaling": [
+      {
+        "s": 0.25,
+        "min_scaled_B": 0.11235124999999996,
+        "max_abs_gap_versus_s_times_B": 0.0,
+        "all_positive": true
+      },
+      {
+        "s": 1.0,
+        "min_scaled_B": 0.44940499999999983,
+        "max_abs_gap_versus_s_times_B": 0.0,
+        "all_positive": true
+      },
+      {
+        "s": 4.0,
+        "min_scaled_B": 1.7976199999999993,
+        "max_abs_gap_versus_s_times_B": 0.0,
+        "all_positive": true
+      }
+    ],
+    "minimum_newtonian_g_at_U_0.05_m_s2": 3.8326905699282747e-14,
+    "minimum_y_at_maximum_matched_a0": 0.00019163452849641372,
+    "y_floor_1e-12_inactive_on_matched_a0_box": true,
+    "nuisance_sign_convention": {
+      "distance_nodes_open_above_zero": true,
+      "velocity_factor": "sqrt(D_node/D_nominal) > 0",
+      "inclination_factor_applies_to_predicted_speed_not_baryonic_sign": true,
+      "integrator_called": false
+    }
+  },
+  "hard2_permanent_rows": [
+    {
+      "source_recno": 1945,
+      "galaxy": "UGC01281",
+      "r_kpc": 0.08,
+      "zero_crossing_upsilon": 15.21,
+      "B_at_U_0.05": -34.11
+    },
+    {
+      "source_recno": 1946,
+      "galaxy": "UGC01281",
+      "r_kpc": 0.23,
+      "zero_crossing_upsilon": 2.7155326324142037,
+      "B_at_U_0.05": -33.592375
+    }
+  ],
+  "hard2_conditional_rows": [
+    {
+      "source_recno": 1948,
+      "galaxy": "UGC01281",
+      "r_kpc": 0.54,
+      "zero_crossing_upsilon": 0.0729394213863285,
+      "B_at_U_0.05": -1.5499800000000001,
+      "stellar_signed_v2": 67.56840000000001,
+      "gas_signed_v2": -4.928400000000001
+    },
+    {
+      "source_recno": 1949,
+      "galaxy": "UGC01281",
+      "r_kpc": 0.69,
+      "zero_crossing_upsilon": 0.1152808468104824,
+      "B_at_U_0.05": -6.81848,
+      "stellar_signed_v2": 104.4484,
+      "gas_signed_v2": -12.0409
+    },
+    {
+      "source_recno": 1950,
+      "galaxy": "UGC01281",
+      "r_kpc": 0.84,
+      "zero_crossing_upsilon": 0.1347078523580686,
+      "B_at_U_0.05": -12.340654999999996,
+      "stellar_signed_v2": 145.6849,
+      "gas_signed_v2": -19.624899999999997
+    },
+    {
+      "source_recno": 1951,
+      "galaxy": "UGC01281",
+      "r_kpc": 1.0,
+      "zero_crossing_upsilon": 0.1370756134356583,
+      "B_at_U_0.05": -16.848095000000004,
+      "stellar_signed_v2": 193.4881,
+      "gas_signed_v2": -26.522500000000004
+    },
+    {
+      "source_recno": 1952,
+      "galaxy": "UGC01281",
+      "r_kpc": 1.15,
+      "zero_crossing_upsilon": 0.1441140936403668,
+      "B_at_U_0.05": -22.349095,
+      "stellar_signed_v2": 237.4681,
+      "gas_signed_v2": -34.2225
+    },
+    {
+      "source_recno": 2904,
+      "galaxy": "UGC07577",
+      "r_kpc": 0.19,
+      "zero_crossing_upsilon": 0.2784639053455617,
+      "B_at_U_0.05": -2.687855,
+      "stellar_signed_v2": 11.7649,
+      "gas_signed_v2": -3.2761
+    },
+    {
+      "source_recno": 2905,
+      "galaxy": "UGC07577",
+      "r_kpc": 0.38,
+      "zero_crossing_upsilon": 0.093143869117895,
+      "B_at_U_0.05": -1.6371199999999997,
+      "stellar_signed_v2": 37.9456,
+      "gas_signed_v2": -3.5343999999999998
+    },
+    {
+      "source_recno": 2947,
+      "galaxy": "UGC08286",
+      "r_kpc": 0.47,
+      "zero_crossing_upsilon": 0.0569002793094499,
+      "B_at_U_0.05": -1.7975199999999987,
+      "stellar_signed_v2": 260.49960000000004,
+      "gas_signed_v2": -14.822500000000002
+    },
+    {
+      "source_recno": 3046,
+      "galaxy": "UGC08837",
+      "r_kpc": 0.52,
+      "zero_crossing_upsilon": 0.1075652412109944,
+      "B_at_U_0.05": -7.208095,
+      "stellar_signed_v2": 125.21609999999998,
+      "gas_signed_v2": -13.4689
+    },
+    {
+      "source_recno": 3047,
+      "galaxy": "UGC08837",
+      "r_kpc": 1.05,
+      "zero_crossing_upsilon": 0.0783189594334447,
+      "B_at_U_0.05": -7.78478,
+      "stellar_signed_v2": 274.89639999999997,
+      "gas_signed_v2": -21.5296
+    },
+    {
+      "source_recno": 3356,
+      "galaxy": "UGCA444",
+      "r_kpc": 0.12,
+      "zero_crossing_upsilon": 0.09,
+      "B_at_U_0.05": -0.1936,
+      "stellar_signed_v2": 4.840000000000001,
+      "gas_signed_v2": -0.43560000000000004
+    }
+  ],
+  "hard2_galaxy_parameter_constraints": [
+    {
+      "galaxy": "UGC01281",
+      "most_restrictive_r_kpc": 1.15,
+      "most_restrictive_source_recno": 1952,
+      "upsilon_must_exceed": 0.1441140936403668,
+      "conditional_radii": 5,
+      "original_box_entirely_feasible": false,
+      "feasible_open_interval": "(0.1441140936403668, 1.5]"
+    },
+    {
+      "galaxy": "UGC07577",
+      "most_restrictive_r_kpc": 0.19,
+      "most_restrictive_source_recno": 2904,
+      "upsilon_must_exceed": 0.2784639053455617,
+      "conditional_radii": 2,
+      "original_box_entirely_feasible": false,
+      "feasible_open_interval": "(0.2784639053455617, 1.5]"
+    },
+    {
+      "galaxy": "UGC08286",
+      "most_restrictive_r_kpc": 0.47,
+      "most_restrictive_source_recno": 2947,
+      "upsilon_must_exceed": 0.0569002793094499,
+      "conditional_radii": 1,
+      "original_box_entirely_feasible": false,
+      "feasible_open_interval": "(0.0569002793094499, 1.5]"
+    },
+    {
+      "galaxy": "UGC08837",
+      "most_restrictive_r_kpc": 0.52,
+      "most_restrictive_source_recno": 3046,
+      "upsilon_must_exceed": 0.1075652412109944,
+      "conditional_radii": 2,
+      "original_box_entirely_feasible": false,
+      "feasible_open_interval": "(0.1075652412109944, 1.5]"
+    },
+    {
+      "galaxy": "UGCA444",
+      "most_restrictive_r_kpc": 0.12,
+      "most_restrictive_source_recno": 3356,
+      "upsilon_must_exceed": 0.09,
+      "conditional_radii": 1,
+      "original_box_entirely_feasible": false,
+      "feasible_open_interval": "(0.09, 1.5]"
+    }
+  ],
+  "distinctions": {
+    "fixed_common_sample_unchanged_boxes": "S_DOMAIN13 satisfies this for the signed operator. S_HARD2 and S_NO_UGC01281 do not.",
+    "parameter_constrained_feasible_domains": "For each of the five galaxies, Upsilon must exceed the listed threshold before every retained conditional radius has B>0. Bounds were not changed.",
+    "permanently_undefined_observations": "UGC01281 source rows at 0.08 and 0.23 kpc."
+  },
+  "linear_coefficient_sign": "epsilon*c*H0*r/(km^2) > 0 for epsilon>0 and r>0",
+  "H0_SI": 2.1842852410855023e-18,
+  "C_LIGHT": 299792458.0
+}

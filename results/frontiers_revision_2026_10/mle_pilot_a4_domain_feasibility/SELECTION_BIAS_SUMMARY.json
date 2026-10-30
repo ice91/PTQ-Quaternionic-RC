@@ -1,0 +1,662 @@
+{
+  "task": "REV26-P1G-A4-DOMAIN-DECISION-FEASIBILITY",
+  "predeclared_inner_rule": "A radius is inside one disk scale length when r_kpc/Rdisk < 1. Rdisk is SPARC Table 1 Rdisk in kpc, joined by galaxy name.",
+  "candidates": {
+    "S_FULL": {
+      "galaxies_retained": 91,
+      "radii_retained": 1782,
+      "radii_excluded": 0,
+      "galaxies_with_any_excluded_radius": [],
+      "retained_radius_kpc": {
+        "n": 1782,
+        "min": 0.08,
+        "q25": 2.6225,
+        "median": 6.875,
+        "q75": 14.5875,
+        "max": 108.31,
+        "mean": 11.705662177328843
+      },
+      "excluded_radius_kpc": {
+        "n": 0
+      },
+      "retained_r_over_Rdisk": {
+        "n": 1782,
+        "min": 0.039978678038379525,
+        "q25": 1.1822696488654991,
+        "median": 2.4763221153846153,
+        "q75": 5.0415692691288765,
+        "max": 35.0,
+        "mean": 3.683920457121021
+      },
+      "excluded_r_over_Rdisk": {
+        "n": 0
+      },
+      "excluded_inside_one_Rdisk": 0,
+      "retained_gas_sign_counts": {
+        "negative": 111,
+        "zero": 81,
+        "positive": 1590
+      },
+      "excluded_gas_sign_counts": {
+        "negative": 0,
+        "zero": 0,
+        "positive": 0
+      },
+      "retained_stellar_signed_v2": {
+        "n": 1782,
+        "min": 2.25,
+        "q25": 1510.297075,
+        "median": 9720.97465,
+        "q75": 38370.317324999996,
+        "max": 147791.4005,
+        "mean": 23995.963185914705
+      },
+      "excluded_stellar_signed_v2": {
+        "n": 0
+      },
+      "retained_gas_signed_v2": {
+        "n": 1782,
+        "min": -263.73759999999993,
+        "q25": 63.920100000000005,
+        "median": 423.12649999999996,
+        "q75": 1326.962775,
+        "max": 7440.787600000001,
+        "mean": 946.3739818181818
+      },
+      "excluded_gas_signed_v2": {
+        "n": 0
+      },
+      "retained_v_obs_kms": {
+        "n": 1782,
+        "min": 1.41,
+        "q25": 70.725,
+        "median": 124.0,
+        "q75": 219.0,
+        "max": 383.0,
+        "mean": 142.70988215488214
+      },
+      "excluded_v_obs_kms": {
+        "n": 0
+      },
+      "retained_v_err_kms": {
+        "n": 1782,
+        "min": 0.2,
+        "q25": 3.0,
+        "median": 4.9,
+        "q75": 7.625,
+        "max": 75.0,
+        "mean": 6.076161616161616
+      },
+      "excluded_v_err_kms": {
+        "n": 0
+      },
+      "retained_galaxy_Qual_counts": {
+        "1": 55,
+        "2": 36
+      },
+      "excluded_point_galaxy_Qual_counts": {},
+      "mask_uses_observed_response_residuals": false,
+      "missingness_depends_on_baryonic_domain_variables": false
+    },
+    "S_HARD2": {
+      "galaxies_retained": 91,
+      "radii_retained": 1780,
+      "radii_excluded": 2,
+      "galaxies_with_any_excluded_radius": [
+        "UGC01281"
+      ],
+      "retained_radius_kpc": {
+        "n": 1780,
+        "min": 0.08,
+        "q25": 2.6375,
+        "median": 6.9,
+        "q75": 14.6125,
+        "max": 108.31,
+        "mean": 11.718640449438203
+      },
+      "excluded_radius_kpc": {
+        "n": 2,
+        "min": 0.08,
+        "q25": 0.11750000000000001,
+        "median": 0.155,
+        "q75": 0.1925,
+        "max": 0.23,
+        "mean": 0.155
+      },
+      "retained_r_over_Rdisk": {
+        "n": 1780,
+        "min": 0.039978678038379525,
+        "q25": 1.185514780466599,
+        "median": 2.482377497946893,
+        "q75": 5.043802725502919,
+        "max": 35.0,
+        "mean": 3.6879528486183033
+      },
+      "excluded_r_over_Rdisk": {
+        "n": 2,
+        "min": 0.049079754601226995,
+        "q25": 0.07208588957055215,
+        "median": 0.0950920245398773,
+        "q75": 0.11809815950920247,
+        "max": 0.14110429447852763,
+        "mean": 0.0950920245398773
+      },
+      "excluded_inside_one_Rdisk": 2,
+      "retained_gas_sign_counts": {
+        "negative": 109,
+        "zero": 81,
+        "positive": 1590
+      },
+      "excluded_gas_sign_counts": {
+        "negative": 2,
+        "zero": 0,
+        "positive": 0
+      },
+      "retained_stellar_signed_v2": {
+        "n": 1780,
+        "min": 4.840000000000001,
+        "q25": 1527.8380750000001,
+        "median": 9770.38465,
+        "q75": 38418.01375,
+        "max": 147791.4005,
+        "mean": 24022.916598202246
+      },
+      "excluded_stellar_signed_v2": {
+        "n": 2,
+        "min": 2.25,
+        "q25": 4.838125,
+        "median": 7.42625,
+        "q75": 10.014375,
+        "max": 12.6025,
+        "mean": 7.42625
+      },
+      "retained_gas_signed_v2": {
+        "n": 1780,
+        "min": -263.73759999999993,
+        "q25": 64.28032499999999,
+        "median": 424.77209999999997,
+        "q75": 1327.327075,
+        "max": 7440.787600000001,
+        "mean": 947.4757756179777
+      },
+      "excluded_gas_signed_v2": {
+        "n": 2,
+        "min": -34.2225,
+        "q25": -34.2225,
+        "median": -34.2225,
+        "q75": -34.2225,
+        "max": -34.2225,
+        "mean": -34.2225
+      },
+      "retained_v_obs_kms": {
+        "n": 1780,
+        "min": 1.99,
+        "q25": 70.875,
+        "median": 124.5,
+        "q75": 219.25,
+        "max": 383.0,
+        "mean": 142.86693258426965
+      },
+      "excluded_v_obs_kms": {
+        "n": 2,
+        "min": 1.41,
+        "q25": 2.1725,
+        "median": 2.935,
+        "q75": 3.6975,
+        "max": 4.46,
+        "mean": 2.935
+      },
+      "retained_v_err_kms": {
+        "n": 1780,
+        "min": 0.2,
+        "q25": 3.0,
+        "median": 4.9,
+        "q75": 7.6325,
+        "max": 75.0,
+        "mean": 6.078494382022472
+      },
+      "excluded_v_err_kms": {
+        "n": 2,
+        "min": 4.0,
+        "q25": 4.0,
+        "median": 4.0,
+        "q75": 4.0,
+        "max": 4.0,
+        "mean": 4.0
+      },
+      "retained_galaxy_Qual_counts": {
+        "1": 55,
+        "2": 36
+      },
+      "excluded_point_galaxy_Qual_counts": {
+        "1": 1
+      },
+      "mask_uses_observed_response_residuals": false,
+      "missingness_depends_on_baryonic_domain_variables": true
+    },
+    "S_DOMAIN13": {
+      "galaxies_retained": 91,
+      "radii_retained": 1769,
+      "radii_excluded": 13,
+      "galaxies_with_any_excluded_radius": [
+        "UGC01281",
+        "UGC07577",
+        "UGC08286",
+        "UGC08837",
+        "UGCA444"
+      ],
+      "retained_radius_kpc": {
+        "n": 1769,
+        "min": 0.08,
+        "q25": 2.7,
+        "median": 6.96,
+        "q75": 14.86,
+        "max": 108.31,
+        "mean": 11.787580553985304
+      },
+      "excluded_radius_kpc": {
+        "n": 13,
+        "min": 0.08,
+        "q25": 0.23,
+        "median": 0.52,
+        "q75": 0.84,
+        "max": 1.15,
+        "mean": 0.5584615384615385
+      },
+      "retained_r_over_Rdisk": {
+        "n": 1769,
+        "min": 0.039978678038379525,
+        "q25": 1.2,
+        "median": 2.5081967213114753,
+        "q75": 5.050295857988166,
+        "max": 35.0,
+        "mean": 3.708212997226391
+      },
+      "excluded_r_over_Rdisk": {
+        "n": 13,
+        "min": 0.049079754601226995,
+        "q25": 0.2111111111111111,
+        "median": 0.4222222222222222,
+        "q75": 0.5153374233128835,
+        "max": 0.7055214723926381,
+        "mean": 0.37826634585956076
+      },
+      "excluded_inside_one_Rdisk": 13,
+      "retained_gas_sign_counts": {
+        "negative": 98,
+        "zero": 81,
+        "positive": 1590
+      },
+      "excluded_gas_sign_counts": {
+        "negative": 13,
+        "zero": 0,
+        "positive": 0
+      },
+      "retained_stellar_signed_v2": {
+        "n": 1769,
+        "min": 5.017600000000001,
+        "q25": 1569.7443999999998,
+        "median": 9906.2209,
+        "q75": 38645.3105,
+        "max": 147791.4005,
+        "mean": 24171.4684704918
+      },
+      "excluded_stellar_signed_v2": {
+        "n": 13,
+        "min": 2.25,
+        "q25": 12.6025,
+        "median": 104.4484,
+        "q75": 193.4881,
+        "max": 274.89639999999997,
+        "mean": 113.74407692307692
+      },
+      "retained_gas_signed_v2": {
+        "n": 1769,
+        "min": -263.73759999999993,
+        "q25": 69.05610000000001,
+        "median": 436.3921,
+        "q75": 1334.4409,
+        "max": 7440.787600000001,
+        "mean": 953.454656246467
+      },
+      "excluded_gas_signed_v2": {
+        "n": 13,
+        "min": -34.2225,
+        "q25": -26.522500000000004,
+        "median": -14.822500000000002,
+        "q75": -4.928400000000001,
+        "max": -0.43560000000000004,
+        "mean": -17.14240769230769
+      },
+      "retained_v_obs_kms": {
+        "n": 1769,
+        "min": 1.99,
+        "q25": 72.3,
+        "median": 125.0,
+        "q75": 220.0,
+        "max": 383.0,
+        "mean": 143.6730412662521
+      },
+      "excluded_v_obs_kms": {
+        "n": 13,
+        "min": 1.41,
+        "q25": 5.4,
+        "median": 11.0,
+        "q75": 17.2,
+        "max": 23.2,
+        "mean": 11.646153846153844
+      },
+      "retained_v_err_kms": {
+        "n": 1769,
+        "min": 0.2,
+        "q25": 3.0,
+        "median": 4.95,
+        "q75": 7.66,
+        "max": 75.0,
+        "mean": 6.0945618993781805
+      },
+      "excluded_v_err_kms": {
+        "n": 13,
+        "min": 2.05,
+        "q25": 2.81,
+        "median": 4.0,
+        "q75": 4.0,
+        "max": 5.78,
+        "mean": 3.572307692307692
+      },
+      "retained_galaxy_Qual_counts": {
+        "1": 55,
+        "2": 36
+      },
+      "excluded_point_galaxy_Qual_counts": {
+        "1": 2,
+        "2": 3
+      },
+      "mask_uses_observed_response_residuals": false,
+      "missingness_depends_on_baryonic_domain_variables": true
+    },
+    "S_NO_UGC01281": {
+      "galaxies_retained": 90,
+      "radii_retained": 1757,
+      "radii_excluded": 25,
+      "galaxies_with_any_excluded_radius": [
+        "UGC01281"
+      ],
+      "retained_radius_kpc": {
+        "n": 1757,
+        "min": 0.08,
+        "q25": 2.72,
+        "median": 6.98,
+        "q75": 14.91,
+        "max": 108.31,
+        "mean": 11.842737620944794
+      },
+      "excluded_radius_kpc": {
+        "n": 25,
+        "min": 0.08,
+        "q25": 1.0,
+        "median": 1.92,
+        "q75": 2.76,
+        "max": 4.99,
+        "mean": 2.072
+      },
+      "retained_r_over_Rdisk": {
+        "n": 1757,
+        "min": 0.039978678038379525,
+        "q25": 1.1972477064220182,
+        "median": 2.510791366906475,
+        "q75": 5.076923076923077,
+        "max": 35.0,
+        "mean": 3.7182510606063546
+      },
+      "excluded_r_over_Rdisk": {
+        "n": 25,
+        "min": 0.049079754601226995,
+        "q25": 0.6134969325153374,
+        "median": 1.177914110429448,
+        "q75": 1.6932515337423313,
+        "max": 3.0613496932515343,
+        "mean": 1.2711656441717794
+      },
+      "excluded_inside_one_Rdisk": 11,
+      "retained_gas_sign_counts": {
+        "negative": 102,
+        "zero": 81,
+        "positive": 1574
+      },
+      "excluded_gas_sign_counts": {
+        "negative": 9,
+        "zero": 0,
+        "positive": 16
+      },
+      "retained_stellar_signed_v2": {
+        "n": 1757,
+        "min": 4.840000000000001,
+        "q25": 1599.2001000000002,
+        "median": 10377.4969,
+        "q75": 38748.5389,
+        "max": 147791.4005,
+        "mean": 24333.418915480936
+      },
+      "excluded_stellar_signed_v2": {
+        "n": 25,
+        "min": 2.25,
+        "q25": 193.4881,
+        "median": 343.73159999999996,
+        "q75": 384.5521,
+        "max": 400.80039999999997,
+        "mean": 279.57451199999997
+      },
+      "retained_gas_signed_v2": {
+        "n": 1757,
+        "min": -263.73759999999993,
+        "q25": 67.40410000000001,
+        "median": 442.26090000000005,
+        "q75": 1341.7569,
+        "max": 7440.787600000001,
+        "mean": 957.9620985771201
+      },
+      "excluded_gas_signed_v2": {
+        "n": 25,
+        "min": -34.2225,
+        "q25": -4.928400000000001,
+        "median": 95.84409999999998,
+        "q75": 248.3776,
+        "max": 418.6116,
+        "mean": 131.961136
+      },
+      "retained_v_obs_kms": {
+        "n": 1757,
+        "min": 1.99,
+        "q25": 73.2,
+        "median": 126.0,
+        "q75": 220.0,
+        "max": 383.0,
+        "mean": 144.2505577689243
+      },
+      "excluded_v_obs_kms": {
+        "n": 25,
+        "min": 1.41,
+        "q25": 20.2,
+        "median": 37.4,
+        "q75": 49.3,
+        "max": 56.9,
+        "mean": 34.4312
+      },
+      "retained_v_err_kms": {
+        "n": 1757,
+        "min": 0.2,
+        "q25": 3.0,
+        "median": 4.96,
+        "q75": 7.67,
+        "max": 75.0,
+        "mean": 6.092970973249858
+      },
+      "excluded_v_err_kms": {
+        "n": 25,
+        "min": 4.0,
+        "q25": 4.0,
+        "median": 4.0,
+        "q75": 4.94,
+        "max": 9.73,
+        "mean": 4.8948
+      },
+      "retained_galaxy_Qual_counts": {
+        "1": 54,
+        "2": 36
+      },
+      "excluded_point_galaxy_Qual_counts": {
+        "1": 1
+      },
+      "mask_uses_observed_response_residuals": false,
+      "missingness_depends_on_baryonic_domain_variables": true
+    },
+    "S_NO_UGC01281_DOMAIN_SAFE": {
+      "galaxies_retained": 90,
+      "radii_retained": 1751,
+      "radii_excluded": 31,
+      "galaxies_with_any_excluded_radius": [
+        "UGC01281",
+        "UGC07577",
+        "UGC08286",
+        "UGC08837",
+        "UGCA444"
+      ],
+      "retained_radius_kpc": {
+        "n": 1751,
+        "min": 0.08,
+        "q25": 2.7699999999999996,
+        "median": 6.98,
+        "q75": 14.98,
+        "max": 108.31,
+        "mean": 11.88175899486008
+      },
+      "excluded_radius_kpc": {
+        "n": 31,
+        "min": 0.08,
+        "q25": 0.53,
+        "median": 1.46,
+        "q75": 2.605,
+        "max": 4.99,
+        "mean": 1.7590322580645161
+      },
+      "retained_r_over_Rdisk": {
+        "n": 1751,
+        "min": 0.039978678038379525,
+        "q25": 1.201532432590513,
+        "median": 2.5223880597014925,
+        "q75": 5.1016756800428205,
+        "max": 35.0,
+        "mean": 3.7297708692709794
+      },
+      "excluded_r_over_Rdisk": {
+        "n": 31,
+        "min": 0.049079754601226995,
+        "q25": 0.42276755282890255,
+        "median": 0.8957055214723927,
+        "q75": 1.598159509202454,
+        "max": 3.0613496932515343,
+        "mean": 1.0941116934249775
+      },
+      "excluded_inside_one_Rdisk": 17,
+      "retained_gas_sign_counts": {
+        "negative": 96,
+        "zero": 81,
+        "positive": 1574
+      },
+      "excluded_gas_sign_counts": {
+        "negative": 15,
+        "zero": 0,
+        "positive": 16
+      },
+      "retained_stellar_signed_v2": {
+        "n": 1751,
+        "min": 5.017600000000001,
+        "q25": 1626.9124500000003,
+        "median": 10489.9778,
+        "q75": 38809.29925,
+        "max": 147791.4005,
+        "mean": 24416.391702969733
+      },
+      "excluded_stellar_signed_v2": {
+        "n": 31,
+        "min": 2.25,
+        "q25": 114.83224999999999,
+        "median": 318.9796,
+        "q75": 376.37440000000004,
+        "max": 400.80039999999997,
+        "mean": 248.5330774193548
+      },
+      "retained_gas_signed_v2": {
+        "n": 1751,
+        "min": -263.73759999999993,
+        "q25": 69.64025000000001,
+        "median": 450.7129,
+        "q75": 1347.99245,
+        "max": 7440.787600000001,
+        "mean": 961.2772554540262
+      },
+      "excluded_gas_signed_v2": {
+        "n": 31,
+        "min": -34.2225,
+        "q25": -12.7549,
+        "median": 5.4289000000000005,
+        "q75": 227.41165,
+        "max": 418.6116,
+        "mean": 104.57939677419355
+      },
+      "retained_v_obs_kms": {
+        "n": 1751,
+        "min": 1.99,
+        "q25": 73.9,
+        "median": 127.0,
+        "q75": 220.0,
+        "max": 383.0,
+        "mean": 144.71073672187322
+      },
+      "excluded_v_obs_kms": {
+        "n": 31,
+        "min": 1.41,
+        "q25": 12.6,
+        "median": 29.3,
+        "q75": 47.6,
+        "max": 56.9,
+        "mean": 29.693870967741933
+      },
+      "retained_v_err_kms": {
+        "n": 1751,
+        "min": 0.2,
+        "q25": 3.0,
+        "median": 5.0,
+        "q75": 7.675,
+        "max": 75.0,
+        "mean": 6.104757281553399
+      },
+      "excluded_v_err_kms": {
+        "n": 31,
+        "min": 2.05,
+        "q25": 4.0,
+        "median": 4.0,
+        "q75": 4.66,
+        "max": 9.73,
+        "mean": 4.460967741935485
+      },
+      "retained_galaxy_Qual_counts": {
+        "1": 54,
+        "2": 36
+      },
+      "excluded_point_galaxy_Qual_counts": {
+        "1": 2,
+        "2": 3
+      },
+      "mask_uses_observed_response_residuals": false,
+      "missingness_depends_on_baryonic_domain_variables": true
+    },
+    "interpretation": {
+      "S_DOMAIN13_retains_negative_Vgas": true,
+      "percent_of_radii_removed_by_S_DOMAIN13": 0.007295173961840628,
+      "small_fraction_is_not_evidence_of_no_bias": true,
+      "statistically_unbiased": false
+    }
+  }
+}

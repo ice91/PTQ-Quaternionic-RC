@@ -1,0 +1,44 @@
+{
+  "task": "REV26-P1G-A4-DOMAIN-DECISION-FEASIBILITY",
+  "activated_sample": null,
+  "primary_sample": "PENDING_INDEPENDENT_REVIEW",
+  "candidates": {
+    "S_FULL": {
+      "galaxies": 91,
+      "radii": 1782,
+      "excluded_radii": 0,
+      "excluded_galaxies_touched": 0
+    },
+    "S_HARD2": {
+      "galaxies": 91,
+      "radii": 1780,
+      "excluded_radii": 2,
+      "excluded_galaxies_touched": 1
+    },
+    "S_DOMAIN13": {
+      "galaxies": 91,
+      "radii": 1769,
+      "excluded_radii": 13,
+      "excluded_galaxies_touched": 5
+    },
+    "S_NO_UGC01281": {
+      "galaxies": 90,
+      "radii": 1757,
+      "excluded_radii": 25,
+      "excluded_galaxies_touched": 1
+    },
+    "S_NO_UGC01281_DOMAIN_SAFE": {
+      "galaxies": 90,
+      "radii": 1751,
+      "excluded_radii": 31,
+      "rule": "Exclude every UGC01281 radius, then require B(0.05)>0. Not activated."
+    }
+  },
+  "rules": {
+    "S_FULL": "All 91 galaxies and 1782 radii.",
+    "S_HARD2": "Remove only radii with B<0 for every Upsilon in [0.05,1.5].",
+    "S_DOMAIN13": "Keep radii with B(0.05)>0. Stellar signed contribution is nonnegative, so B stays positive on [0.05,1.5].",
+    "S_NO_UGC01281": "Exclude the whole galaxy as an unactivated literature-sensitivity candidate.",
+    "S_NO_UGC01281_DOMAIN_SAFE": "Optional and unactivated: S_NO_UGC01281 intersect S_DOMAIN13."
+  }
+}
