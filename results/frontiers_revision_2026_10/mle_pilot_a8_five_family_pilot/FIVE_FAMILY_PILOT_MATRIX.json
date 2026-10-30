@@ -1,0 +1,41 @@
+{
+  "baryon": {
+    "source": "A8",
+    "verdict": "PASS_WITH_WARN",
+    "accepted_iterations": 3,
+    "kkt": "IMPROVED",
+    "eligible_for_longer_optimization": true
+  },
+  "mond_ptqnu": {
+    "source": "A7-R1 reused",
+    "verdict": "PASS_WITH_WARN",
+    "accepted_iterations": 3,
+    "kkt": "MIXED",
+    "eligible_for_longer_optimization": true,
+    "optimized_in_a8": false
+  },
+  "linear_ptq": {
+    "source": "A8",
+    "verdict": "FAIL",
+    "accepted_iterations": 0,
+    "kkt": "NOT_ESTABLISHED",
+    "eligible_for_longer_optimization": false
+  },
+  "screen": {
+    "source": "A8 ptq-screen",
+    "verdict": "FAIL",
+    "accepted_iterations": 0,
+    "kkt": "NOT_ESTABLISHED",
+    "eligible_for_longer_optimization": false,
+    "mond_screen_optimized": false
+  },
+  "nfw1p": {
+    "source": "A8",
+    "verdict": "PASS_WITH_WARN",
+    "accepted_iterations": 3,
+    "kkt": "IMPROVED",
+    "eligible_for_longer_optimization": true
+  },
+  "coverage": "PARTIAL",
+  "model_ranking": "NOT_AUTHORIZED"
+}

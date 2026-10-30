@@ -1,0 +1,48 @@
+{
+  "model": "ptq-screen",
+  "verdict": "FAIL",
+  "scipy_version": "1.17.1",
+  "options": {
+    "maxiter": 3,
+    "maxls": 20,
+    "maxcor": 10,
+    "ftol": 1e-12,
+    "gtol": 1e-06
+  },
+  "factr_from_ftol": 4503.599627370496,
+  "scipy": null,
+  "failure": {
+    "type": "SourceStop",
+    "message": "objective identity 1.1920928955078125e-07"
+  },
+  "warnings": [],
+  "requests": [
+    {
+      "request_index": 1,
+      "theta_sha256": "b0a24278778944f59b3ae440ba3ae5a63d9dec584c851f93a64fa3e693ff3ab4",
+      "kind": "INITIAL",
+      "status": "COMPLETE_NOT_ACCEPTED",
+      "F": 6614.725282751667,
+      "full_gradient_norm": 32.30786064991939,
+      "projected_gradient_norm": 32.30786064991939,
+      "max_identity_gap": 2.1032064978498966e-12,
+      "flags": [
+        "negative_catalog_gas_signed"
+      ],
+      "seconds": 33.92353077000007,
+      "galaxy_calls": 182,
+      "equivalents": 1.9999999999999993,
+      "elapsed_seconds": 468.6862109452486
+    }
+  ],
+  "accepted": [],
+  "minimize_invocations": 1,
+  "budget": {
+    "calls": 364,
+    "eq": 4.000000000000003,
+    "requests": 2,
+    "wall_seconds": 540.7285584961064,
+    "total_calls": 1365,
+    "total_equivalents": 15.000000000000021
+  }
+}

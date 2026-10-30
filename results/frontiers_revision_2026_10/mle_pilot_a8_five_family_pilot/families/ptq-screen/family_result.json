@@ -1,0 +1,141 @@
+{
+  "model": "ptq-screen",
+  "verdict": "FAIL",
+  "preflight": {
+    "pass": true,
+    "theta_sha256": "b0a24278778944f59b3ae440ba3ae5a63d9dec584c851f93a64fa3e693ff3ab4",
+    "dimension": 94,
+    "initial_F": 6614.725282751667,
+    "a6_objective": 6614.725282751667,
+    "objective_abs_gap": 0.0,
+    "archived_gradient_max_abs_gap": 5.684341886080802e-14,
+    "max_identity_gap": 2.1032064978498966e-12,
+    "projected_gradient_norm": 32.30786064991939,
+    "full_gradient_norm": 32.30786064991939,
+    "active_bounds": {
+      "lower": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        15,
+        42,
+        66,
+        81,
+        82,
+        86
+      ],
+      "upper": [
+        10,
+        56,
+        60,
+        71
+      ]
+    },
+    "outside_bounds": [],
+    "flags": [
+      "negative_catalog_gas_signed"
+    ],
+    "domains": [
+      "INTERIOR_ANALYTICALLY_DIFFERENTIABLE"
+    ],
+    "gradient_finite": true,
+    "c_m200_unchanged": true,
+    "zero_filled_coordinates": false,
+    "fixtures": []
+  },
+  "accepted": [],
+  "requests": [
+    {
+      "request_index": 1,
+      "theta_sha256": "b0a24278778944f59b3ae440ba3ae5a63d9dec584c851f93a64fa3e693ff3ab4",
+      "kind": "INITIAL",
+      "status": "COMPLETE_NOT_ACCEPTED",
+      "F": 6614.725282751667,
+      "full_gradient_norm": 32.30786064991939,
+      "projected_gradient_norm": 32.30786064991939,
+      "max_identity_gap": 2.1032064978498966e-12,
+      "flags": [
+        "negative_catalog_gas_signed"
+      ],
+      "seconds": 33.92353077000007,
+      "galaxy_calls": 182,
+      "equivalents": 1.9999999999999993,
+      "elapsed_seconds": 468.6862109452486
+    }
+  ],
+  "failure": {
+    "type": "SourceStop",
+    "message": "objective identity 1.1920928955078125e-07"
+  },
+  "warnings": [],
+  "scipy": null,
+  "endpoint": {
+    "pass": true,
+    "recovered_kind": "INITIAL",
+    "recovered_iteration_index": 0,
+    "recovered_theta_sha256": "b0a24278778944f59b3ae440ba3ae5a63d9dec584c851f93a64fa3e693ff3ab4",
+    "galaxies": 91,
+    "quadrature": "fine192",
+    "recorded_objective": 6614.725282751667,
+    "replay_objective": 6614.725282751667,
+    "objective_abs_gap": 0.0,
+    "max_per_galaxy_path_gap": 2.1032064978498966e-12,
+    "outside_bounds": [],
+    "gradient_finite": true,
+    "flags": [
+      "negative_catalog_gas_signed"
+    ],
+    "domains": [
+      "INTERIOR_ANALYTICALLY_DIFFERENTIABLE"
+    ],
+    "projected_gradient_norm": 32.30786064991939,
+    "full_gradient_norm": 32.30786064991939,
+    "active_bounds": {
+      "lower": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        15,
+        42,
+        66,
+        81,
+        82,
+        86
+      ],
+      "upper": [
+        10,
+        56,
+        60,
+        71
+      ]
+    },
+    "fixtures": []
+  },
+  "manifest": {
+    "latest_kind": "INITIAL",
+    "iteration_index": 0,
+    "theta_file": "accepted_0_theta.npy",
+    "meta_file": "accepted_0_meta.json",
+    "theta_sha256": "b0a24278778944f59b3ae440ba3ae5a63d9dec584c851f93a64fa3e693ff3ab4",
+    "meta_sha256": "7db388a9b10ccdcfedf99a7dabd1a9ab0a6a6e87fbf06e9d9097e7804e48ca24",
+    "objective_after": 6614.725282751667,
+    "model": "ptq-screen",
+    "scientific_target": "REV26-P1E-UNIFORM-EXPLICIT-B0-SIGNED-SPARC-CANDIDATE-v2",
+    "mask_sha256": "df0086b1e67f96403ff09f5c5bfb7f5818593d141d14234d752cb433a9511e6e",
+    "models_sha256": "7214664b9a4a3e182f99748a9c4c7da91a98b930399a832589203395f3b89b1b",
+    "jacobian_sha256": "d23cb42195870aab92745d1735e54366435c8ae49f3d214f858164364d439585"
+  },
+  "budget": {
+    "calls": 364,
+    "eq": 4.000000000000003,
+    "requests": 2,
+    "wall_seconds": 540.7285584961064,
+    "total_calls": 1365,
+    "total_equivalents": 15.000000000000021
+  },
+  "minimize_invocations": 1
+}
