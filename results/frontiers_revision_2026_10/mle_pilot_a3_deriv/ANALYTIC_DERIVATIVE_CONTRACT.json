@@ -1,0 +1,35 @@
+{
+  "task": "REV26-P1G-A3-DERIV",
+  "activated_as_optimizer_jacobian": false,
+  "likelihood_version": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+  "objective": "F = -sum_g log L_g",
+  "marginal": "log L_g = logsumexp(ell_gk + log w_gk)",
+  "weight_independence": "Distance and inclination nodes and weights are functions of galaxy geometry and quadrature order only. They do not depend on epsilon or ln_sigma. No extra Leibniz term is required for those two parameters.",
+  "conditional_b0": {
+    "variance": "var = e^2 + sigma_sys^2",
+    "ell": "-0.5 * sum_k [(y_k - b_k*v_k)^2 / var_k + log(2*pi*var_k)]",
+    "inclination_factor": "b = sin(i_node) / sin(i_nominal)",
+    "d_ell_d_sigma": "sigma * sum_k [(y_k - b*v_k)^2 / var_k^2 - 1/var_k]",
+    "normalization_term_included": true,
+    "d_ell_d_ln_sigma": "sigma * d_ell_d_sigma",
+    "d_ell_d_v_k": "b * (y_k - b*v_k) / var_k"
+  },
+  "linear_ptq_epsilon": {
+    "law": "v^2 = v_bar^2 + (epsilon * c * H0 * r_m) / KM^2",
+    "dv_depsilon": "(c * H0 * r_m / KM^2) / (2 v)",
+    "radius": "catalog radius scaled by D_node / D_nominal",
+    "nonsmooth": "division by v; invalid if v <= 0"
+  },
+  "ptq_nu_epsilon": {
+    "a0": "epsilon * c * H0",
+    "nu": "0.5 + sqrt(0.25 + 1/y), y = g_N / a0",
+    "chain": "dv/dnu * dnu/dy * dy/da0 * da0/depsilon",
+    "dnu_dy": "-0.5 / (sqrt(0.25 + 1/y) * y^2)",
+    "smooth_only_if": "a0 > 1e-30 and y above the 1e-12 floor and radius above 1e-12"
+  },
+  "optimizer_sign": "native gradient of F is minus the sum of d log L",
+  "unsupported_not_zero_filled": ["galaxy_upsilon", "screen_epsilon", "screen_ln_q", "mond_log10_a0", "nfw_log10_M200"],
+  "gtol": 1e-6,
+  "stationarity_certified": false,
+  "frozen_step_epsilon_bias_retained": true
+}

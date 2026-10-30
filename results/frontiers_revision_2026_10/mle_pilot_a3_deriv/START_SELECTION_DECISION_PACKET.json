@@ -1,0 +1,23 @@
+{
+  "task": "REV26-P1G-A3-DERIV",
+  "a3_specification_replaced": false,
+  "fitting_authorized": false,
+  "archived_points_not_the_same_physical_point": true,
+  "values": {
+    "mond_accepted_F": 6657.762686800939,
+    "ptq_nu_accepted_F": 6657.818831613563,
+    "mond_screen_accepted_callback_F": 6657.59180854709,
+    "ptq_screen_accepted_F": 6657.646629539804
+  },
+  "predeclared_rule": [
+    "Pool only archived accepted vectors that map inside the paired family's bounds.",
+    "Require an independent fine192 replay with absolute objective error <= 1e-9 on all 91 galaxies.",
+    "A coarse96 label is recorded and is not a veto.",
+    "Among points that pass the fine192 replay, choose the minimum fine192 objective.",
+    "A callback objective without an independent replay is not eligible."
+  ],
+  "application_not_executed": {
+    "family_mond_ptqnu": "Both accepted points have independent fine192 records. The lower objective is mond at 6657.762686800939. A3 proposed ptq-nu because mond carries an official coarse96 failure. That reason is not this rule.",
+    "family_screen": "ptq-screen has an independent fine192 evaluation. mond-screen has a callback objective and no completed independent terminal replay, so it is not eligible yet. Its lower callback value is not selected in advance of that replay."
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "task": "REV26-P1G-A3-DERIV",
+  "complete_jacobian": false,
+  "recommended_future_split": "Analytically verified global directions plus independently validated local derivatives. A partial Jacobian does not certify full-vector stationarity.",
+  "rows": [
+    {
+      "family": "ln_sigma_sys",
+      "scope": "global",
+      "analytic_feasible": true,
+      "verified_now": "ptq and ptq-nu archived accepted points, B0, order 192",
+      "missing": "screen, mond, nfw, baryon; B1 variance (b*sigma)^2",
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE at the two tested points"
+    },
+    {
+      "family": "linear_ptq_epsilon",
+      "scope": "global",
+      "analytic_feasible": true,
+      "verified_now": "one accepted point; analytic 82.52506788569912 versus frozen FD 76.82584514576808",
+      "missing": "a step or analytic reference that resolves 1e-6; v=0 branch",
+      "domain": "smooth interior at the tested point; frozen relative step 1e-4 remains biased"
+    },
+    {
+      "family": "ptq_nu_epsilon",
+      "scope": "global",
+      "analytic_feasible": true,
+      "verified_now": "one accepted point, no clip flags, analytic matches the isolated reimplementation",
+      "missing": "a0 floor, y clip, other parameter values",
+      "domain": "INTERIOR_ANALYTICALLY_DIFFERENTIABLE at the tested point only"
+    },
+    {
+      "family": "galaxy_upsilon",
+      "scope": "one galaxy",
+      "analytic_feasible": true,
+      "verified_now": "A3 finite difference only for F574-1; no analytic test in this task",
+      "missing": "dv/dUpsilon through v_bar, bound-aware projection",
+      "domain": "BOUNDARY_ONE_SIDED_REQUIRED when Upsilon sits on a bound"
+    },
+    {
+      "family": "screen_epsilon_and_q",
+      "scope": "global",
+      "analytic_feasible": true,
+      "verified_now": false,
+      "missing": "derivative of nu_q(y) = 0.5 + sqrt(0.25 + y^(-q)) and q = exp(ln q)",
+      "domain": "DERIVATIVE_NOT_VALIDATED"
+    },
+    {
+      "family": "mond_log10_a0",
+      "scope": "global",
+      "analytic_feasible": true,
+      "verified_now": false,
+      "missing": "chain rule through a0 = 10^(log10 a0); same simple-nu or screen kernel",
+      "domain": "DERIVATIVE_NOT_VALIDATED"
+    },
+    {
+      "family": "nfw_log10_M200",
+      "scope": "one galaxy",
+      "analytic_feasible": true,
+      "verified_now": "A3 central differences at D631-7 and DDO154 only; not analytic",
+      "missing": "derivative through c(M) and the NFW mass profile, including log1p and maximum floors",
+      "domain": "DERIVATIVE_NOT_VALIDATED"
+    }
+  ],
+  "measured_cost": "This check evaluated 182 galaxy integrals, 2.0 full-sample equivalents, in 77.3 seconds, returning both global derivatives. One central finite difference of a single global coordinate costs two full objective passes."
+}
