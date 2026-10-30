@@ -1,0 +1,12 @@
+{
+  "absolute_limit": 1e-09,
+  "relative_limit": 1e-12,
+  "ulp_factor": 8,
+  "ulp_definition": "math.ulp(abs(float(logL_A5)))",
+  "relative_definition": "abs(logL_A5-logL_A6)/max(1, abs(logL_A5), abs(logL_A6))",
+  "provisional_trial": "STRICT_PASS or (complete, finite, interior, no unexpected branch, relative<=1e-12, absolute<=8*ulp)",
+  "accepted_state": "every galaxy absolute<=1e-9; no ULP exception",
+  "endpoint_replay": "fine192, per-galaxy absolute<=1e-9, objective gap<=1e-8",
+  "nonfinite_json": "omitted; Infinity and NaN are not serialized",
+  "fake_objective_or_zero_gradient": false
+}

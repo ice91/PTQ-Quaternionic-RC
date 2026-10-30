@@ -1,0 +1,32 @@
+{
+  "classification": "MIXED",
+  "reason": "Projected infinity norm decreased on accepted steps 1 and 2, then increased on step 3. The norm is the native epsilon derivative and its sign reversed.",
+  "initial_projected_infinity_norm": 28.81029102042346,
+  "terminal_projected_infinity_norm": 18.19526740929288,
+  "initial_full_infinity_norm": 28.81029102042346,
+  "terminal_full_infinity_norm": 18.19526740929288,
+  "stationarity": "NOT_ESTABLISHED",
+  "gtol": 1e-06,
+  "scipy_success": false,
+  "scipy_status": 1,
+  "scipy_message": "STOP: TOTAL NO. OF ITERATIONS REACHED LIMIT",
+  "accepted_projected_infinity_norms": [
+    28.81029102042346,
+    22.50434712428028,
+    13.361323230114692,
+    18.19526740929288
+  ],
+  "accepted_full_infinity_norms": [
+    28.81029102042346,
+    22.50434712428028,
+    13.838120523434512,
+    18.19526740929288
+  ],
+  "epsilon_derivative_sign": [
+    -1,
+    1,
+    1,
+    -1
+  ],
+  "parameter_scaling": false
+}
