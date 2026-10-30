@@ -1,0 +1,64 @@
+{
+  "status": "PASS",
+  "likelihood_evaluations": 0,
+  "minimum_B_at_U_0.05": 0.44940499999999983,
+  "minimum_row": {
+    "galaxy": "UGC01281",
+    "r_kpc": 0.38,
+    "source_recno": 1947,
+    "B": 0.44940499999999983
+  },
+  "known_minimum_reference": 0.44940499999999983,
+  "minimum_matches_reference": true,
+  "velocity_problems": [],
+  "minimum_interpolation_y": 0.00019163452849641372,
+  "y_floor_inactive": true,
+  "retained_negative_gas_example": {
+    "galaxy": "UGC06614",
+    "r_kpc": 10.64,
+    "source_recno": 2595,
+    "v_gas": -16.24
+  },
+  "positive_gas_example": {
+    "galaxy": "CamB",
+    "r_kpc": 0.16,
+    "source_recno": 1,
+    "v_gas": 1.86
+  },
+  "fixture_velocity_at_upsilon_bounds": {
+    "U_0.05": 0.6703767597403716,
+    "U_1.5": 6.429132911987431
+  },
+  "relative_1e-6_upsilon_perturbation": {
+    "B": 0.4494064098049997,
+    "baryon_speed": 0.6703778112415414,
+    "finite": true
+  },
+  "distance_scaling": [
+    {
+      "s": 0.25,
+      "max_abs_gap_versus_sqrt_s": 0.0,
+      "fixture_positive": true
+    },
+    {
+      "s": 1.0,
+      "max_abs_gap_versus_sqrt_s": 0.0,
+      "fixture_positive": true
+    },
+    {
+      "s": 4.0,
+      "max_abs_gap_versus_sqrt_s": 0.0,
+      "fixture_positive": true
+    }
+  ],
+  "inclination": {
+    "nominal_b": 1.0,
+    "shifted_b": 0.9998476951563913,
+    "baryonic_B_independent_of_inclination": true,
+    "integrator_applies_b_outside_baryonic_operator": true
+  },
+  "preexisting_radius_and_y_floors_left_unchanged": true,
+  "preexisting_nfw_halo_nonnegative_sqrt_left_unchanged": true,
+  "no_new_acceleration_floor": true,
+  "no_sqrt_abs_B": true
+}
