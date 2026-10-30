@@ -1,0 +1,184 @@
+{
+  "task": "REV26-P1G-A3-ENG",
+  "vector": "baryon last accepted",
+  "theta_sha256": "1e9c848c43e456d6eb233b90ff4796edaf2a30fb7cd9daf274fe40e95f680714",
+  "sequence": "galaxies 0..90 order 192, three paired repeats",
+  "warmup": {
+    "galaxy": 0,
+    "ell": -39.465460783248396,
+    "integrate_reported_s": 0.2620635130442679,
+    "call_wall_s": 0.2685163333080709,
+    "excluded_from_steady_state": true
+  },
+  "calls_including_warmup": 547,
+  "equivalents_including_warmup": 6.0066244376680205,
+  "runs": [
+    {
+      "repeat": 0,
+      "policy": "A_per_galaxy_fsync",
+      "steady_wall_s": 23.467627516016364,
+      "components_s": {
+        "integration_reported_s": 21.751497719902545,
+        "integration_wall_s": 21.887102990876883,
+        "serialize_s": 0.009158018976449966,
+        "write_s": 0.03248897474259138,
+        "fsync_s": 0.9297906514257193,
+        "dir_fsync_s": 0.5641954732127488
+      },
+      "objective": 8812.51428142682,
+      "n_calls": 91,
+      "output_bytes": 4885,
+      "accepted_recovered": "baryon-archived-0",
+      "trial_not_promoted": true,
+      "budget_completed_after_restart_read": 91,
+      "warmup_excluded": true
+    },
+    {
+      "repeat": 0,
+      "policy": "B_batched_accepted_commit",
+      "steady_wall_s": 21.931614866945893,
+      "components_s": {
+        "integration_reported_s": 21.68881404493004,
+        "integration_wall_s": 21.82619328610599,
+        "serialize_s": 0.003707540687173605,
+        "write_s": 0.001336792018264532,
+        "fsync_s": 0.07662496622651815,
+        "dir_fsync_s": 0.019983495119959116
+      },
+      "objective": 8812.51428142682,
+      "n_calls": 91,
+      "output_bytes": 4892,
+      "accepted_recovered": "baryon-archived-0",
+      "trial_not_promoted": true,
+      "budget_completed_after_restart_read": 91,
+      "warmup_excluded": true
+    },
+    {
+      "repeat": 1,
+      "policy": "A_per_galaxy_fsync",
+      "steady_wall_s": 22.045622277073562,
+      "components_s": {
+        "integration_reported_s": 19.88097522687167,
+        "integration_wall_s": 20.00723009929061,
+        "serialize_s": 0.008621202781796455,
+        "write_s": 0.031206833198666573,
+        "fsync_s": 1.430969016160816,
+        "dir_fsync_s": 0.5254006367176771
+      },
+      "objective": 8812.51428142682,
+      "n_calls": 91,
+      "output_bytes": 4885,
+      "accepted_recovered": "baryon-archived-1",
+      "trial_not_promoted": true,
+      "budget_completed_after_restart_read": 91,
+      "warmup_excluded": true
+    },
+    {
+      "repeat": 1,
+      "policy": "B_batched_accepted_commit",
+      "steady_wall_s": 21.837956853210926,
+      "components_s": {
+        "integration_reported_s": 21.59187562018633,
+        "integration_wall_s": 21.725715067237616,
+        "serialize_s": 0.0036309617571532726,
+        "write_s": 0.0013021877966821194,
+        "fsync_s": 0.0839741276577115,
+        "dir_fsync_s": 0.019708200823515654
+      },
+      "objective": 8812.51428142682,
+      "n_calls": 91,
+      "output_bytes": 4892,
+      "accepted_recovered": "baryon-archived-1",
+      "trial_not_promoted": true,
+      "budget_completed_after_restart_read": 91,
+      "warmup_excluded": true
+    },
+    {
+      "repeat": 2,
+      "policy": "A_per_galaxy_fsync",
+      "steady_wall_s": 23.454448919277638,
+      "components_s": {
+        "integration_reported_s": 21.214160269126296,
+        "integration_wall_s": 21.34923924598843,
+        "serialize_s": 0.009288007393479347,
+        "write_s": 0.031728885136544704,
+        "fsync_s": 1.4892640886828303,
+        "dir_fsync_s": 0.5305395573377609
+      },
+      "objective": 8812.51428142682,
+      "n_calls": 91,
+      "output_bytes": 4885,
+      "accepted_recovered": "baryon-archived-2",
+      "trial_not_promoted": true,
+      "budget_completed_after_restart_read": 91,
+      "warmup_excluded": true
+    },
+    {
+      "repeat": 2,
+      "policy": "B_batched_accepted_commit",
+      "steady_wall_s": 21.93997028004378,
+      "components_s": {
+        "integration_reported_s": 21.695946905296296,
+        "integration_wall_s": 21.834211462177336,
+        "serialize_s": 0.003859414253383875,
+        "write_s": 0.0014089066535234451,
+        "fsync_s": 0.07658960530534387,
+        "dir_fsync_s": 0.019931955263018608
+      },
+      "objective": 8812.51428142682,
+      "n_calls": 91,
+      "output_bytes": 4892,
+      "accepted_recovered": "baryon-archived-2",
+      "trial_not_promoted": true,
+      "budget_completed_after_restart_read": 91,
+      "warmup_excluded": true
+    }
+  ],
+  "paired_ratios_A_over_B": [
+    {
+      "repeat": 0,
+      "A_s": 23.467627516016364,
+      "B_s": 21.931614866945893,
+      "A_over_B": 1.0700364591658713,
+      "B_minus_A_s": -1.5360126490704715
+    },
+    {
+      "repeat": 1,
+      "A_s": 22.045622277073562,
+      "B_s": 21.837956853210926,
+      "A_over_B": 1.009509379712512,
+      "B_minus_A_s": -0.2076654238626361
+    },
+    {
+      "repeat": 2,
+      "A_s": 23.454448919277638,
+      "B_s": 21.93997028004378,
+      "A_over_B": 1.0690282903715418,
+      "B_minus_A_s": -1.5144786392338574
+    }
+  ],
+  "median_A_over_B": 1.0690282903715418,
+  "ratio_min": 1.009509379712512,
+  "ratio_max": 1.0700364591658713,
+  "objectives_identical": true,
+  "objectives": {
+    "A_per_galaxy_fsync": [
+      8812.51428142682,
+      8812.51428142682,
+      8812.51428142682
+    ],
+    "B_batched_accepted_commit": [
+      8812.51428142682,
+      8812.51428142682,
+      8812.51428142682
+    ]
+  },
+  "durability": {
+    "atomic_replace": true,
+    "directory_fsync_timed": true,
+    "trial_not_promoted": true,
+    "budget_counter_preserved": true,
+    "accepted_matches_theta": true
+  },
+  "note": "Speedup is the paired wall ratio on this sequence only. It is not extrapolated to the 12-hour campaign."
+}

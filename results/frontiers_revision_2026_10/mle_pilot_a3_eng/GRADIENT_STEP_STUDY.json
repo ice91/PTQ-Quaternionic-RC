@@ -1,0 +1,575 @@
+{
+  "task": "REV26-P1G-A3-ENG",
+  "gtol": 1e-06,
+  "models": {
+    "ptq": {
+      "theta_sha256": "96ac8469398b416aa0740522da74c844c12ea8e95364d69f3920f2df460fd6c4",
+      "analytic_logL_gap_max": 5.115907697472721e-13,
+      "coordinates": [
+        {
+          "coordinate": "epsilon",
+          "index": 0,
+          "native_parameterization": "epsilon",
+          "physical": "epsilon multiplies c*H0 in the model law",
+          "at_bound": false,
+          "native_gradient_fd_1e-4": 76.82584514576808,
+          "scaled_gradient_fd_1e-4": 307.2264779120814,
+          "archived_scaled_gradient": 307.2264779211762,
+          "analytic_native_gradient": 82.52506788569912,
+          "analytic_minus_fd": 5.699222739931031,
+          "fd_384_native": 76.82568644811388,
+          "fd_384_minus_192": -0.00015869765420006843,
+          "forward_minus_central": 689.6743515378292,
+          "step_rows_192": [
+            {
+              "relative_step": 0.0008,
+              "native_step": 0.0031991992000000003,
+              "scheme": "central",
+              "objective_plus": 7166.6915702240385,
+              "objective_minus": 7168.503791930846,
+              "objective_difference": -1.812221706807577,
+              "native_gradient": -283.2305201263455,
+              "scaled_gradient": -1132.6385667547354,
+              "warnings": 0
+            },
+            {
+              "relative_step": 0.0004,
+              "native_step": 0.0015995996000000001,
+              "scheme": "central",
+              "objective_plus": 7154.286686850445,
+              "objective_minus": 7154.314590917979,
+              "objective_difference": -0.027904067534109345,
+              "native_gradient": -8.722203835919109,
+              "scaled_gradient": -34.88008441763668,
+              "warnings": 0
+            },
+            {
+              "relative_step": 0.0002,
+              "native_step": 0.0007997998000000001,
+              "scheme": "central",
+              "objective_plus": 7151.035282303287,
+              "objective_minus": 7150.939745908155,
+              "objective_difference": 0.09553639513251255,
+              "native_gradient": 59.72519318741549,
+              "scaled_gradient": 238.84098783128135,
+              "warnings": 0
+            },
+            {
+              "relative_step": 0.0001,
+              "native_step": 0.00039989990000000004,
+              "scheme": "central",
+              "objective_plus": 7150.190649670868,
+              "objective_minus": 7150.129204375286,
+              "objective_difference": 0.06144529558241629,
+              "native_gradient": 76.82584514576808,
+              "scaled_gradient": 307.2264779120814,
+              "warnings": 0
+            },
+            {
+              "relative_step": 5e-05,
+              "native_step": 0.00019994995000000002,
+              "scheme": "central",
+              "objective_plus": 7149.969289607918,
+              "objective_minus": 7149.936857602529,
+              "objective_difference": 0.0324320053887277,
+              "native_gradient": 81.10030882410248,
+              "scaled_gradient": 324.320053887277,
+              "warnings": 0
+            },
+            {
+              "relative_step": 0.0001,
+              "scheme": "forward_one_sided",
+              "native_step": 0.00039989990000000004,
+              "native_gradient": 766.5001966835973,
+              "scaled_gradient": 3065.233520037509,
+              "center_objective": 7149.884126318864,
+              "warnings": 0
+            }
+          ],
+          "richardson": [
+            {
+              "h_big": 0.0008,
+              "h_small": 0.0004,
+              "richardson_native": 82.78056826088968,
+              "abs_change_from_smaller": 91.50277209680878
+            },
+            {
+              "h_big": 0.0004,
+              "h_small": 0.0002,
+              "richardson_native": 82.5409921951937,
+              "abs_change_from_smaller": 22.815799007778203
+            },
+            {
+              "h_big": 0.0002,
+              "h_small": 0.0001,
+              "richardson_native": 82.52606246521894,
+              "abs_change_from_smaller": 5.700217319450857
+            },
+            {
+              "h_big": 0.0001,
+              "h_small": 5e-05,
+              "richardson_native": 82.52513005021395,
+              "abs_change_from_smaller": 1.4248212261114617
+            }
+          ],
+          "step_spread_native": 364.330828950448,
+          "error_indicator_native": 91.50277209680878,
+          "rederived_logL_gap_max": 5.115907697472721e-13,
+          "clip_flags": [],
+          "gtol_resolvable": false,
+          "labels": [
+            "IMPLEMENTATION_CONSISTENT",
+            "DERIVATIVE_APPROXIMATION_UNSTABLE",
+            "QUADRATURE_SENSITIVITY",
+            "STATIONARITY_NOT_CERTIFIABLE"
+          ],
+          "projected_kkt": "interior_component_equals_native",
+          "assumptions": "Analytic derivative differentiates the same B0 conditional Gaussian and the same segmented quadrature. max() floors are inactive only if clip_flags is empty. Differences are diagnostics, not rigorous bounds."
+        },
+        {
+          "coordinate": "ln_sigma_sys",
+          "index": 92,
+          "native_parameterization": "ln_sigma_sys",
+          "physical": "sigma_sys = exp(ln_sigma_sys)",
+          "at_bound": false,
+          "native_gradient_fd_1e-4": 7.836814474468882,
+          "scaled_gradient_fd_1e-4": 95.65672678490955,
+          "archived_scaled_gradient": 95.65672678492155,
+          "analytic_native_gradient": 7.837096471983812,
+          "analytic_minus_fd": 0.00028199751492952174,
+          "fd_384_native": 7.836814680493615,
+          "fd_384_minus_192": 2.0602473238540142e-07,
+          "forward_minus_central": 1.1984961089504456,
+          "step_rows_192": [
+            {
+              "relative_step": 0.0008,
+              "native_step": 0.009764858116424139,
+              "scheme": "central",
+              "objective_plus": 7150.054102753487,
+              "objective_minus": 7149.901398947096,
+              "objective_difference": 0.15270380639140058,
+              "native_gradient": 7.819048908378827,
+              "scaled_gradient": 95.43987899462536,
+              "warnings": 0
+            },
+            {
+              "relative_step": 0.0004,
+              "native_step": 0.0048824290582120695,
+              "scheme": "central",
+              "objective_plus": 7149.945774608945,
+              "objective_minus": 7149.869290532438,
+              "objective_difference": 0.0764840765068584,
+              "native_gradient": 7.832584518377685,
+              "scaled_gradient": 95.605095633573,
+              "warnings": 0
+            },
+            {
+              "relative_step": 0.0002,
+              "native_step": 0.0024412145291060347,
+              "scheme": "central",
+              "objective_plus": 7149.909107169361,
+              "objective_minus": 7149.870848609151,
+              "objective_difference": 0.038258560210124415,
+              "native_gradient": 7.835968480847642,
+              "scaled_gradient": 95.64640052531104,
+              "warnings": 0
+            },
+            {
+              "relative_step": 0.0001,
+              "native_step": 0.0012206072645530174,
+              "scheme": "central",
+              "objective_plus": 7149.8951548846,
+              "objective_minus": 7149.876023539243,
+              "objective_difference": 0.01913134535698191,
+              "native_gradient": 7.836814474468882,
+              "scaled_gradient": 95.65672678490955,
+              "warnings": 0
+            },
+            {
+              "relative_step": 5e-05,
+              "native_step": 0.0006103036322765087,
+              "scheme": "central",
+              "objective_plus": 7149.889275007572,
+              "objective_minus": 7149.879709076742,
+              "objective_difference": 0.009565930829921854,
+              "native_gradient": 7.837025968729482,
+              "scaled_gradient": 95.65930829921854,
+              "warnings": 0
+            },
+            {
+              "relative_step": 0.0001,
+              "scheme": "forward_one_sided",
+              "native_step": 0.0012206072645530174,
+              "native_gradient": 9.035310583419328,
+              "scaled_gradient": 110.28565735614393,
+              "center_objective": 7149.884126318864,
+              "warnings": 0
+            }
+          ],
+          "richardson": [
+            {
+              "h_big": 0.0008,
+              "h_small": 0.0004,
+              "richardson_native": 7.837096388377304,
+              "abs_change_from_smaller": 0.004511869999618945
+            },
+            {
+              "h_big": 0.0004,
+              "h_small": 0.0002,
+              "richardson_native": 7.837096468337627,
+              "abs_change_from_smaller": 0.001127987489985216
+            },
+            {
+              "h_big": 0.0002,
+              "h_small": 0.0001,
+              "richardson_native": 7.83709647234263,
+              "abs_change_from_smaller": 0.00028199787374738605
+            },
+            {
+              "h_big": 0.0001,
+              "h_small": 5e-05,
+              "richardson_native": 7.837096466816348,
+              "abs_change_from_smaller": 7.04980868659888e-05
+            }
+          ],
+          "step_spread_native": 0.017977060350655272,
+          "error_indicator_native": 0.004511869999618945,
+          "rederived_logL_gap_max": 5.115907697472721e-13,
+          "clip_flags": [],
+          "gtol_resolvable": false,
+          "labels": [
+            "IMPLEMENTATION_CONSISTENT",
+            "NONSTATIONARY_WITH_RESOLVED_GRADIENT",
+            "STATIONARITY_NOT_CERTIFIABLE"
+          ],
+          "projected_kkt": "interior_component_equals_native",
+          "assumptions": "Analytic derivative differentiates the same B0 conditional Gaussian and the same segmented quadrature. max() floors are inactive only if clip_flags is empty. Differences are diagnostics, not rigorous bounds."
+        }
+      ],
+      "local_ml": [
+        {
+          "galaxy": "F574-1",
+          "index": 10,
+          "scheme": "backward_inward",
+          "bound_side": "upper",
+          "native_gradient": -0.11657968692471231,
+          "scaled_gradient": -0.16904054604083285,
+          "projected_native": 0.0,
+          "note": "Unprojected gradient at an active bound with the outward sign is not a KKT violation."
+        }
+      ],
+      "model_stationarity_certificate": false
+    },
+    "ptq-nu": {
+      "theta_sha256": "7abded50306ec11a32380f1ae85c555faef1d2d9318f39c673b691ae974473b2",
+      "analytic_logL_gap_max": 1.9042545318370685e-12,
+      "coordinates": [
+        {
+          "coordinate": "epsilon",
+          "index": 0,
+          "native_parameterization": "epsilon",
+          "physical": "epsilon multiplies c*H0 in the model law",
+          "at_bound": false,
+          "native_gradient_fd_1e-4": 0.9492829796648327,
+          "scaled_gradient_fd_1e-4": 0.2174487417505588,
+          "archived_scaled_gradient": 0.2174487235607676,
+          "analytic_native_gradient": 0.9494002718727226,
+          "analytic_minus_fd": 0.00011729220788991856,
+          "fd_384_native": 0.9492736888281487,
+          "fd_384_minus_192": -9.290836683994996e-06,
+          "forward_minus_central": 0.7699854752094194,
+          "step_rows_192": [
+            {
+              "relative_step": 0.0008,
+              "native_step": 0.0001832530416397727,
+              "scheme": "central",
+              "objective_plus": 6657.820133035847,
+              "objective_minus": 6657.819787829286,
+              "objective_difference": 0.0003452065611782018,
+              "native_gradient": 0.9418849425069494,
+              "scaled_gradient": 0.21575410073637613,
+              "warnings": 0
+            },
+            {
+              "relative_step": 0.0004,
+              "native_step": 9.162652081988634e-05,
+              "scheme": "central",
+              "objective_plus": 6657.819200636142,
+              "objective_minus": 6657.819026999954,
+              "objective_difference": 0.0001736361882649362,
+              "native_gradient": 0.947521452911321,
+              "scaled_gradient": 0.21704523533117026,
+              "warnings": 0
+            },
+            {
+              "relative_step": 0.0002,
+              "native_step": 4.581326040994317e-05,
+              "scheme": "central",
+              "objective_plus": 6657.8189456382715,
+              "objective_minus": 6657.81885869106,
+              "objective_difference": 8.69472114573e-05,
+              "native_gradient": 0.9489306226983709,
+              "scaled_gradient": 0.21736802864324997,
+              "warnings": 0
+            },
+            {
+              "relative_step": 0.0001,
+              "native_step": 2.2906630204971586e-05,
+              "scheme": "central",
+              "objective_plus": 6657.818870996208,
+              "objective_minus": 6657.8188275064595,
+              "objective_difference": 4.348974835011177e-05,
+              "native_gradient": 0.9492829796648327,
+              "scaled_gradient": 0.2174487417505588,
+              "warnings": 0
+            },
+            {
+              "relative_step": 5e-05,
+              "native_step": 1.1453315102485793e-05,
+              "scheme": "central",
+              "objective_plus": 6657.818846896451,
+              "objective_minus": 6657.8188251495585,
+              "objective_difference": 2.1746892343799118e-05,
+              "native_gradient": 0.9493710837956094,
+              "scaled_gradient": 0.21746892343799115,
+              "warnings": 0
+            },
+            {
+              "relative_step": 0.0001,
+              "scheme": "forward_one_sided",
+              "native_step": 2.2906630204971586e-05,
+              "native_gradient": 1.719268454874252,
+              "scaled_gradient": 0.3938264671887737,
+              "center_objective": 6657.818831613561,
+              "warnings": 0
+            }
+          ],
+          "richardson": [
+            {
+              "h_big": 0.0008,
+              "h_small": 0.0004,
+              "richardson_native": 0.9494002897127781,
+              "abs_change_from_smaller": 0.0018788368014571732
+            },
+            {
+              "h_big": 0.0004,
+              "h_small": 0.0002,
+              "richardson_native": 0.9494003459607209,
+              "abs_change_from_smaller": 0.00046972326234995254
+            },
+            {
+              "h_big": 0.0002,
+              "h_small": 0.0001,
+              "richardson_native": 0.9494004319869865,
+              "abs_change_from_smaller": 0.00011745232215387702
+            },
+            {
+              "h_big": 0.0001,
+              "h_small": 5e-05,
+              "richardson_native": 0.9494004518392017,
+              "abs_change_from_smaller": 2.9368043592326032e-05
+            }
+          ],
+          "step_spread_native": 0.0074861412886599865,
+          "error_indicator_native": 0.0018788368014571732,
+          "rederived_logL_gap_max": 1.9042545318370685e-12,
+          "clip_flags": [],
+          "gtol_resolvable": false,
+          "labels": [
+            "IMPLEMENTATION_CONSISTENT",
+            "QUADRATURE_SENSITIVITY",
+            "NONSTATIONARY_WITH_RESOLVED_GRADIENT",
+            "STATIONARITY_NOT_CERTIFIABLE"
+          ],
+          "projected_kkt": "interior_component_equals_native",
+          "assumptions": "Analytic derivative differentiates the same B0 conditional Gaussian and the same segmented quadrature. max() floors are inactive only if clip_flags is empty. Differences are diagnostics, not rigorous bounds."
+        },
+        {
+          "coordinate": "ln_sigma_sys",
+          "index": 92,
+          "native_parameterization": "ln_sigma_sys",
+          "physical": "sigma_sys = exp(ln_sigma_sys)",
+          "at_bound": false,
+          "native_gradient_fd_1e-4": -0.4484899850183394,
+          "scaled_gradient_fd_1e-4": -5.47430133792659,
+          "archived_scaled_gradient": -5.474301347021228,
+          "analytic_native_gradient": -0.44859569759110923,
+          "analytic_minus_fd": -0.00010571257276981161,
+          "fd_384_native": -0.4484906120339355,
+          "fd_384_minus_192": -6.270155960552692e-07,
+          "forward_minus_central": 0.770843805512358,
+          "step_rows_192": [
+            {
+              "relative_step": 0.0008,
+              "native_step": 0.009764858116424139,
+              "scheme": "central",
+              "objective_plus": 6657.874733764263,
+              "objective_minus": 6657.883362584173,
+              "objective_difference": -0.008628819909972663,
+              "native_gradient": -0.4418302758265017,
+              "scaled_gradient": -5.393012443732914,
+              "warnings": 0
+            },
+            {
+              "relative_step": 0.0004,
+              "native_step": 0.0048824290582120695,
+              "scheme": "central",
+              "objective_plus": 6657.831703943121,
+              "objective_minus": 6657.836067900525,
+              "objective_difference": -0.004363957404166285,
+              "native_gradient": -0.4469043330825531,
+              "scaled_gradient": -5.454946755207857,
+              "warnings": 0
+            },
+            {
+              "relative_step": 0.0002,
+              "native_step": 0.0024412145291060347,
+              "scheme": "central",
+              "objective_plus": 6657.821501115046,
+              "objective_minus": 6657.823689287207,
+              "objective_difference": -0.0021881721613681293,
+              "native_gradient": -0.44817285315957694,
+              "scaled_gradient": -5.470430403420323,
+              "warnings": 0
+            },
+            {
+              "relative_step": 0.0001,
+              "native_step": 0.0012206072645530174,
+              "scheme": "central",
+              "objective_plus": 6657.819225080976,
+              "objective_minus": 6657.820319941244,
+              "objective_difference": -0.001094860267585318,
+              "native_gradient": -0.4484899850183394,
+              "scaled_gradient": -5.47430133792659,
+              "warnings": 0
+            },
+            {
+              "relative_step": 5e-05,
+              "native_step": 0.0006103036322765087,
+              "scheme": "central",
+              "objective_plus": 6657.818793074529,
+              "objective_minus": 6657.819340601425,
+              "objective_difference": -0.0005475268962982227,
+              "native_gradient": -0.44856925908820094,
+              "scaled_gradient": -5.475268962982227,
+              "warnings": 0
+            },
+            {
+              "relative_step": 0.0001,
+              "scheme": "forward_one_sided",
+              "native_step": 0.0012206072645530174,
+              "native_gradient": 0.32235382049401856,
+              "scaled_gradient": 3.934674150514184,
+              "center_objective": 6657.818831613561,
+              "warnings": 0
+            }
+          ],
+          "richardson": [
+            {
+              "h_big": 0.0008,
+              "h_small": 0.0004,
+              "richardson_native": -0.4485956855012369,
+              "abs_change_from_smaller": 0.0016913524186837892
+            },
+            {
+              "h_big": 0.0004,
+              "h_small": 0.0002,
+              "richardson_native": -0.44859569318525155,
+              "abs_change_from_smaller": 0.000422840025674609
+            },
+            {
+              "h_big": 0.0002,
+              "h_small": 0.0001,
+              "richardson_native": -0.4485956956379269,
+              "abs_change_from_smaller": 0.00010571061958747352
+            },
+            {
+              "h_big": 0.0001,
+              "h_small": 5e-05,
+              "richardson_native": -0.4485956837781548,
+              "abs_change_from_smaller": 2.6424689953841174e-05
+            }
+          ],
+          "step_spread_native": 0.0067389832616992495,
+          "error_indicator_native": 0.0016913524186837892,
+          "rederived_logL_gap_max": 1.9042545318370685e-12,
+          "clip_flags": [],
+          "gtol_resolvable": false,
+          "labels": [
+            "IMPLEMENTATION_CONSISTENT",
+            "NONSTATIONARY_WITH_RESOLVED_GRADIENT",
+            "STATIONARITY_NOT_CERTIFIABLE"
+          ],
+          "projected_kkt": "interior_component_equals_native",
+          "assumptions": "Analytic derivative differentiates the same B0 conditional Gaussian and the same segmented quadrature. max() floors are inactive only if clip_flags is empty. Differences are diagnostics, not rigorous bounds."
+        }
+      ],
+      "local_ml": [
+        {
+          "galaxy": "F574-1",
+          "index": 10,
+          "scheme": "central",
+          "bound_side": "interior",
+          "native_gradient": 0.03490694404486648,
+          "scaled_gradient": 0.050615068865056394,
+          "projected_native": 0.03490694404486648,
+          "note": "Unprojected gradient at an active bound with the outward sign is not a KKT violation."
+        }
+      ],
+      "model_stationarity_certificate": false
+    }
+  },
+  "nfw": {
+    "source": "nfw1p_initial_theta.npy",
+    "theta_sha256": "5c4ad3c07e46f3fa3df746c3cb5a1eeb42fc8577fbd5ec316dcd1c12ae617d7e",
+    "likelihood_version": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+    "objective_finite": true,
+    "objective": 6547.742003005349,
+    "objective_repeat_abs": 0.0,
+    "inside_original_bounds": true,
+    "warnings": [],
+    "full_sample_seconds": 14.979314292315394,
+    "halo_directions": [
+      {
+        "galaxy": "D631-7",
+        "index": 93,
+        "log10_M200": 10.215645488189656,
+        "native_gradient": -0.6130665711889804,
+        "scaled_gradient": -2.452266284755922,
+        "seconds": 0.3741427380591631,
+        "warnings": 0,
+        "at_bound": false
+      },
+      {
+        "galaxy": "DDO154",
+        "index": 94,
+        "log10_M200": 9.992876980187384,
+        "native_gradient": -0.29484918981026453,
+        "scaled_gradient": -1.1793967592410581,
+        "seconds": 0.3663294417783618,
+        "warnings": 0,
+        "at_bound": false
+      }
+    ],
+    "ln_sigma_direction": {
+      "index": 182,
+      "value": 1.8743332934789647,
+      "at_bound": false,
+      "native_gradient": -44.09588884703955,
+      "scaled_gradient": -538.2376226361885,
+      "seconds": 29.905325144995004,
+      "warnings": 0,
+      "objective_plus": 6547.689239150419,
+      "objective_minus": 6547.796886674946
+    },
+    "optimizer_steps": 0,
+    "global_optimum_claimed": false,
+    "checkpoint_note": "Per-galaxy fsync overhead is taken from the baryon A/B, not retimed on NFW."
+  },
+  "budget": {
+    "calls": 5650,
+    "equivalents": 70.07180032574145,
+    "wall_seconds": 1085.3037150190212,
+    "stopped": null
+  }
+}

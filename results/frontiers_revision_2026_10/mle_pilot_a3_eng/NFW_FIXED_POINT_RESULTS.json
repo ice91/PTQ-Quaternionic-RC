@@ -1,0 +1,47 @@
+{
+  "source": "nfw1p_initial_theta.npy",
+  "theta_sha256": "5c4ad3c07e46f3fa3df746c3cb5a1eeb42fc8577fbd5ec316dcd1c12ae617d7e",
+  "likelihood_version": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+  "objective_finite": true,
+  "objective": 6547.742003005349,
+  "objective_repeat_abs": 0.0,
+  "inside_original_bounds": true,
+  "warnings": [],
+  "full_sample_seconds": 14.979314292315394,
+  "halo_directions": [
+    {
+      "galaxy": "D631-7",
+      "index": 93,
+      "log10_M200": 10.215645488189656,
+      "native_gradient": -0.6130665711889804,
+      "scaled_gradient": -2.452266284755922,
+      "seconds": 0.3741427380591631,
+      "warnings": 0,
+      "at_bound": false
+    },
+    {
+      "galaxy": "DDO154",
+      "index": 94,
+      "log10_M200": 9.992876980187384,
+      "native_gradient": -0.29484918981026453,
+      "scaled_gradient": -1.1793967592410581,
+      "seconds": 0.3663294417783618,
+      "warnings": 0,
+      "at_bound": false
+    }
+  ],
+  "ln_sigma_direction": {
+    "index": 182,
+    "value": 1.8743332934789647,
+    "at_bound": false,
+    "native_gradient": -44.09588884703955,
+    "scaled_gradient": -538.2376226361885,
+    "seconds": 29.905325144995004,
+    "warnings": 0,
+    "objective_plus": 6547.689239150419,
+    "objective_minus": 6547.796886674946
+  },
+  "optimizer_steps": 0,
+  "global_optimum_claimed": false,
+  "checkpoint_note": "Per-galaxy fsync overhead is taken from the baryon A/B, not retimed on NFW."
+}

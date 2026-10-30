@@ -1,0 +1,50 @@
+{
+  "task": "REV26-P1G-A3-ENG",
+  "record": "HUMAN_DECISION_RECORD",
+  "human_arbiter": "sole author",
+  "manuscript_id": "1964512",
+  "decisions": {
+    "DECISION_1": "ACCEPT_AS_FUTURE_PROTOCOL",
+    "DECISION_2": "ACCEPT_AS_FUTURE_PROTOCOL",
+    "DECISION_3": "ACCEPT_AS_FUTURE_PROTOCOL"
+  },
+  "meanings": {
+    "DECISION_1": "Fine192 remains the scientific objective. Coarse96 failures remain in the original official record. Diagnostic384 provides non-authoritative pointwise refinement evidence only.",
+    "DECISION_2": "The frozen gtol remains 1e-6. Stationarity must not be certified when derivative accuracy cannot resolve that tolerance. The exact operational derivative-certification method remains subject to validation. Coarse96/192 derivative agreement is not automatically mandatory if coarse96 is independently shown to be underresolved.",
+    "DECISION_3": "No new five-family fitting campaign is authorized by this task."
+  },
+  "accepted_engineering_principles": [
+    "Fine192 is the only scientific objective.",
+    "Official coarse96 failures stay in the P1G-A record.",
+    "Diagnostic384 is pointwise and non-authoritative.",
+    "gtol stays 1e-6.",
+    "Stationarity is not certified when the derivative error cannot resolve 1e-6.",
+    "A coarse96 derivative mismatch is not by itself a fine192 derivative failure when coarse96 is underresolved."
+  ],
+  "unchanged_official_scientific_acceptance": [
+    "P1G-A precision FAIL labels for baryon, mond and ptq-screen remain FAIL.",
+    "No model has an established MLE.",
+    "Likelihood, bounds, B0 floor, 91 galaxies and 1782 observations are unchanged.",
+    "gtol=1e-6 is unchanged."
+  ],
+  "proposed_future_numerical_methods": [
+    "Operational derivative certification still requires the validation in this task.",
+    "Batched ledger persistence may be adopted only if the paired benchmark shows a real gain and durability holds."
+  ],
+  "unauthorized": [
+    "Five-family fitting campaign",
+    "Activation of a revised MLE acceptance rule",
+    "Declaring historical precision failures to be scientific PASS",
+    "Declaring any model an MLE",
+    "Changing gtol, likelihood, or bounds",
+    "Manuscript revision and journal submission"
+  ],
+  "a2_source_sha256": {
+    "/home/rocky/ptq-mond/docs/frontiers_major_revision_2026_10/rev26_p1g_a2_eng/00_EXECUTIVE_VERDICT.md": "8c5fb9cd8b41db66f7d2a2affb92a129872662b65de47e697acf44dd53e34d59",
+    "/home/rocky/ptq-mond/docs/frontiers_major_revision_2026_10/rev26_p1g_a2_eng/08_HUMAN_DECISION_PACKET.md": "74a752f8f42fde66d3773c076216f9cdda6cc3524d0c4a5d99a4b0380ab33bd4",
+    "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_pilot_a2_eng/AUDIT_STATUS.json": "946e3152538696998ae0c56c5cf4443cf418a656bb32b04b60a0cea5fa2c7f38",
+    "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_pilot_a2_eng/FINE192_REPEAT_RESULTS.json": "c4a2629226c54efbf1fd15637363bf4e080ba1fce7b36cccf12530e608ccca0a",
+    "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_pilot_a2_eng/COARSE_96_192_384_DIAGNOSTICS.json": "9b38b897d6dc7cb2fe9b7d842ed2cc1f59f532c008f907a5c6f563424d613fd4",
+    "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_pilot_a2_eng/GRADIENT_CERTIFICATION_DRAFT.json": "da96ea806cfd5d0508a407464755c3bb6b8eb26adfcec8d1755be3a09cb7f092"
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "task": "REV26-P1G-A3-ENG",
+  "activated": false,
+  "fitting_authorized": false,
+  "likelihood_version": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+  "scientific_objective_order": 192,
+  "diagnostic_384": "non_authoritative_pointwise_only",
+  "gtol": 1e-6,
+  "families": [
+    {
+      "id": 1,
+      "name": "baryon",
+      "native_outputs": ["baryon"],
+      "proposed_start": "baryon last accepted theta",
+      "why": "Only native member. Official precision record remains FAIL. Not an MLE.",
+      "archived_accepted_objective": 8812.51428142682
+    },
+    {
+      "id": 2,
+      "name": "mond_ptqnu",
+      "native_outputs": ["mond", "ptq-nu"],
+      "mapping": "a0 = epsilon * c * H0; shared U and ln_sigma",
+      "archived_accepted_objectives": {
+        "mond": 6657.762686800939,
+        "ptq-nu": 6657.818831613563
+      },
+      "proposed_optimized_member": "ptq-nu",
+      "why": "The two accepted vectors are different physical points. ptq-nu has a completed fine192 precision pass. mond is lower by about 0.056 but its official coarse96 record is FAIL. The other native vector is produced by exact mapping and checked, not by a second optimization."
+    },
+    {
+      "id": 3,
+      "name": "ptq_linear",
+      "native_outputs": ["ptq"],
+      "proposed_start": "ptq last accepted theta",
+      "why": "Not a MOND reparameterization. Wide epsilon bounds stay. Precision pass does not imply stationarity or an MLE.",
+      "archived_accepted_objective": 7149.884126318863
+    },
+    {
+      "id": 4,
+      "name": "screen",
+      "native_outputs": ["mond-screen", "ptq-screen"],
+      "mapping": "a0 = epsilon * c * H0; q = exp(ln q); shared U and ln_sigma",
+      "archived_accepted_objectives": {
+        "ptq-screen": 6657.646629539804,
+        "mond-screen": 6657.59180854709
+      },
+      "proposed_optimized_member": "ptq-screen",
+      "why": "Objectives differ. ptq-screen has a finished precision record that remains FAIL. mond-screen stopped before an independent terminal validation. Mapping writes the other native vector. Neither point is an MLE."
+    },
+    {
+      "id": 5,
+      "name": "nfw1p",
+      "native_outputs": ["nfw1p"],
+      "proposed_start": "original P1A start, which is also the P1G-A terminal because accepted iterations were zero",
+      "why": "No optimizer batch has been run. The start is not a corrected-B0 MLE. Full-covariance historical logL is a different likelihood."
+    }
+  ],
+  "scheduler": {
+    "serial": true,
+    "buckets_not_borrowable": true,
+    "non_nfw_optimizer_minutes": 90,
+    "nfw_optimizer_minutes": 180,
+    "b0_terminal_validation_minutes_each": 15,
+    "matched_pair_identity_check": "two full fine192 samples after mapping, charged to contingency",
+    "contingency_minutes": 45,
+    "b1_minutes_each_separate": 10,
+    "b0_subtotal_minutes": 660,
+    "b1_subtotal_minutes": 50,
+    "aggregate_minutes_including_b1": 710,
+    "on_budget_limit": "retain last atomically committed accepted theta; discard the in-flight trial",
+    "accepted_commit": "tmp file, fsync, os.replace, directory fsync; theta and objective metadata in the same record"
+  },
+  "b1_policy": {
+    "version": "REV26-P1E-UNIFORM-EXPLICIT-B1-PHYSICAL-v1",
+    "action": "fixed-point evaluation at the accepted B0 theta only",
+    "optimize_b1": false,
+    "fits_in_unallocated_time": false,
+    "reason": "P1G-A reached B1 only as a budget error with no likelihood value. The 45-minute contingency is already assigned to preflight, mapping checks and bookkeeping."
+  }
+}

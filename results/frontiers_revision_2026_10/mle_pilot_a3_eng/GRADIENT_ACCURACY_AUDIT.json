@@ -1,0 +1,79 @@
+{
+  "task": "REV26-P1G-A3-ENG",
+  "gtol": 1e-06,
+  "stopped": null,
+  "models": {
+    "ptq": [
+      {
+        "coordinate": "epsilon",
+        "labels": [
+          "IMPLEMENTATION_CONSISTENT",
+          "DERIVATIVE_APPROXIMATION_UNSTABLE",
+          "QUADRATURE_SENSITIVITY",
+          "STATIONARITY_NOT_CERTIFIABLE"
+        ],
+        "gtol_resolvable": false,
+        "native_gradient_fd_1e-4": 76.82584514576808,
+        "analytic_native_gradient": 82.52506788569912,
+        "analytic_minus_fd": 5.699222739931031,
+        "fd_384_minus_192": -0.00015869765420006843,
+        "error_indicator_native": 91.50277209680878,
+        "step_spread_native": 364.330828950448,
+        "at_bound": false
+      },
+      {
+        "coordinate": "ln_sigma_sys",
+        "labels": [
+          "IMPLEMENTATION_CONSISTENT",
+          "NONSTATIONARY_WITH_RESOLVED_GRADIENT",
+          "STATIONARITY_NOT_CERTIFIABLE"
+        ],
+        "gtol_resolvable": false,
+        "native_gradient_fd_1e-4": 7.836814474468882,
+        "analytic_native_gradient": 7.837096471983812,
+        "analytic_minus_fd": 0.00028199751492952174,
+        "fd_384_minus_192": 2.0602473238540142e-07,
+        "error_indicator_native": 0.004511869999618945,
+        "step_spread_native": 0.017977060350655272,
+        "at_bound": false
+      }
+    ],
+    "ptq-nu": [
+      {
+        "coordinate": "epsilon",
+        "labels": [
+          "IMPLEMENTATION_CONSISTENT",
+          "QUADRATURE_SENSITIVITY",
+          "NONSTATIONARY_WITH_RESOLVED_GRADIENT",
+          "STATIONARITY_NOT_CERTIFIABLE"
+        ],
+        "gtol_resolvable": false,
+        "native_gradient_fd_1e-4": 0.9492829796648327,
+        "analytic_native_gradient": 0.9494002718727226,
+        "analytic_minus_fd": 0.00011729220788991856,
+        "fd_384_minus_192": -9.290836683994996e-06,
+        "error_indicator_native": 0.0018788368014571732,
+        "step_spread_native": 0.0074861412886599865,
+        "at_bound": false
+      },
+      {
+        "coordinate": "ln_sigma_sys",
+        "labels": [
+          "IMPLEMENTATION_CONSISTENT",
+          "NONSTATIONARY_WITH_RESOLVED_GRADIENT",
+          "STATIONARITY_NOT_CERTIFIABLE"
+        ],
+        "gtol_resolvable": false,
+        "native_gradient_fd_1e-4": -0.4484899850183394,
+        "analytic_native_gradient": -0.44859569759110923,
+        "analytic_minus_fd": -0.00010571257276981161,
+        "fd_384_minus_192": -6.270155960552692e-07,
+        "error_indicator_native": 0.0016913524186837892,
+        "step_spread_native": 0.0067389832616992495,
+        "at_bound": false
+      }
+    ]
+  },
+  "nfw_objective_finite": true,
+  "model_stationarity_certificate": false
+}
