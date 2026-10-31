@@ -1,0 +1,40 @@
+{
+  "authorization": "AUTHORIZE_REV26-P1G-A10-FOUR-FAMILY-SCIENCE-PILOT",
+  "manuscript_id": "1964512",
+  "scientific_target": "SIGNED_B0_S_DOMAIN13_91_1769",
+  "target_status": "HUMAN_FROZEN_FOR_CONTROLLED_PILOT",
+  "publication_route": "FOUR_FAMILY_CORE_PLUS_CONSTRAINTS",
+  "screen_role": "EXPLORATORY_ONLY",
+  "canonical_signed_v2": "NOT_ACTIVATED",
+  "code_scientific_target_token": "REV26-P1E-UNIFORM-EXPLICIT-B0-SIGNED-SPARC-CANDIDATE-v2",
+  "variance_token": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+  "gtol": 1e-06,
+  "ftol": 1e-12,
+  "maxiter": 8,
+  "maxls": 20,
+  "maxcor": 10,
+  "method": "L-BFGS-B",
+  "jac": true,
+  "families": [
+    "baryon",
+    "ptq-nu",
+    "ptq",
+    "nfw1p"
+  ],
+  "not_authorized": [
+    "production_fitting",
+    "extra_starts",
+    "mond",
+    "mond-screen",
+    "ptq-screen",
+    "B1",
+    "MCMC",
+    "nfw_multistart",
+    "canonical_v2",
+    "manuscript_edit",
+    "journal_submission",
+    "git_mutation"
+  ],
+  "linear_provisional_trials_only": "d<=1e-9 OR (d<=8*ULP AND relative<=1e-12)",
+  "accepted_identity": "absolute<=1e-9"
+}

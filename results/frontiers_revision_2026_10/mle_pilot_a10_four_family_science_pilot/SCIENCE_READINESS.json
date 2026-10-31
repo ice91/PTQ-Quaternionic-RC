@@ -1,0 +1,52 @@
+{
+  "scientific_target_validity": "FROZEN_FOR_CONTROLLED_PILOT",
+  "numerical_reliability": "IDENTITY_AND_REPLAY_PASS_WITH_BARYON_QUADRATURE_CAVEAT",
+  "stationarity": "NONE_OF_FOUR",
+  "local_optimum_uncertainty": "SINGLE_RESTARTED_START_NOT_A_GLOBAL_MLE",
+  "empirical_inference_readiness": "NOT_READY",
+  "scientific_mle": "NOT_ESTABLISHED",
+  "canonical_signed_v2": "NOT_ACTIVATED",
+  "route_b_readiness": "NOT_SUPPORTED_BY_THIS_PILOT",
+  "route_c_readiness": "DEFENSIBLE_WITH_CLAIM_REDUCTION",
+  "deadline_risk": "HIGH",
+  "four_family_primary_numerical_comparison": "NOT_SUPPORTED",
+  "deadline_extension_recommended_for_inferential_comparison": true,
+  "families": {
+    "baryon": {
+      "status": "STAGNATED_NONSTATIONARY",
+      "original_gtol_reached": false,
+      "single_start_approx_stationary": false,
+      "precision": "RECORDED",
+      "initial_F": 8754.698117964921,
+      "terminal_F": 8754.697750666048,
+      "terminal_projected": 0.07412412325790055
+    },
+    "ptq-nu": {
+      "status": "BUDGET_LIMIT",
+      "original_gtol_reached": false,
+      "single_start_approx_stationary": false,
+      "precision": "RECORDED",
+      "initial_F": 6614.908093993494,
+      "terminal_F": 6614.707443742924,
+      "terminal_projected": 1.7154599738140013
+    },
+    "ptq": {
+      "status": "ENGINEERING_PROGRESS",
+      "original_gtol_reached": false,
+      "single_start_approx_stationary": false,
+      "precision": "RECORDED",
+      "initial_F": 7101.670401073404,
+      "terminal_F": 7101.63905628795,
+      "terminal_projected": 203.6368184903998
+    },
+    "nfw1p": {
+      "status": "ENGINEERING_PROGRESS",
+      "original_gtol_reached": false,
+      "single_start_approx_stationary": false,
+      "precision": "RECORDED",
+      "initial_F": 6489.365968846107,
+      "terminal_F": 6487.00570417641,
+      "terminal_projected": 4.378091290436939
+    }
+  }
+}

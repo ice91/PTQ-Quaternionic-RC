@@ -1,0 +1,97 @@
+{
+  "gtol_unchanged": 1e-06,
+  "families": {
+    "baryon": {
+      "status": "STAGNATED_NONSTATIONARY",
+      "original_gtol_reached": false,
+      "single_start_approx_stationary": false,
+      "stagnated": true,
+      "engineering_progress": "PASS",
+      "gtol": 1e-06,
+      "approx_threshold": 0.0001,
+      "initial_projected": 0.5415612700842196,
+      "terminal_projected": 0.07412412325790055,
+      "initial_full": 25.071601089933107,
+      "terminal_full": 25.069967044762212,
+      "initial_max_index": 86,
+      "terminal_max_index": 20,
+      "scipy": null,
+      "failure": {
+        "type": "StagnationStop",
+        "message": "STAGNATED_NONSTATIONARY"
+      },
+      "accepted_iterations": 3
+    },
+    "ptq-nu": {
+      "status": "BUDGET_LIMIT",
+      "original_gtol_reached": false,
+      "single_start_approx_stationary": false,
+      "stagnated": false,
+      "engineering_progress": "PASS",
+      "gtol": 1e-06,
+      "approx_threshold": 0.0001,
+      "initial_projected": 4.495983185189471,
+      "terminal_projected": 1.7154599738140013,
+      "initial_full": 21.61615144653014,
+      "terminal_full": 21.635360333656095,
+      "initial_max_index": 0,
+      "terminal_max_index": 69,
+      "scipy": null,
+      "failure": {
+        "type": "BudgetLimit",
+        "message": "family budget"
+      },
+      "accepted_iterations": 7
+    },
+    "ptq": {
+      "status": "ENGINEERING_PROGRESS",
+      "original_gtol_reached": false,
+      "single_start_approx_stationary": false,
+      "stagnated": false,
+      "engineering_progress": "PASS",
+      "gtol": 1e-06,
+      "approx_threshold": 0.0001,
+      "initial_projected": 18.19526740929288,
+      "terminal_projected": 203.6368184903998,
+      "initial_full": 18.19526740929288,
+      "terminal_full": 203.6368184903998,
+      "initial_max_index": 0,
+      "terminal_max_index": 0,
+      "scipy": {
+        "success": false,
+        "status": 1,
+        "message": "STOP: TOTAL NO. OF ITERATIONS REACHED LIMIT",
+        "nit": 8,
+        "nfev": 10,
+        "njev": 10
+      },
+      "failure": null,
+      "accepted_iterations": 8
+    },
+    "nfw1p": {
+      "status": "ENGINEERING_PROGRESS",
+      "original_gtol_reached": false,
+      "single_start_approx_stationary": false,
+      "stagnated": false,
+      "engineering_progress": "PASS",
+      "gtol": 1e-06,
+      "approx_threshold": 0.0001,
+      "initial_projected": 10.91421336445364,
+      "terminal_projected": 4.378091290436939,
+      "initial_full": 21.655874969958905,
+      "terminal_full": 21.583587055382736,
+      "initial_max_index": 111,
+      "terminal_max_index": 182,
+      "scipy": {
+        "success": false,
+        "status": 1,
+        "message": "STOP: TOTAL NO. OF ITERATIONS REACHED LIMIT",
+        "nit": 8,
+        "nfev": 11,
+        "njev": 11
+      },
+      "failure": null,
+      "accepted_iterations": 8
+    }
+  }
+}

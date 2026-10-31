@@ -1,0 +1,50 @@
+{
+  "caps": {
+    "per_family_eq": 45,
+    "per_family_marginals": 4500,
+    "per_family_requests": 24,
+    "per_family_wall_minutes": 40,
+    "per_family_minimize": 1,
+    "global_eq": 160,
+    "global_wall_minutes": 150,
+    "global_minimize": 4
+  },
+  "global": {
+    "eq": 155.99999999999693,
+    "marginals": 14196,
+    "minimize": 4,
+    "wall_seconds": 2946.5258525633253
+  },
+  "families": {
+    "baryon": {
+      "marginals": 2457,
+      "eq": 27.000000000000032,
+      "requests": 8,
+      "wall_seconds": 480.37181492708623
+    },
+    "ptq-nu": {
+      "marginals": 4095,
+      "eq": 44.99999999999991,
+      "requests": 13,
+      "wall_seconds": 834.4109044279903
+    },
+    "ptq": {
+      "marginals": 3731,
+      "eq": 40.99999999999995,
+      "requests": 10,
+      "wall_seconds": 844.9690888519399
+    },
+    "nfw1p": {
+      "marginals": 3913,
+      "eq": 42.999999999999936,
+      "requests": 11,
+      "wall_seconds": 786.7206423990428
+    }
+  },
+  "stops": {
+    "baryon": "STAGNATED_NONSTATIONARY",
+    "ptq-nu": "BUDGET_LIMIT",
+    "ptq": "MAXITER_8",
+    "nfw1p": "MAXITER_8"
+  }
+}

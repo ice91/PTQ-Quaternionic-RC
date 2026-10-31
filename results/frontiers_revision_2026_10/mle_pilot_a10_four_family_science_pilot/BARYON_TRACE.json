@@ -1,0 +1,163 @@
+{
+  "model": "baryon",
+  "provisional_trials": false,
+  "archived_sha256": "1e9c848c43e456d6eb233b90ff4796edaf2a30fb7cd9daf274fe40e95f680714",
+  "warm_sha256": "93b72fe3630b1d4ee53c086063f961255cad49778ff3f08415c832e4827eccdf",
+  "historical_objective": 8754.698117964921,
+  "historical_iterations": 3,
+  "historical_projected": 0.5415612700842196,
+  "checkpoint_problems": [],
+  "code_scientific_target": "REV26-P1E-UNIFORM-EXPLICIT-B0-SIGNED-SPARC-CANDIDATE-v2",
+  "variance_token": "REV26-P1E-UNIFORM-EXPLICIT-B0-PHYSICAL-v1",
+  "experiment_target": "SIGNED_B0_S_DOMAIN13_91_1769",
+  "k_count": 92,
+  "preflight": {
+    "F": 8754.698117964921,
+    "projected_gradient_norm": 0.5415612700842196,
+    "full_gradient_norm": 25.071601089933107,
+    "max_projected_index": 86,
+    "max_full_index": 88,
+    "active_lower": 0,
+    "active_upper": 45,
+    "max_abs_gap": 1.1368683772161603e-13,
+    "physical": {
+      "review_required": false,
+      "max_nominal_kms": 406.3777458227751,
+      "max_quadrature_kms": 592.4028363925087,
+      "superluminal_galaxies": [],
+      "max_superluminal_weight": 0.0,
+      "galaxies_audited": 91
+    },
+    "theta_sha256": "93b72fe3630b1d4ee53c086063f961255cad49778ff3f08415c832e4827eccdf"
+  },
+  "preflight_ok": true,
+  "status": "STAGNATED_NONSTATIONARY",
+  "engineering_progress": "PASS",
+  "single_start_approx_stationary": false,
+  "original_gtol_reached": false,
+  "stagnated": true,
+  "precision": "RECORDED",
+  "initial_F": 8754.698117964921,
+  "terminal_F": 8754.697750666048,
+  "objective_improvement": 0.0003672988732432714,
+  "accepted_iterations": 3,
+  "accepted": [
+    {
+      "kind": "ACCEPTED",
+      "iteration_index": 1,
+      "theta_sha256": "35858f24f978f3d628b861cfe2ca288bf3e8e1749f34221f5ada1b4e438ac3c9",
+      "objective_before": 8754.698117964921,
+      "objective_after": 8754.697815818121,
+      "delta_f": -0.00030214680009521544,
+      "identity_class": "ACCEPTED_STRICT_PASS",
+      "projected_gradient_norm": 0.22237448831310758,
+      "full_gradient_norm": 25.06853296470036,
+      "max_projected_index": 91,
+      "physical_regime": "NO_FLAG",
+      "physical": {
+        "review_required": false,
+        "max_nominal_kms": 406.3777458227751,
+        "max_quadrature_kms": 592.4028363925087,
+        "superluminal_galaxies": [],
+        "max_superluminal_weight": 0.0,
+        "galaxies_audited": 91
+      },
+      "model": "baryon",
+      "active_lower": 0,
+      "active_upper": 45
+    },
+    {
+      "kind": "ACCEPTED",
+      "iteration_index": 2,
+      "theta_sha256": "824b448930be7fb57b9622f70d970be8d02e08cf139338afd81b580a8ae70cd4",
+      "objective_before": 8754.697815818121,
+      "objective_after": 8754.69779827367,
+      "delta_f": -1.7544451111461967e-05,
+      "identity_class": "ACCEPTED_STRICT_PASS",
+      "projected_gradient_norm": 0.09311738406379011,
+      "full_gradient_norm": 25.070146920080177,
+      "max_projected_index": 91,
+      "physical_regime": "NO_FLAG",
+      "physical": {
+        "review_required": false,
+        "max_nominal_kms": 406.3777458227751,
+        "max_quadrature_kms": 592.4028363925087,
+        "superluminal_galaxies": [],
+        "max_superluminal_weight": 0.0,
+        "galaxies_audited": 91
+      },
+      "model": "baryon",
+      "active_lower": 0,
+      "active_upper": 45
+    },
+    {
+      "kind": "ACCEPTED",
+      "iteration_index": 3,
+      "theta_sha256": "792135832c515052090f2cdd9eefa9962f6d06fe46b4e2420b9de6542b369158",
+      "objective_before": 8754.69779827367,
+      "objective_after": 8754.697750666048,
+      "delta_f": -4.7607622036593966e-05,
+      "identity_class": "ACCEPTED_STRICT_PASS",
+      "projected_gradient_norm": 0.07412412325790055,
+      "full_gradient_norm": 25.069967044762212,
+      "max_projected_index": 20,
+      "physical_regime": "NO_FLAG",
+      "physical": {
+        "review_required": false,
+        "max_nominal_kms": 406.3777458227751,
+        "max_quadrature_kms": 592.4028363925087,
+        "superluminal_galaxies": [],
+        "max_superluminal_weight": 0.0,
+        "galaxies_audited": 91
+      },
+      "model": "baryon",
+      "active_lower": 0,
+      "active_upper": 45
+    }
+  ],
+  "initial_projected": 0.5415612700842196,
+  "terminal_projected": 0.07412412325790055,
+  "initial_full": 25.071601089933107,
+  "terminal_full": 25.069967044762212,
+  "initial_max_index": 86,
+  "terminal_max_index": 20,
+  "replay": {
+    "pass": true,
+    "F": 8754.697750666048,
+    "objective_abs_gap": 0.0,
+    "max_per_galaxy_gap": 1.1368683772161603e-13,
+    "projected_gradient_norm": 0.07412412325790055,
+    "full_gradient_norm": 25.069967044762212,
+    "physical": {
+      "review_required": false,
+      "max_nominal_kms": 406.3777458227751,
+      "max_quadrature_kms": 592.4028363925087,
+      "superluminal_galaxies": [],
+      "max_superluminal_weight": 0.0,
+      "galaxies_audited": 91
+    },
+    "theta_sha256": "792135832c515052090f2cdd9eefa9962f6d06fe46b4e2420b9de6542b369158"
+  },
+  "quadrature": {
+    "node_count": 384,
+    "method": "segmented_quantile",
+    "fine192_F": 8754.697750666048,
+    "refined_F": 8754.697699987024,
+    "absolute_difference": 5.067902384325862e-05,
+    "max_per_galaxy": 4.9933028776649735e-05,
+    "relative": 5.788780525221789e-09,
+    "replaces_fine192": false
+  },
+  "failure": {
+    "type": "StagnationStop",
+    "message": "STAGNATED_NONSTATIONARY"
+  },
+  "scipy": null,
+  "budget": {
+    "marginals": 2457,
+    "eq": 27.000000000000032,
+    "requests": 8,
+    "wall_seconds": 480.37181492708623
+  },
+  "terminal_theta_sha256": "792135832c515052090f2cdd9eefa9962f6d06fe46b4e2420b9de6542b369158"
+}
