@@ -1,0 +1,79 @@
+{
+  "selection_written_before_likelihood": true,
+  "likelihood_evaluated": false,
+  "n_galaxies": 91,
+  "n_radii": 1769,
+  "rules": [
+    "NEGATIVE_GAS: most retained negative-gas radii, then largest D_err/D, then name",
+    "BULGE: largest max |V_bulge| among remaining, then name",
+    "LOW_OUTER_ACCELERATION: smallest outermost V_obs*|V_obs|/R among remaining with V_obs>0, then name",
+    "DISTANCE_FRACTION: largest D_err/D among remaining, then name"
+  ],
+  "tie_break": "galaxy name ascending",
+  "selected": [
+    {
+      "galaxy": "UGC03205",
+      "n_radii": 48,
+      "D_Mpc": 50.0,
+      "D_err_Mpc": 10.0,
+      "frac_distance": 0.2,
+      "i_deg": 67.0,
+      "i_err_deg": 4.0,
+      "n_negative_gas": 23,
+      "max_abs_bulge_kms": 173.79,
+      "outer_v_kms": 220.0,
+      "outer_r_kpc": 40.04,
+      "outer_v2_over_r_kpc": 1208.7912087912089,
+      "role": "NEGATIVE_GAS",
+      "sorted_index": 63
+    },
+    {
+      "galaxy": "NGC7814",
+      "n_radii": 18,
+      "D_Mpc": 14.4,
+      "D_err_Mpc": 0.66,
+      "frac_distance": 0.04583333333333334,
+      "i_deg": 90.0,
+      "i_err_deg": 1.0,
+      "n_negative_gas": 6,
+      "max_abs_bulge_kms": 345.22,
+      "outer_v_kms": 214.0,
+      "outer_r_kpc": 19.53,
+      "outer_v2_over_r_kpc": 2344.905273937532,
+      "role": "BULGE",
+      "sorted_index": 57
+    },
+    {
+      "galaxy": "UGC07577",
+      "n_radii": 7,
+      "D_Mpc": 2.59,
+      "D_err_Mpc": 0.13,
+      "frac_distance": 0.0501930501930502,
+      "i_deg": 63.0,
+      "i_err_deg": 3.0,
+      "n_negative_gas": 0,
+      "max_abs_bulge_kms": 0.0,
+      "outer_v_kms": 17.8,
+      "outer_r_kpc": 1.69,
+      "outer_v2_over_r_kpc": 187.47928994082844,
+      "role": "LOW_OUTER_ACCELERATION",
+      "sorted_index": 80
+    },
+    {
+      "galaxy": "UGC09133",
+      "n_radii": 68,
+      "D_Mpc": 57.1,
+      "D_err_Mpc": 11.4,
+      "frac_distance": 0.19964973730297722,
+      "i_deg": 53.0,
+      "i_err_deg": 6.0,
+      "n_negative_gas": 3,
+      "max_abs_bulge_kms": 326.59,
+      "outer_v_kms": 229.0,
+      "outer_r_kpc": 108.31,
+      "outer_v2_over_r_kpc": 484.17505308835746,
+      "role": "DISTANCE_FRACTION",
+      "sorted_index": 86
+    }
+  ]
+}
