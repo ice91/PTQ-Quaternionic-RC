@@ -1,0 +1,23 @@
+replay ptq-nu 0.5 5.0 0.0
+replay ptq-nu 0.5 10.0 0.0
+replay ptq-nu 0.7 5.0 0.0
+replay ptq-nu 0.7 10.0 0.0
+replay ptq 0.5 5.0 0.0
+replay ptq 0.5 10.0 0.0
+replay ptq 0.7 5.0 0.0
+replay ptq 0.7 10.0 0.0
+identity ptq-nu 2.3305801732931286e-12
+identity ptq 7.503331289626658e-12
+Traceback (most recent call last):
+  File "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/a15_conditional_sparc_evidence/diagnostic/validate_a15.py", line 156, in <module>
+    main()
+  File "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/a15_conditional_sparc_evidence/diagnostic/validate_a15.py", line 112, in main
+    value = float(integrate(g, p, gi, "segmented_quantile", 384, floors=("B0",))["logL"]["B0"])
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_pilot_a10_four_family_science_pilot/candidate/src/ptquat/marginal_likelihood.py", line 87, in integrate
+    vd=velocity(g,p,gi,ds[:,None]);b=np.sin(incs)/np.sin(g.inc)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rocky/PTQ-Quaternionic-RC/results/frontiers_revision_2026_10/mle_pilot_a10_four_family_science_pilot/candidate/src/ptquat/marginal_likelihood.py", line 28, in velocity
+    H0_si=pars["_H0"], c0=pars["_c0"], c_slope=pars["_c_slope"])
+                          ~~~~^^^^^^^
+KeyError: '_c0'

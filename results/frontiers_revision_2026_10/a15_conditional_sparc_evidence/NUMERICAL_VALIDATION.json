@@ -1,0 +1,346 @@
+{
+  "primary_objective": "fine192",
+  "fine192_replay": [
+    {
+      "model": "ptq-nu",
+      "upsilon": 0.5,
+      "sigma": 5.0,
+      "max_abs_gap": 0.0
+    },
+    {
+      "model": "ptq-nu",
+      "upsilon": 0.5,
+      "sigma": 10.0,
+      "max_abs_gap": 0.0
+    },
+    {
+      "model": "ptq-nu",
+      "upsilon": 0.7,
+      "sigma": 5.0,
+      "max_abs_gap": 0.0
+    },
+    {
+      "model": "ptq-nu",
+      "upsilon": 0.7,
+      "sigma": 10.0,
+      "max_abs_gap": 0.0
+    },
+    {
+      "model": "ptq",
+      "upsilon": 0.5,
+      "sigma": 5.0,
+      "max_abs_gap": 0.0
+    },
+    {
+      "model": "ptq",
+      "upsilon": 0.5,
+      "sigma": 10.0,
+      "max_abs_gap": 0.0
+    },
+    {
+      "model": "ptq",
+      "upsilon": 0.7,
+      "sigma": 5.0,
+      "max_abs_gap": 0.0
+    },
+    {
+      "model": "ptq",
+      "upsilon": 0.7,
+      "sigma": 10.0,
+      "max_abs_gap": 0.0
+    }
+  ],
+  "replay_note": "Eight reported minima, all 91 galaxies, official galaxy_log_marginal order 192. Maximum absolute gap versus the science cache was 0.",
+  "a5_a6_identity": [
+    {
+      "model": "ptq-nu",
+      "upsilon": 0.5,
+      "sigma_sys_kms": 5.0,
+      "max_abs_gap": 2.3305801732931286e-12,
+      "limit": 1e-09,
+      "pass": true
+    },
+    {
+      "model": "ptq",
+      "upsilon": 0.5,
+      "sigma_sys_kms": 5.0,
+      "max_abs_gap": 7.503331289626658e-12,
+      "limit": 1e-09,
+      "pass": true
+    }
+  ],
+  "identity_note": "galaxy_jacobian_row official integrate versus rederived accumulation at the two primary conditional minima. No optimizer-roundoff exception applied.",
+  "fine384_comparisons": [
+    {
+      "model": "ptq-nu",
+      "upsilon": 0.5,
+      "sigma": 5.0,
+      "node": 10,
+      "fine384_logL": -7433.195144305513,
+      "fine192_logL": -7434.792535693709,
+      "max_abs_galaxy_gap": 1.5358480673961878,
+      "sum_gap": 1.597391388196229
+    },
+    {
+      "model": "ptq-nu",
+      "upsilon": 0.5,
+      "sigma": 5.0,
+      "node": 11,
+      "fine384_logL": -7430.073546661741,
+      "fine192_logL": -7431.2204018617595,
+      "max_abs_galaxy_gap": 1.1439392796298051,
+      "sum_gap": 1.1468552000187628
+    },
+    {
+      "model": "ptq-nu",
+      "upsilon": 0.5,
+      "sigma": 5.0,
+      "node": 12,
+      "fine384_logL": -7435.229144496703,
+      "fine192_logL": -7435.985561104966,
+      "max_abs_galaxy_gap": 0.7546745020354564,
+      "sum_gap": 0.7564166082629526
+    },
+    {
+      "model": "ptq-nu",
+      "upsilon": 0.5,
+      "sigma": 10.0,
+      "node": 12,
+      "fine384_logL": -7068.681807811778,
+      "fine192_logL": -7068.692667254443,
+      "max_abs_galaxy_gap": 0.010939122006348612,
+      "sum_gap": 0.010859442665605457
+    },
+    {
+      "model": "ptq-nu",
+      "upsilon": 0.7,
+      "sigma": 5.0,
+      "node": 13,
+      "fine384_logL": -7336.123815129588,
+      "fine192_logL": -7336.152698533695,
+      "max_abs_galaxy_gap": 0.02798324615804404,
+      "sum_gap": 0.02888340410663659
+    },
+    {
+      "model": "ptq-nu",
+      "upsilon": 0.7,
+      "sigma": 10.0,
+      "node": 11,
+      "fine384_logL": -7039.211679549078,
+      "fine192_logL": -7039.211617348215,
+      "max_abs_galaxy_gap": 6.257430771938743e-05,
+      "sum_gap": -6.220086288521998e-05
+    },
+    {
+      "model": "ptq",
+      "upsilon": 0.5,
+      "sigma": 5.0,
+      "node": 15,
+      "fine384_logL": -12426.498029195594,
+      "fine192_logL": -12510.875840502822,
+      "max_abs_galaxy_gap": 48.303873947900456,
+      "sum_gap": 84.3778113072276
+    },
+    {
+      "model": "ptq",
+      "upsilon": 0.5,
+      "sigma": 5.0,
+      "node": 16,
+      "fine384_logL": -9804.101797449233,
+      "fine192_logL": -9839.974186698935,
+      "max_abs_galaxy_gap": 26.54760124295848,
+      "sum_gap": 35.87238924970188
+    },
+    {
+      "model": "ptq",
+      "upsilon": 0.5,
+      "sigma": 5.0,
+      "node": 17,
+      "fine384_logL": -11671.807322233459,
+      "fine192_logL": -11675.828732840087,
+      "max_abs_galaxy_gap": 4.0055449029667045,
+      "sum_gap": 4.021410606628706
+    },
+    {
+      "model": "ptq",
+      "upsilon": 0.5,
+      "sigma": 10.0,
+      "node": 16,
+      "fine384_logL": -8101.530507277674,
+      "fine192_logL": -8114.323460824027,
+      "max_abs_galaxy_gap": 10.692432274152281,
+      "sum_gap": 12.792953546353601
+    },
+    {
+      "model": "ptq",
+      "upsilon": 0.7,
+      "sigma": 5.0,
+      "node": 16,
+      "fine384_logL": -9000.979052806113,
+      "fine192_logL": -9003.46808361298,
+      "max_abs_galaxy_gap": 2.4738803356355277,
+      "sum_gap": 2.4890308068661398
+    },
+    {
+      "model": "ptq",
+      "upsilon": 0.7,
+      "sigma": 10.0,
+      "node": 16,
+      "fine384_logL": -7707.9265382661115,
+      "fine192_logL": -7707.983780556323,
+      "max_abs_galaxy_gap": 0.04399144681320877,
+      "sum_gap": 0.05724229021143401
+    }
+  ],
+  "fine384_adjusted_F_primary": [
+    {
+      "model": "ptq-nu",
+      "node": 10,
+      "F192": 7434.792535693709,
+      "F384": 7433.195144305513,
+      "sum_gap": 1.597391388196229
+    },
+    {
+      "model": "ptq-nu",
+      "node": 11,
+      "F192": 7431.2204018617595,
+      "F384": 7430.073546661741,
+      "sum_gap": 1.1468552000187628
+    },
+    {
+      "model": "ptq-nu",
+      "node": 12,
+      "F192": 7435.985561104966,
+      "F384": 7435.229144496703,
+      "sum_gap": 0.7564166082629526
+    },
+    {
+      "model": "ptq",
+      "node": 15,
+      "F192": 12510.875840502822,
+      "F384": 12426.498029195594,
+      "sum_gap": 84.3778113072276
+    },
+    {
+      "model": "ptq",
+      "node": 16,
+      "F192": 9839.974186698935,
+      "F384": 9804.101797449233,
+      "sum_gap": 35.87238924970188
+    },
+    {
+      "model": "ptq",
+      "node": 17,
+      "F192": 11675.828732840087,
+      "F384": 11671.807322233459,
+      "sum_gap": 4.021410606628706
+    }
+  ],
+  "shallow_simple_nu_neighbor": {
+    "scenario": "ptq-nu U=0.5 sigma=10",
+    "node11_sum_gap": 0.01461639012362781,
+    "node12_sum_gap": 0.010859442665605457,
+    "F384_node11": 7069.039394215802,
+    "F384_node12": 7068.681807811778,
+    "best_node_remains": 12
+  },
+  "largest_linear_galaxy_gaps_at_primary_minimum": [
+    {
+      "galaxy": "NGC2841",
+      "gap_fine384_minus_fine192": 26.54760124295848
+    },
+    {
+      "galaxy": "NGC7814",
+      "gap_fine384_minus_fine192": 7.155497152546104
+    },
+    {
+      "galaxy": "UGC12506",
+      "gap_fine384_minus_fine192": 1.1264097863404743
+    },
+    {
+      "galaxy": "NGC5907",
+      "gap_fine384_minus_fine192": 0.8366377238923235
+    },
+    {
+      "galaxy": "NGC0024",
+      "gap_fine384_minus_fine192": 0.15607525445858528
+    },
+    {
+      "galaxy": "UGC08286",
+      "gap_fine384_minus_fine192": 0.02307354582444532
+    },
+    {
+      "galaxy": "NGC2403",
+      "gap_fine384_minus_fine192": 0.013776360228689555
+    },
+    {
+      "galaxy": "IC4202",
+      "gap_fine384_minus_fine192": 0.012925396030823322
+    }
+  ],
+  "minimum_moved": false,
+  "predictive_gap_closed": false,
+  "outer_radius": [
+    {
+      "galaxy": "D631-7",
+      "r_last_kpc": 7.19,
+      "linear_over_vbar2_at_last": 11.003493747907756,
+      "n_radii_linear_exceeds_abs_vbar2": 16,
+      "n_radii": 16,
+      "n_negative_gas": 0
+    },
+    {
+      "galaxy": "NGC7814",
+      "r_last_kpc": 19.53,
+      "linear_over_vbar2_at_last": 1.0963899359407718,
+      "n_radii_linear_exceeds_abs_vbar2": 1,
+      "n_radii": 18,
+      "n_negative_gas": 6
+    },
+    {
+      "galaxy": "UGC03205",
+      "r_last_kpc": 40.04,
+      "linear_over_vbar2_at_last": 2.5056057088054007,
+      "n_radii_linear_exceeds_abs_vbar2": 5,
+      "n_radii": 48,
+      "n_negative_gas": 23
+    },
+    {
+      "galaxy": "UGC07577",
+      "r_last_kpc": 1.69,
+      "linear_over_vbar2_at_last": 5.600314573590556,
+      "n_radii_linear_exceeds_abs_vbar2": 7,
+      "n_radii": 7,
+      "n_negative_gas": 0
+    },
+    {
+      "galaxy": "UGC09133",
+      "r_last_kpc": 108.31,
+      "linear_over_vbar2_at_last": 6.622676843044809,
+      "n_radii_linear_exceeds_abs_vbar2": 23,
+      "n_radii": 68,
+      "n_negative_gas": 3
+    },
+    {
+      "n_galaxies_linear_term_exceeds_vbar2_at_last_radius": 74,
+      "n_galaxies": 91,
+      "median_last_ratio": 2.692203028946656,
+      "upsilon": 0.5,
+      "sigma_sys_kms": 5.0,
+      "linear_epsilon": 0.025194221086055985,
+      "ptq_nu_epsilon": 0.1441398656038085,
+      "note": "Nominal catalog templates. Not an extra likelihood evaluation."
+    }
+  ],
+  "aborted_fine384_before_fix": {
+    "calls": 1,
+    "error": "KeyError _c0 on the first integrate; not a scientific result"
+  },
+  "calls": {
+    "fine192_replay": 728,
+    "identity": 182,
+    "aborted": 1,
+    "fine384_nodes": 1092,
+    "fine384_followup": 182
+  }
+}
