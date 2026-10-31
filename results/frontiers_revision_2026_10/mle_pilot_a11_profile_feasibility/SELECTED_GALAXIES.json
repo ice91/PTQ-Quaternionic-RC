@@ -1,0 +1,83 @@
+{
+  "rule_published_before_likelihood": true,
+  "rule": [
+    "Use only A10 terminal native vectors. Do not call the likelihood while selecting.",
+    "Include the baryon terminal maximum projected-gradient coordinate when it is a galaxy Upsilon.",
+    "Include the first sorted-name baryon galaxy sitting at Upsilon>=1.5.",
+    "Include the first sorted-name ptq-nu galaxy sitting at Upsilon<=0.05. Baryon has no lower-bound contact.",
+    "Include the S_DOMAIN13 galaxy with the most excluded radii in the frozen A9 register.",
+    "Include the linear-PTQ interior Upsilon closest to the median of interior Upsilons.",
+    "Include the ptq-nu terminal maximum projected-gradient galaxy when that coordinate is a Upsilon.",
+    "Skip a later rule when the galaxy is already chosen. Do not replace the set after seeing new likelihood values."
+  ],
+  "galaxies": [
+    {
+      "galaxy": "NGC2841",
+      "index": 20,
+      "role": "LARGE_LOCAL_GRADIENT_BARYON",
+      "detail": {
+        "a10_terminal_max_projected_index": 20,
+        "upsilon": 1.2325104661135198,
+        "projected_norm_at_vector": 0.07412412325790055
+      }
+    },
+    {
+      "galaxy": "D564-8",
+      "index": 1,
+      "role": "UPPER_BOUND_BARYON",
+      "detail": {
+        "upsilon": 1.5,
+        "n_upper_baryon": 45,
+        "rule": "first sorted name with Upsilon>=1.5"
+      }
+    },
+    {
+      "galaxy": "CamB",
+      "index": 0,
+      "role": "LOWER_BOUND_PTQNU",
+      "detail": {
+        "upsilon": 0.05,
+        "n_lower_ptqnu": 11,
+        "rule": "first sorted name with ptq-nu Upsilon<=0.05"
+      }
+    },
+    {
+      "galaxy": "UGC01281",
+      "index": 59,
+      "role": "DOMAIN13_TOUCHED",
+      "detail": {
+        "excluded_radii": 7,
+        "source": "A9 exclusion register counts"
+      }
+    },
+    {
+      "galaxy": "NGC3953",
+      "index": 34,
+      "role": "INTERIOR_LINEAR",
+      "detail": {
+        "upsilon": 0.7294669475557379,
+        "interior_median": 0.7294669475557379,
+        "rule": "linear terminal Upsilon closest to the interior median"
+      }
+    },
+    {
+      "galaxy": "UGC06614",
+      "index": 68,
+      "role": "LARGE_LOCAL_GRADIENT_PTQNU",
+      "detail": {
+        "a10_terminal_max_projected_index": 69,
+        "galaxy_offset": 68,
+        "upsilon": 0.3085142831883788,
+        "projected_norm_at_vector": 1.7154599738140013
+      }
+    }
+  ],
+  "nfw_2d_conditional": {
+    "max_galaxies": 2,
+    "members": [
+      "NGC2841",
+      "CamB"
+    ],
+    "execute_only_if": "1D and baryon paired quadrature finished and at least 250 marginals plus 3 minutes remain"
+  }
+}

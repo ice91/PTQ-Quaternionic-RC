@@ -1,0 +1,47 @@
+{
+  "classification": "PROVED_FOR_FROZEN_OBJECTIVE",
+  "statement": "F(phi, lambda_1, ..., lambda_91) = sum_g F_g(phi, lambda_g), with C(phi)=0",
+  "F_definition": "F = -sum_g logL_g, fine192, B0 variance e^2+sigma_sys^2",
+  "shared_phi": {
+    "baryon": [
+      "ln_sigma"
+    ],
+    "ptq-nu": [
+      "epsilon",
+      "ln_sigma"
+    ],
+    "ptq": [
+      "epsilon",
+      "ln_sigma"
+    ],
+    "nfw1p": [
+      "ln_sigma"
+    ]
+  },
+  "local_lambda": {
+    "baryon": [
+      "Upsilon_g"
+    ],
+    "ptq-nu": [
+      "Upsilon_g"
+    ],
+    "ptq": [
+      "Upsilon_g"
+    ],
+    "nfw1p": [
+      "Upsilon_g",
+      "log10_M200_g"
+    ]
+  },
+  "cross_galaxy_coupling_found": false,
+  "mechanisms_checked": [
+    "catalog_velocity_at_distance uses only U[gi], and for NFW only lM[gi]",
+    "c(M200)=10*(M200/1e12)^(-0.1) depends on that galaxy mass and fixed constants",
+    "distance and inclination nodes depend only on that galaxy geometry",
+    "B0 variance uses that galaxy e_i and the shared sigma",
+    "Gaussian normalization is inside each galaxy integral",
+    "S_DOMAIN13 mask is fixed before integration",
+    "no shared penalty or hierarchical prior is added to F",
+    "bounds are independent boxes"
+  ]
+}

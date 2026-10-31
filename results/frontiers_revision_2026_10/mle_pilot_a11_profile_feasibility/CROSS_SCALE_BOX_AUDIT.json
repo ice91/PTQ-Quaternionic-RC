@@ -1,0 +1,38 @@
+{
+  "classification": "OUTSIDE",
+  "map": "a0 = epsilon * c * H0",
+  "H0_kms_per_Mpc": 67.4,
+  "H0_SI": 2.1842852410855023e-18,
+  "c_m_per_s": 299792458.0,
+  "c_times_H0": 6.548322413981453e-10,
+  "epsilon_cos_recorded": 1.4919136877222163,
+  "epsilon_cos_manuscript_rounding": 1.492,
+  "source": "/home/rocky/PTQ-Quaternionic-RC/results/paper_submission_ptqnu_20260323/02_ptqnu_main/closure_test.yaml",
+  "adopted_map": "Omega_Lambda = epsilon^2 / (1 + epsilon^2)",
+  "omega_lambda_from_recorded_epsilon": 0.69,
+  "ptq_nu_a0_bounds_m_s2": [
+    5e-11,
+    2e-10
+  ],
+  "ptq_nu_epsilon_bounds": [
+    0.07635543401657195,
+    0.3054217360662878
+  ],
+  "a0_of_epsilon_cos": 9.769531841037116e-10,
+  "a0_cos_over_ptq_nu_upper": 4.884765920518558,
+  "inside_ptq_nu_native_a0_box": false,
+  "linear_epsilon_box": [
+    1e-06,
+    3.999
+  ],
+  "epsilon_cos_inside_linear_wide_box": true,
+  "linear_box_is_not_the_matched_a0_constraint": true,
+  "cosmological_closure": "NOT_ESTABLISHED_AND_NOT_FALSIFIED_BY_THE_BOX",
+  "future_conditional_test_not_executed": {
+    "name": "BOUNDARY_CONDITIONAL_FIXED_EPSILON",
+    "allowed_without_new_authorization": false,
+    "in_box_endpoint_only": 0.3054217360662878,
+    "does_not_equal_epsilon_cos": true,
+    "outside_box_evaluation": "NOT_AUTHORIZED"
+  }
+}

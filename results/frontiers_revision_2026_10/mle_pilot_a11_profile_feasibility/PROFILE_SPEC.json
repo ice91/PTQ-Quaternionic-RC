@@ -1,0 +1,36 @@
+{
+  "applies_because": "SEPARABILITY_PROVED",
+  "profile": "F_prof(phi) = sum_g min_{lambda_g in box} F_g(phi, lambda_g)",
+  "equality": "The constrained global minimum of F equals the minimum of F_prof if and only if every inner minimization is the exact constrained minimum on its own box.",
+  "numerical_local_minimum_is_certified_global": false,
+  "profiling_does_not_reduce_information_criterion_k": true,
+  "native_bounds": {
+    "Upsilon": [
+      0.05,
+      1.5
+    ],
+    "ln_sigma": [
+      -6.907755278982137,
+      5.298317366548036
+    ],
+    "ptq_nu_epsilon": [
+      0.07635543401657195,
+      0.3054217360662878
+    ],
+    "linear_epsilon": [
+      1e-06,
+      3.999
+    ],
+    "log10_M200": [
+      9.0,
+      13.0
+    ],
+    "nfw_c_of_M": "c=10*(M200/1e12)^(-0.1), fixed, not a free parameter"
+  },
+  "envelope": "Where the local minimizer is unique and the active set is constant, dF_prof/dphi equals the sum of partial derivatives holding lambda_g at that minimizer.",
+  "nondifferentiable_when": [
+    "a local parameter enters or leaves a bound",
+    "the minimizing local branch switches",
+    "the inner argmin is not unique"
+  ]
+}
